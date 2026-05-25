@@ -1,0 +1,51 @@
+============================================================
+  RADIO PROGRAMADOR v7.0 — PREMIUM EDITION
+  Ferramenta de Auditoria e Controle de Rede Wi-Fi
+  Windows 11
+============================================================
+
+
+COMO GERAR O EXECUTAVEL (.exe) — 3 PASSOS:
+
+  1. Instale Python: https://www.python.org/downloads/
+     (Marque "Add Python to PATH" na instalacao!)
+
+  2. De dois cliques em "GERAR_EXE.bat"
+     Espere 3 a 6 minutos (ele faz tudo sozinho)
+
+  3. Pronto! Seu arquivo esta em: PRONTO\RadioProgramador.exe
+     Copie pra onde quiser. Dois cliques e abre!
+
+
+O QUE O PROGRAMA FAZ:
+
+  - Dashboard com metricas de rede (velocidade, sinal, ping)
+  - Lista TODOS os dispositivos conectados na rede
+  - Botao BLOQUEAR em cada dispositivo (corta internet dele)
+  - Animacao pulsante vermelha nos bloqueados
+  - Botao DESBLOQUEAR para restaurar
+  - Teste de velocidade integrado
+  - Limpador de rastros no menu
+
+  Termos tecnicos usados:
+  - BLOQUEAR = ARP Spoofing (engana o aparelho, cortando internet)
+  - DESCONECTAR = Deauth (expulsa da rede Wi-Fi)
+
+
+REQUISITOS:
+
+  - Windows 11 (64 bits)
+  - Npcap instalado (https://npcap.com) — para funcoes de bloqueio
+  - O programa pede Administrador automaticamente
+
+
+AVISO LEGAL:
+
+  Use SOMENTE na sua propria rede ou com autorizacao.
+  Uso em redes de terceiros sem permissao e CRIME
+  (Codigo Penal - Art. 154-A).
+
+
+============================================================
+  v7.0 Premium | Windows 11 | 2025
+============================================================
