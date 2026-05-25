@@ -1,0 +1,70 @@
+============================================================
+  RADIO PROGRAMADOR v8.0 — PREMIUM EDITION
+  Ferramenta de Auditoria e Controle de Rede Wi-Fi
+  Windows 11
+============================================================
+
+
+COMO GERAR O EXECUTAVEL (.exe) — 3 PASSOS:
+
+  1. Instale Python: https://www.python.org/downloads/
+     (Marque "Add Python to PATH" na instalacao!)
+
+  2. De dois cliques em "GERAR_EXE.bat"
+     Espere 3 a 7 minutos (ele faz tudo sozinho)
+
+  3. Pronto! Seu arquivo esta em: PRONTO\RadioProgramador.exe
+     Copie pra onde quiser. Dois cliques e abre!
+
+
+O QUE O PROGRAMA FAZ:
+
+  - Dashboard premium com metricas em tempo real
+  - Mostra TODAS as redes Wi-Fi visiveis (radar)
+  - Lista TODOS os dispositivos conectados na rede
+  - BLOQUEIA dispositivos (corta internet deles)
+  - BLOQUEIA IP especifico digitado manualmente
+  - BLOQUEIA O ROTEADOR (corta internet de todos)
+  - IDENTIFICA SENHAS — testa 5 brechas diferentes
+  - TESTA VELOCIDADE — download, upload, ping, sinal
+  - LIMPA RASTROS — remove arquivos de versoes anteriores
+
+
+COMO FUNCIONA O BLOQUEIO:
+
+  Quando voce clica em "Bloquear", o programa usa uma tecnica
+  chamada ARP Spoofing. Ele "engana" o aparelho, fazendo ele
+  achar que VOCE e o roteador. Resultado: o aparelho para de
+  receber internet ate voce clicar "Desbloquear".
+
+
+COMO FUNCIONA O IDENTIFICADOR DE SENHA:
+
+  O programa testa 5 metodos para descobrir a senha:
+  1. Verifica se ja esta salva no seu computador
+  2. Captura PMKID (falha no protocolo WPA2)
+  3. Captura Handshake e testa com lista de senhas comuns
+  4. Tenta WPS PIN (se o roteador tiver WPS ligado)
+  5. Pixie Dust (falha na geracao do PIN em alguns roteadores)
+
+  Se encontrar a senha, mostra QUAL brecha foi usada
+  e COMO a empresa pode corrigir.
+
+
+REQUISITO EXTRA (para funcoes de bloqueio e senha):
+
+  Instale o Npcap: https://npcap.com
+  Na instalacao, marque "WinPcap API compatibility"
+  (O programa tenta instalar sozinho, mas se falhar, baixe manual)
+
+
+AVISO LEGAL:
+
+  Use SOMENTE na sua propria rede ou com autorizacao.
+  Uso em redes de terceiros sem permissao e CRIME
+  (Codigo Penal - Art. 154-A).
+
+
+============================================================
+  v8.0 Premium | Windows 11 | 2026
+============================================================

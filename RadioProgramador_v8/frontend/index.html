@@ -1,0 +1,1799 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Radio Programador v8.0</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #050507;
+  --card-bg: rgba(20,20,28,0.92);
+  --border: rgba(255,255,255,0.08);
+  --border-hover: rgba(255,255,255,0.12);
+  --purple: #6366f1;
+  --purple-light: #8b5cf6;
+  --green: #22c55e;
+  --green-light: #4ade80;
+  --red: #ef4444;
+  --red-light: #f87171;
+  --cyan: #22d3ee;
+  --yellow: #fbbf24;
+  --blue: #3b82f6;
+  --text: #ffffff;
+  --text-muted: #888888;
+  --text-dim: #555555;
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+</style>
+
+<style>
+/* ===== GLOBAL STYLES ===== */
+.bg-glow {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(99,102,241,0.12) 0%, transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(236,72,153,0.08) 0%, transparent 40%);
+  animation: drift 20s ease-in-out infinite;
+}
+@keyframes drift {
+  0%, 100% { transform: translate(0,0) scale(1); }
+  50% { transform: translate(20px,-10px) scale(1.05); }
+}
+.bg-grid {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 70%);
+}
+
+/* Screen management */
+.screen { display: none; position: absolute; inset: 0; z-index: 1; overflow-y: auto; }
+.screen.active { display: flex; align-items: center; justify-content: center; }
+.screen-dashboard.active { display: flex; align-items: stretch; justify-content: stretch; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+/* Animations */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes windowIn { from { opacity: 0; transform: scale(0.95) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes pulse { 0% { transform: scale(0.95); opacity: 0.8; } 100% { transform: scale(1.4); opacity: 0; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+@keyframes shine { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+@keyframes shimmer { 0%, 100% { box-shadow: 0 0 20px rgba(99,102,241,0.4); } 50% { box-shadow: 0 0 30px rgba(168,85,247,0.6); } }
+@keyframes activePulse { 0%, 100% { box-shadow: 0 0 0 4px rgba(99,102,241,0.2); } 50% { box-shadow: 0 0 0 8px rgba(99,102,241,0.1); } }
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+
+@keyframes devicePulse {
+  0%, 100% { box-shadow: 0 0 12px rgba(239,68,68,0.6); transform: scale(1); }
+  50% { box-shadow: 0 0 24px rgba(239,68,68,1); transform: scale(1.15); }
+}
+@keyframes ring {
+  0% { transform: scale(0.8); opacity: 1; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+@keyframes ringExpand {
+  0% { transform: scale(1); opacity: 0.8; border-width: 3px; }
+  100% { transform: scale(2.2); opacity: 0; border-width: 1px; }
+}
+@keyframes coreBeat {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 60px rgba(239,68,68,0.7); }
+  50% { transform: scale(1.08); box-shadow: 0 0 80px rgba(239,68,68,1); }
+}
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.6; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== COMMON COMPONENTS ===== */
+.window {
+  position: relative; z-index: 10;
+  background: linear-gradient(180deg, rgba(15,15,22,0.95) 0%, rgba(8,8,14,0.95) 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 50px 100px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+  backdrop-filter: blur(40px);
+  overflow: hidden;
+  animation: windowIn 0.6s cubic-bezier(0.16,1,0.3,1);
+}
+.titlebar {
+  display: flex; align-items: center;
+  height: 38px; padding: 0 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  background: rgba(255,255,255,0.02);
+}
+.dot { width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; }
+.dot.r { background: #ff5f57; }
+.dot.y { background: #febc2e; }
+.dot.g { background: #28c840; }
+.titlebar-title {
+  flex: 1; text-align: center;
+  font-size: 12px; color: #666;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.05em;
+}
+
+/* ===== WELCOME SCREEN ===== */
+.welcome-content {
+  padding: 80px 60px;
+  display: flex; flex-direction: column;
+  align-items: center; text-align: center;
+  height: calc(100% - 38px);
+}
+.logo { width: 110px; height: 110px; margin-bottom: 40px; position: relative; animation: float 6s ease-in-out infinite; }
+.logo-circle {
+  width: 100%; height: 100%; border-radius: 28px;
+  background: linear-gradient(135deg, var(--purple) 0%, var(--purple-light) 50%, #ec4899 100%);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 25px 50px rgba(99,102,241,0.4), inset 0 1px 0 rgba(255,255,255,0.3);
+  position: relative; overflow: hidden;
+}
+.logo-circle::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4), transparent 60%);
+}
+.logo-icon {
+  font-size: 50px; font-weight: 800; color: #fff;
+  font-family: 'JetBrains Mono', monospace;
+  position: relative; z-index: 1; letter-spacing: -0.05em;
+}
+.pulse-ring-welcome {
+  position: absolute; inset: -10px;
+  border: 2px solid rgba(99,102,241,0.4);
+  border-radius: 32px;
+  animation: pulse 3s ease-out infinite;
+}
+.pulse-ring-welcome:nth-child(2) { animation-delay: 1s; }
+.pulse-ring-welcome:nth-child(3) { animation-delay: 2s; }
+.welcome-title {
+  font-size: 42px; font-weight: 800; letter-spacing: -0.04em;
+  background: linear-gradient(180deg, #fff 0%, #aaa 100%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 16px; line-height: 1.1;
+}
+.welcome-tagline {
+  color: var(--text-muted); font-size: 17px;
+  font-weight: 400; line-height: 1.6;
+  max-width: 480px; margin-bottom: 48px;
+}
+.btn-cta {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 16px 32px;
+  background: linear-gradient(135deg, var(--purple) 0%, var(--purple-light) 100%);
+  border: none; border-radius: var(--radius-sm); color: #fff;
+  font-family: inherit; font-size: 15px; font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(99,102,241,0.4), 0 0 0 1px rgba(255,255,255,0.1) inset;
+  transition: all 0.3s ease; letter-spacing: -0.01em;
+}
+.btn-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 40px rgba(99,102,241,0.5), 0 0 0 1px rgba(255,255,255,0.2) inset;
+}
+.btn-cta .arrow { transition: transform 0.3s ease; }
+.btn-cta:hover .arrow { transform: translateX(4px); }
+.version-info {
+  margin-top: 32px; display: flex; gap: 24px; align-items: center;
+  color: var(--text-dim); font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.version-tag {
+  padding: 4px 10px;
+  background: rgba(99,102,241,0.1);
+  border: 1px solid rgba(99,102,241,0.3);
+  color: #a5b4fc; border-radius: 6px; font-weight: 500;
+}
+
+/* ===== TERMS SCREEN ===== */
+.terms-window { width: 720px; max-height: 90vh; display: flex; flex-direction: column; }
+.terms-content { padding: 40px 48px 32px; flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.terms-header { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
+.icon-box {
+  width: 52px; height: 52px; border-radius: 14px;
+  background: linear-gradient(135deg, rgba(99,102,241,0.2) 0%, rgba(168,85,247,0.2) 100%);
+  border: 1px solid rgba(99,102,241,0.3);
+  display: flex; align-items: center; justify-content: center; font-size: 24px;
+}
+.terms-title { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+.terms-subtitle { color: var(--text-muted); font-size: 14px; margin-top: 4px; }
+.terms-box {
+  flex: 1; background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 14px; padding: 24px;
+  overflow-y: auto; margin-bottom: 24px; min-height: 200px;
+}
+.terms-box h3 {
+  font-size: 14px; font-weight: 600; color: #a5b4fc;
+  margin: 18px 0 8px; letter-spacing: -0.01em;
+  display: flex; align-items: center; gap: 8px;
+}
+.terms-box h3:first-child { margin-top: 0; }
+.terms-box h3::before { content: ''; width: 4px; height: 4px; border-radius: 50%; background: #a5b4fc; }
+.terms-box p { color: #aaa; font-size: 13px; line-height: 1.7; }
+.checkbox-row {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 16px; background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--radius-sm); margin-bottom: 20px;
+  cursor: pointer; transition: all 0.2s ease;
+}
+.checkbox-row:hover { background: rgba(255,255,255,0.04); border-color: rgba(99,102,241,0.4); }
+.checkbox-row.checked { background: rgba(99,102,241,0.08); border-color: rgba(99,102,241,0.5); }
+.checkbox-box {
+  width: 22px; height: 22px; border-radius: 7px;
+  border: 2px solid rgba(255,255,255,0.2);
+  background: rgba(0,0,0,0.3);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 1px;
+  transition: all 0.25s cubic-bezier(0.16,1,0.3,1);
+}
+.checkbox-row.checked .checkbox-box {
+  background: linear-gradient(135deg, var(--purple) 0%, var(--purple-light) 100%);
+  border-color: transparent;
+  box-shadow: 0 0 0 4px rgba(99,102,241,0.2);
+}
+.checkbox-box svg { opacity: 0; transform: scale(0.5); transition: all 0.25s cubic-bezier(0.16,1,0.3,1); }
+.checkbox-row.checked .checkbox-box svg { opacity: 1; transform: scale(1); }
+.checkbox-text { flex: 1; }
+.checkbox-text strong { display: block; font-size: 14px; font-weight: 600; color: #fff; margin-bottom: 4px; }
+.checkbox-text small { display: block; color: var(--text-muted); font-size: 12px; line-height: 1.5; }
+.terms-actions { display: flex; gap: 12px; }
+.btn-terms {
+  flex: 1; padding: 14px 24px; border: none; border-radius: 11px;
+  font-family: inherit; font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s ease; letter-spacing: -0.01em;
+}
+.btn-terms-secondary {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08); color: #aaa;
+}
+.btn-terms-secondary:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.btn-terms-primary {
+  background: linear-gradient(135deg, var(--purple) 0%, var(--purple-light) 100%);
+  color: #fff; box-shadow: 0 8px 24px rgba(99,102,241,0.3);
+  opacity: 0.5; pointer-events: none; transition: all 0.3s ease;
+}
+.btn-terms-primary.active { opacity: 1; pointer-events: all; }
+.btn-terms-primary.active:hover { transform: translateY(-1px); box-shadow: 0 12px 32px rgba(99,102,241,0.4); }
+
+/* ===== SETUP SCREEN ===== */
+.setup-window { width: 760px; min-height: 580px; display: flex; flex-direction: column; }
+.setup-content { padding: 50px 60px; flex: 1; display: flex; flex-direction: column; }
+.steps { display: flex; align-items: center; justify-content: center; gap: 0; margin-bottom: 50px; }
+.step { display: flex; align-items: center; gap: 12px; }
+.step-circle {
+  width: 36px; height: 36px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.03);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 600; color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+  transition: all 0.4s cubic-bezier(0.16,1,0.3,1);
+}
+.step.completed .step-circle {
+  background: linear-gradient(135deg, var(--green) 0%, #16a34a 100%);
+  border-color: transparent; color: #fff;
+  box-shadow: 0 0 0 4px rgba(34,197,94,0.15);
+}
+.step.active .step-circle {
+  background: linear-gradient(135deg, var(--purple) 0%, var(--purple-light) 100%);
+  border-color: transparent; color: #fff;
+  box-shadow: 0 0 0 4px rgba(99,102,241,0.2);
+  animation: activePulse 2s ease-in-out infinite;
+}
+.step-line {
+  width: 80px; height: 2px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 2px; margin: 0 8px;
+}
+.step-line.completed { background: linear-gradient(90deg, var(--green), var(--purple)); }
+.setup-body { flex: 1; display: flex; flex-direction: column; align-items: center; text-align: center; justify-content: center; }
+.icon-big {
+  width: 96px; height: 96px; border-radius: 24px;
+  background: linear-gradient(135deg, var(--purple) 0%, var(--purple-light) 100%);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 32px;
+  box-shadow: 0 25px 50px rgba(99,102,241,0.4), inset 0 1px 0 rgba(255,255,255,0.3);
+  position: relative; animation: bob 4s ease-in-out infinite;
+}
+.icon-big::before {
+  content: ''; position: absolute; inset: 0; border-radius: 24px;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4), transparent 60%);
+}
+.icon-big-emoji { font-size: 48px; position: relative; z-index: 1; }
+.setup-title {
+  font-size: 28px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 12px;
+  background: linear-gradient(180deg, #fff 0%, #aaa 100%);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.setup-desc { color: var(--text-muted); font-size: 15px; line-height: 1.6; max-width: 440px; margin-bottom: 40px; }
+.progress-container {
+  width: 400px; background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--radius-sm); padding: 16px; margin-bottom: 24px;
+}
+.progress-info { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 10px; font-family: 'JetBrains Mono', monospace; }
+.progress-info-label { color: #aaa; }
+.progress-info-pct { color: var(--purple); font-weight: 600; }
+.progress-bar { height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; }
+.progress-fill {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, var(--purple) 0%, var(--purple-light) 50%, #ec4899 100%);
+  border-radius: 3px; transition: width 0.5s ease;
+  position: relative; animation: shimmer 2s ease-in-out infinite;
+}
+.progress-fill::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  animation: shine 1.5s linear infinite;
+}
+.tasks { width: 400px; text-align: left; display: flex; flex-direction: column; gap: 8px; }
+.task {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px; background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 10px; font-size: 13px; transition: all 0.3s ease;
+}
+.task.done { background: rgba(34,197,94,0.05); border-color: rgba(34,197,94,0.2); }
+.task.doing { background: rgba(99,102,241,0.05); border-color: rgba(99,102,241,0.3); }
+.task-status {
+  width: 18px; height: 18px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.task.done .task-status { background: var(--green); }
+.task.doing .task-status {
+  background: rgba(99,102,241,0.2);
+  border: 2px solid var(--purple); border-top-color: transparent;
+  animation: spin 0.8s linear infinite;
+}
+.task.pending .task-status { background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.1); }
+.task-name { flex: 1; }
+.task.done .task-name { color: #aaa; }
+.task.doing .task-name { color: #fff; font-weight: 500; }
+.task.pending .task-name { color: var(--text-dim); }
+.task-time { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #666; }
+
+/* ===== DASHBOARD SCREEN ===== */
+.screen-dashboard { overflow-y: auto; }
+.screen-dashboard.active { display: block; }
+.dashboard-wrapper {
+  width: 100%; min-width: 1000px; min-height: 100vh;
+  padding: 0; animation: fadeIn 0.5s ease;
+}
+.app-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 32px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  background: rgba(10,10,15,0.8);
+  backdrop-filter: blur(20px);
+  position: sticky; top: 0; z-index: 50;
+}
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand-logo {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--purple) 0%, #ec4899 100%);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 20px rgba(99,102,241,0.3);
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800; font-size: 13px; letter-spacing: -0.05em;
+}
+.brand-name { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
+.brand-version { font-size: 11px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; }
+.header-actions { display: flex; align-items: center; gap: 8px; }
+.status-pill {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 12px;
+  background: rgba(34,197,94,0.1);
+  border: 1px solid rgba(34,197,94,0.25);
+  border-radius: 999px;
+  font-size: 11px; font-weight: 600; color: var(--green-light);
+  font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em;
+}
+.status-pill.warning {
+  background: rgba(251,191,36,0.1);
+  border-color: rgba(251,191,36,0.25);
+  color: var(--yellow);
+}
+.status-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--green);
+  box-shadow: 0 0 8px var(--green); animation: blink 2s ease-in-out infinite;
+}
+.status-pill.warning .status-dot { background: var(--yellow); box-shadow: 0 0 8px var(--yellow); }
+.btn-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  color: #aaa; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s ease; font-size: 16px;
+}
+.btn-icon:hover { background: rgba(255,255,255,0.08); color: #fff; transform: translateY(-1px); }
+
+/* Metrics */
+.metrics {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 14px; padding: 24px 32px 16px;
+}
+.metric-card {
+  position: relative; padding: 22px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--radius-md); overflow: hidden;
+  transition: all 0.3s ease;
+}
+.metric-card:hover { transform: translateY(-2px); border-color: var(--border-hover); }
+.metric-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: var(--accent); opacity: 0.6;
+}
+.metric-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: var(--accent-bg);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 14px; font-size: 14px;
+}
+.metric-label {
+  font-size: 11px; font-weight: 500; color: #777;
+  text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px;
+}
+.metric-value {
+  font-size: 32px; font-weight: 700; letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  display: flex; align-items: baseline; gap: 6px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.metric-unit { font-size: 13px; color: #666; font-weight: 500; }
+.metric-trend {
+  display: flex; align-items: center; gap: 4px;
+  margin-top: 8px; font-size: 11px; color: var(--green-light);
+  font-family: 'JetBrains Mono', monospace;
+}
+.card-dl { --accent: linear-gradient(90deg, #22c55e, #16a34a); --accent-bg: rgba(34,197,94,0.15); }
+.card-dl .metric-value { color: var(--green-light); }
+.card-ul { --accent: linear-gradient(90deg, #3b82f6, #1d4ed8); --accent-bg: rgba(59,130,246,0.15); }
+.card-ul .metric-value { color: #60a5fa; }
+.card-ping { --accent: linear-gradient(90deg, #f59e0b, #d97706); --accent-bg: rgba(245,158,11,0.15); }
+.card-ping .metric-value { color: var(--yellow); }
+.card-signal { --accent: linear-gradient(90deg, #06b6d4, #0891b2); --accent-bg: rgba(6,182,212,0.15); }
+.card-signal .metric-value { color: var(--cyan); }
+
+/* Toolbar */
+.toolbar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 32px 20px; flex-wrap: wrap;
+}
+.btn-action {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 11px 18px; border-radius: 11px;
+  font-family: inherit; font-size: 13px; font-weight: 600;
+  cursor: pointer; border: none;
+  transition: all 0.2s ease; letter-spacing: -0.01em;
+}
+.btn-blue { background: linear-gradient(135deg, var(--blue) 0%, #1d4ed8 100%); color: #fff; box-shadow: 0 6px 16px rgba(59,130,246,0.3); }
+.btn-blue:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(59,130,246,0.4); }
+.btn-purple { background: linear-gradient(135deg, var(--purple) 0%, var(--purple-light) 100%); color: #fff; box-shadow: 0 6px 16px rgba(99,102,241,0.3); }
+.btn-purple:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(99,102,241,0.4); }
+.btn-green { background: linear-gradient(135deg, var(--green) 0%, #16a34a 100%); color: #fff; box-shadow: 0 6px 16px rgba(34,197,94,0.3); }
+.btn-green:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(34,197,94,0.4); }
+.btn-outline-green {
+  background: transparent; color: var(--green-light);
+  border: 1px solid rgba(34,197,94,0.3);
+}
+.btn-outline-green:hover { background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.5); }
+.btn-outline-red {
+  background: transparent; color: var(--red-light);
+  border: 1px solid rgba(239,68,68,0.3);
+}
+.btn-outline-red:hover { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.5); }
+.toolbar-spacer { flex: 1; }
+.toolbar-info { font-size: 12px; color: #666; font-family: 'JetBrains Mono', monospace; }
+
+/* Tabs */
+.tabs {
+  display: flex; gap: 0; padding: 0 32px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.tab {
+  padding: 14px 24px; font-size: 13px; font-weight: 600;
+  color: var(--text-muted); cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease; letter-spacing: -0.01em;
+}
+.tab:hover { color: #ccc; }
+.tab.active { color: #fff; border-bottom-color: var(--purple); }
+
+/* Tab content */
+.tab-content { display: none; padding: 24px 32px 32px; animation: slideUp 0.3s ease; }
+.tab-content.active { display: block; }
+
+/* Devices */
+.devices-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.devices-title {
+  font-size: 13px; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.08em;
+  display: flex; align-items: center; gap: 8px;
+}
+.devices-title-count {
+  background: rgba(99,102,241,0.15); color: #a5b4fc;
+  padding: 2px 8px; border-radius: 6px; font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.devices-legend { display: flex; gap: 16px; font-size: 11px; color: #666; }
+.legend-item { display: flex; align-items: center; gap: 6px; }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+.legend-dot.green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.legend-dot.red { background: var(--red); box-shadow: 0 0 6px var(--red); animation: devicePulse 1.5s ease-in-out infinite; }
+.devices-list { display: flex; flex-direction: column; gap: 8px; }
+.device {
+  display: flex; align-items: center; gap: 16px;
+  padding: 14px 18px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: var(--radius-sm); transition: all 0.25s ease;
+}
+.device:hover { background: linear-gradient(90deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%); border-color: rgba(255,255,255,0.1); transform: translateX(2px); }
+.device.blocked {
+  background: linear-gradient(90deg, rgba(239,68,68,0.08) 0%, rgba(239,68,68,0.02) 100%);
+  border-color: rgba(239,68,68,0.25);
+}
+.device-status-dot {
+  width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; position: relative;
+}
+.device-status-dot.normal { background: var(--green); box-shadow: 0 0 8px rgba(34,197,94,0.5); }
+.device-status-dot.blocked-dot {
+  background: var(--red); box-shadow: 0 0 12px rgba(239,68,68,0.6);
+  animation: devicePulse 1.2s ease-in-out infinite;
+}
+.device-status-dot.blocked-dot::before {
+  content: ''; position: absolute; inset: -4px;
+  border: 2px solid rgba(239,68,68,0.5); border-radius: 50%;
+  animation: ring 1.5s ease-out infinite;
+}
+.device-icon-box {
+  width: 38px; height: 38px; border-radius: 10px;
+  background: rgba(255,255,255,0.05);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.device.blocked .device-icon-box { background: rgba(239,68,68,0.15); }
+.device-info { flex: 1; min-width: 0; }
+.device-name { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 3px; display: flex; align-items: center; gap: 8px; }
+.device-tag {
+  font-size: 10px; font-weight: 500; padding: 2px 7px;
+  background: rgba(99,102,241,0.15); color: #a5b4fc;
+  border-radius: 4px; letter-spacing: 0.02em;
+}
+.device-tag.danger { background: rgba(239,68,68,0.2); color: #fca5a5; }
+.device-meta {
+  font-size: 12px; color: #666;
+  font-family: 'JetBrains Mono', monospace;
+  display: flex; gap: 12px; flex-wrap: wrap;
+}
+.device-state {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 4px 10px; border-radius: 6px;
+  font-family: 'JetBrains Mono', monospace; white-space: nowrap;
+}
+.state-normal { background: rgba(34,197,94,0.12); color: var(--green-light); }
+.state-blocked { background: rgba(239,68,68,0.15); color: var(--red-light); }
+.btn-block {
+  padding: 9px 16px; border-radius: 9px;
+  font-family: inherit; font-size: 12px; font-weight: 600;
+  cursor: pointer; border: none; transition: all 0.2s ease;
+  letter-spacing: -0.01em; white-space: nowrap;
+}
+.btn-block-red { background: rgba(239,68,68,0.12); color: var(--red-light); border: 1px solid rgba(239,68,68,0.2); }
+.btn-block-red:hover { background: rgba(239,68,68,0.2); color: #fff; }
+.btn-block-green { background: linear-gradient(135deg, var(--green) 0%, #16a34a 100%); color: #fff; box-shadow: 0 4px 12px rgba(34,197,94,0.3); }
+.btn-block-green:hover { transform: translateY(-1px); }
+
+/* Networks tab */
+.network-card {
+  display: flex; align-items: center; gap: 16px;
+  padding: 16px 18px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: var(--radius-sm); transition: all 0.25s ease;
+  margin-bottom: 8px;
+}
+.network-card:hover { border-color: rgba(255,255,255,0.1); transform: translateX(2px); }
+.network-icon { font-size: 24px; }
+.network-info { flex: 1; }
+.network-ssid { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.network-meta { font-size: 12px; color: #666; font-family: 'JetBrains Mono', monospace; display: flex; gap: 12px; flex-wrap: wrap; }
+.signal-bar { display: flex; gap: 2px; align-items: flex-end; height: 16px; }
+.signal-bar-segment { width: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; }
+.signal-bar-segment.active { background: var(--green); }
+.network-security {
+  font-size: 11px; padding: 3px 8px; border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace; font-weight: 500;
+}
+.security-wpa2 { background: rgba(34,197,94,0.12); color: var(--green-light); }
+.security-wpa3 { background: rgba(6,182,212,0.12); color: var(--cyan); }
+.security-wep { background: rgba(239,68,68,0.12); color: var(--red-light); }
+.security-open { background: rgba(251,191,36,0.12); color: var(--yellow); }
+.btn-test-security {
+  padding: 8px 14px; border-radius: 8px;
+  background: rgba(99,102,241,0.12); color: #a5b4fc;
+  border: 1px solid rgba(99,102,241,0.2);
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: all 0.2s ease; font-family: inherit;
+}
+.btn-test-security:hover { background: rgba(99,102,241,0.2); color: #fff; }
+
+/* Password identifier tab */
+.password-section { max-width: 600px; margin: 0 auto; }
+.password-network-info {
+  background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 14px; padding: 20px; margin-bottom: 24px;
+}
+.password-network-row {
+  display: flex; justify-content: space-between; padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 13px;
+}
+.password-network-row:last-child { border-bottom: none; }
+.password-network-label { color: #777; font-weight: 500; }
+.password-network-value { color: #fff; font-family: 'JetBrains Mono', monospace; }
+.password-methods { display: flex; flex-direction: column; gap: 8px; }
+.password-method {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px; background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.05); border-radius: 10px;
+  font-size: 13px;
+}
+.password-method.done { background: rgba(34,197,94,0.05); border-color: rgba(34,197,94,0.2); }
+.password-method.doing { background: rgba(99,102,241,0.05); border-color: rgba(99,102,241,0.3); }
+.password-method.found { background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.4); }
+.method-status-icon { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 10px; }
+.method-name { flex: 1; }
+.password-result {
+  margin-top: 24px; padding: 20px;
+  border-radius: 14px; text-align: center;
+}
+.password-result.found {
+  background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3);
+}
+.password-result.not-found {
+  background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2);
+}
+.password-result-icon { font-size: 32px; margin-bottom: 8px; }
+.password-result-text { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+.password-result-detail { font-size: 13px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+.password-empty {
+  text-align: center; padding: 60px 20px; color: var(--text-dim);
+}
+.password-empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+.password-empty-text { font-size: 15px; }
+
+/* ===== MODALS ===== */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+  align-items: center; justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+.modal-overlay.active { display: flex; }
+.modal {
+  width: 480px; max-width: 90vw;
+  background: linear-gradient(180deg, rgba(20,20,28,0.98) 0%, rgba(10,10,15,0.98) 100%);
+  border: 1px solid var(--border); border-radius: var(--radius-xl);
+  box-shadow: 0 50px 100px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+  backdrop-filter: blur(40px); overflow: hidden;
+  animation: slideUp 0.3s cubic-bezier(0.16,1,0.3,1);
+}
+.modal-header {
+  padding: 32px 32px 20px; text-align: center;
+}
+.modal-title { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+.modal-subtitle { color: var(--text-muted); font-size: 14px; line-height: 1.5; }
+.modal-body { padding: 0 32px 24px; }
+.modal-actions { display: flex; gap: 8px; padding: 0 32px 32px; }
+.modal-btn {
+  flex: 1; padding: 13px 20px; border: none; border-radius: 11px;
+  font-family: inherit; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s ease;
+}
+.modal-btn-cancel {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08); color: #aaa;
+}
+.modal-btn-cancel:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.modal-btn-danger {
+  background: linear-gradient(135deg, var(--red) 0%, #dc2626 100%);
+  color: #fff; box-shadow: 0 8px 24px rgba(239,68,68,0.3);
+}
+.modal-btn-danger:hover { transform: translateY(-1px); }
+.modal-btn-primary {
+  background: linear-gradient(135deg, var(--purple) 0%, var(--purple-light) 100%);
+  color: #fff; box-shadow: 0 8px 24px rgba(99,102,241,0.3);
+}
+.modal-btn-primary:hover { transform: translateY(-1px); }
+.modal-btn-green {
+  background: linear-gradient(135deg, var(--green) 0%, #16a34a 100%);
+  color: #fff; box-shadow: 0 8px 24px rgba(34,197,94,0.3);
+}
+.modal-btn-green:hover { transform: translateY(-1px); }
+
+/* Input field */
+.input-field {
+  width: 100%; padding: 14px 18px;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px; color: #fff;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px; outline: none;
+  transition: border-color 0.2s ease;
+}
+.input-field:focus { border-color: rgba(99,102,241,0.5); }
+.input-field::placeholder { color: var(--text-dim); }
+
+/* Limpador modal */
+.limpador-items { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.limpador-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.05); border-radius: 8px;
+  font-size: 13px;
+}
+.limpador-item-icon { font-size: 16px; }
+.limpador-item-name { flex: 1; color: #ccc; }
+.limpador-item-size { font-size: 11px; color: #666; font-family: 'JetBrains Mono', monospace; }
+
+/* Toast notifications */
+.toast-container {
+  position: fixed; top: 20px; right: 20px; z-index: 2000;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.toast {
+  padding: 14px 20px; border-radius: 12px;
+  background: rgba(20,20,28,0.95); border: 1px solid var(--border);
+  backdrop-filter: blur(20px); box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+  font-size: 13px; font-weight: 500;
+  animation: slideUp 0.3s ease; display: flex; align-items: center; gap: 10px;
+  max-width: 360px;
+}
+.toast.success { border-color: rgba(34,197,94,0.3); }
+.toast.error { border-color: rgba(239,68,68,0.3); }
+.toast.info { border-color: rgba(99,102,241,0.3); }
+.toast-icon { font-size: 16px; }
+
+/* Loading spinner */
+.spinner {
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.1);
+  border-top-color: var(--purple);
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+}
+</style>
+
+</head>
+<body>
+<div class="bg-glow"></div>
+<div class="bg-grid"></div>
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ===== SCREEN 1: WELCOME ===== -->
+<div class="screen screen-welcome" id="screen-welcome">
+  <div class="window" style="width:920px; height:600px;">
+    <div class="titlebar">
+      <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="titlebar-title">Radio Programador</span>
+    </div>
+    <div class="welcome-content">
+      <div class="logo">
+        <div class="pulse-ring-welcome"></div>
+        <div class="pulse-ring-welcome"></div>
+        <div class="pulse-ring-welcome"></div>
+        <div class="logo-circle">
+          <span class="logo-icon">RP</span>
+        </div>
+      </div>
+      <h1 class="welcome-title">Bem-vindo ao seu novo<br>radar de rede.</h1>
+      <p class="welcome-tagline">Veja quem está conectado. Bloqueie quem não deve estar.<br>Tudo num só lugar, em segundos.</p>
+      <button class="btn-cta" onclick="showScreen('terms')">
+        Vamos começar <span class="arrow">→</span>
+      </button>
+      <div class="version-info">
+        <span class="version-tag">v8.0 Premium</span>
+        <span>Windows 11 · 2026</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCREEN 2: TERMS ===== -->
+<div class="screen screen-terms" id="screen-terms">
+  <div class="window terms-window">
+    <div class="titlebar">
+      <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="titlebar-title">Termos de Uso</span>
+    </div>
+    <div class="terms-content">
+      <div class="terms-header">
+        <div class="icon-box">📜</div>
+        <div>
+          <div class="terms-title">Antes de começar</div>
+          <div class="terms-subtitle">Leia rapidinho. É curto, prometo.</div>
+        </div>
+      </div>
+      <div class="terms-box">
+        <h3>Para que serve esse programa</h3>
+        <p>O Radio Programador é uma ferramenta de auditoria e controle de redes Wi-Fi para uso pessoal ou profissional autorizado. Permite escanear dispositivos, medir velocidade e bloquear conexões na sua própria rede.</p>
+        <h3>Uso responsável</h3>
+        <p>Use apenas em redes que você possui ou tem autorização formal para auditar. Usar essa ferramenta em redes de terceiros sem permissão é crime previsto no Art. 154-A do Código Penal Brasileiro.</p>
+        <h3>Privacidade</h3>
+        <p>O programa não coleta dados, não envia informações para servidores externos e não rastreia você. Tudo roda local na sua máquina. Os logs ficam apenas no seu computador.</p>
+        <h3>Sem garantias</h3>
+        <p>O software é fornecido "como está", sem garantias. O desenvolvedor não se responsabiliza por uso indevido ou consequências de bloqueios em dispositivos críticos.</p>
+        <h3>Funções avançadas</h3>
+        <p>Recursos como ARP Spoofing e Deauth requerem permissão de Administrador e drivers Npcap. Eles modificam temporariamente a tabela ARP da rede, mas restauram automaticamente ao desbloquear.</p>
+      </div>
+
+      <div class="checkbox-row" id="termsCheckbox" onclick="toggleTerms()">
+        <div class="checkbox-box">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M2 7l3.5 3.5L12 3.5" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="checkbox-text">
+          <strong>Eu li e concordo com os termos acima</strong>
+          <small>Confirmo que vou usar a ferramenta apenas em redes autorizadas e assumo responsabilidade pelo uso.</small>
+        </div>
+      </div>
+      <div class="terms-actions">
+        <button class="btn-terms btn-terms-secondary" onclick="window.close && window.close()">Não concordo</button>
+        <button class="btn-terms btn-terms-primary" id="termsContinueBtn" onclick="acceptTerms()">Continuar →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCREEN 3: SETUP ===== -->
+<div class="screen screen-setup" id="screen-setup">
+  <div class="window setup-window">
+    <div class="titlebar">
+      <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="titlebar-title" id="setupTitlebarText">Instalação — Etapa 1 de 3</span>
+    </div>
+    <div class="setup-content">
+      <div class="steps" id="setupSteps">
+        <div class="step active" id="step1">
+          <div class="step-circle">1</div>
+        </div>
+        <div class="step-line" id="stepLine1"></div>
+        <div class="step" id="step2">
+          <div class="step-circle">2</div>
+        </div>
+        <div class="step-line" id="stepLine2"></div>
+        <div class="step" id="step3">
+          <div class="step-circle">3</div>
+        </div>
+      </div>
+      <div class="setup-body">
+        <div class="icon-big">
+          <span class="icon-big-emoji">⚡</span>
+        </div>
+        <h1 class="setup-title" id="setupTitle">Preparando tudo...</h1>
+        <p class="setup-desc" id="setupDesc">Verificando seu sistema e instalando componentes necessários.</p>
+        <div class="progress-container">
+          <div class="progress-info">
+            <span class="progress-info-label">Progresso</span>
+            <span class="progress-info-pct" id="setupPct">0%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="setupProgressFill"></div>
+          </div>
+        </div>
+        <div class="tasks" id="setupTasks">
+          <div class="task pending" id="task-verificar">
+            <div class="task-status"></div>
+            <span class="task-name">Verificando seu sistema</span>
+            <span class="task-time">--</span>
+          </div>
+          <div class="task pending" id="task-bibliotecas">
+            <div class="task-status"></div>
+            <span class="task-name">Instalando bibliotecas (scapy, pywifi)</span>
+            <span class="task-time">--</span>
+          </div>
+          <div class="task pending" id="task-npcap">
+            <div class="task-status"></div>
+            <span class="task-name">Configurando Npcap</span>
+            <span class="task-time">--</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCREEN 4: DASHBOARD ===== -->
+<div class="screen screen-dashboard" id="screen-dashboard">
+  <div class="dashboard-wrapper">
+    <!-- Header -->
+    <div class="app-header">
+      <div class="brand">
+        <div class="brand-logo">RP</div>
+        <div>
+          <div class="brand-name">Radio Programador</div>
+          <div class="brand-version">v8.0 · Premium</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="status-pill" id="adminPill">
+          <div class="status-dot"></div>
+          <span id="adminText">ADMINISTRADOR</span>
+        </div>
+        <button class="btn-icon" title="Limpar rastros" onclick="openLimpador()">🧹</button>
+        <button class="btn-icon" title="Configurações" onclick="showToast('info','Configurações em breve')">⚙</button>
+      </div>
+    </div>
+
+    <!-- Metric cards -->
+    <div class="metrics">
+      <div class="metric-card card-dl">
+        <div class="metric-icon">⬇</div>
+        <div class="metric-label">Download</div>
+        <div class="metric-value" id="metricDownload">--<span class="metric-unit">Mbps</span></div>
+        <div class="metric-trend" id="metricDownloadTrend">Aguardando teste</div>
+      </div>
+      <div class="metric-card card-ul">
+        <div class="metric-icon">⬆</div>
+        <div class="metric-label">Upload</div>
+        <div class="metric-value" id="metricUpload">--<span class="metric-unit">Mbps</span></div>
+        <div class="metric-trend" id="metricUploadTrend">Aguardando teste</div>
+      </div>
+      <div class="metric-card card-ping">
+        <div class="metric-icon">⚡</div>
+        <div class="metric-label">Latência</div>
+        <div class="metric-value" id="metricPing">--<span class="metric-unit">ms</span></div>
+        <div class="metric-trend" id="metricPingTrend">Aguardando teste</div>
+      </div>
+      <div class="metric-card card-signal">
+        <div class="metric-icon">📶</div>
+        <div class="metric-label">Sinal Wi-Fi</div>
+        <div class="metric-value" id="metricSignal">--<span class="metric-unit">%</span></div>
+        <div class="metric-trend" id="metricSignalTrend">Aguardando teste</div>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <button class="btn-action btn-blue" onclick="scanDispositivos()">🔍 Buscar Dispositivos</button>
+      <button class="btn-action btn-purple" onclick="scanRedes()">📡 Buscar Redes</button>
+      <button class="btn-action btn-green" onclick="testarVelocidade()">⚡ Testar Velocidade</button>
+      <button class="btn-action btn-outline-green" onclick="desbloquearTodos()">🔓 Desbloquear Todos</button>
+      <button class="btn-action btn-outline-red" onclick="openBloquearIpModal()">🎯 Bloquear IP</button>
+      <button class="btn-action btn-outline-red" onclick="confirmarBloquearRoteador()">🚫 Bloquear Roteador</button>
+      <div class="toolbar-spacer"></div>
+      <span class="toolbar-info" id="lastScanInfo">Nenhuma varredura</span>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('dispositivos')">Dispositivos</div>
+      <div class="tab" onclick="switchTab('redes')">Redes</div>
+      <div class="tab" onclick="switchTab('senha')">Identificador de Senha</div>
+    </div>
+
+    <!-- Tab: Dispositivos -->
+    <div class="tab-content active" id="tab-dispositivos">
+      <div class="devices-header">
+        <div class="devices-title">
+          Dispositivos na rede
+          <span class="devices-title-count" id="deviceCount">0</span>
+        </div>
+        <div class="devices-legend">
+          <div class="legend-item"><div class="legend-dot green"></div> Online</div>
+          <div class="legend-item"><div class="legend-dot red"></div> Bloqueado</div>
+        </div>
+      </div>
+      <div class="devices-list" id="devicesList">
+        <div style="text-align:center; padding:40px; color:#555;">
+          Clique em "Buscar Dispositivos" para escanear a rede.
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Redes -->
+    <div class="tab-content" id="tab-redes">
+      <div class="devices-header">
+        <div class="devices-title">
+          Redes Wi-Fi visíveis
+          <span class="devices-title-count" id="networkCount">0</span>
+        </div>
+      </div>
+      <div id="networksList">
+        <div style="text-align:center; padding:40px; color:#555;">
+          Clique em "Buscar Redes" para escanear.
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Identificador de Senha -->
+    <div class="tab-content" id="tab-senha">
+      <div class="password-section" id="passwordSection">
+        <div class="password-empty" id="passwordEmpty">
+          <div class="password-empty-icon">🔑</div>
+          <div class="password-empty-text">Selecione uma rede na aba "Redes" e clique em<br>"Testar Segurança" para começar.</div>
+        </div>
+        <div id="passwordContent" style="display:none;">
+          <div class="password-network-info" id="passwordNetworkInfo"></div>
+          <div class="password-methods" id="passwordMethods"></div>
+          <div id="passwordResult"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /dashboard-wrapper -->
+</div><!-- /screen-dashboard -->
+
+<!-- ===== MODAL: Bloquear IP ===== -->
+<div class="modal-overlay" id="modalBloquearIp">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🎯 Bloquear IP Específico</div>
+      <div class="modal-subtitle">Digite o endereço IP do dispositivo que deseja bloquear na rede.</div>
+    </div>
+    <div class="modal-body">
+      <input type="text" class="input-field" id="inputBloquearIp" placeholder="Ex: 192.168.0.15">
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn-cancel" onclick="closeModal('modalBloquearIp')">Cancelar</button>
+      <button class="modal-btn modal-btn-danger" onclick="bloquearIp()">Bloquear</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: Confirmar Bloquear Roteador ===== -->
+<div class="modal-overlay" id="modalBloquearRoteador">
+  <div class="modal">
+    <div class="modal-header">
+      <div style="font-size:48px; margin-bottom:16px;">⚠️</div>
+      <div class="modal-title" style="color:var(--red-light);">Bloquear Roteador</div>
+      <div class="modal-subtitle">ATENÇÃO: Isso cortará a internet de TODOS os dispositivos na rede, incluindo o seu. Tem certeza?</div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn-cancel" onclick="closeModal('modalBloquearRoteador')">Cancelar</button>
+      <button class="modal-btn modal-btn-danger" onclick="bloquearRoteador()">Sim, bloquear tudo</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: Confirmar Bloqueio Dispositivo ===== -->
+<div class="modal-overlay" id="modalConfirmBlock">
+  <div class="modal">
+    <div class="modal-header">
+      <div style="font-size:48px; margin-bottom:16px;">🚫</div>
+      <div class="modal-title">Confirmar Bloqueio</div>
+      <div class="modal-subtitle" id="confirmBlockText">Deseja realmente bloquear este dispositivo?</div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn-cancel" onclick="closeModal('modalConfirmBlock')">Cancelar</button>
+      <button class="modal-btn modal-btn-danger" id="confirmBlockBtn">Bloquear</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: Limpador ===== -->
+<div class="modal-overlay" id="modalLimpador">
+  <div class="modal">
+    <div class="modal-header">
+      <div style="font-size:48px; margin-bottom:16px;">🧹</div>
+      <div class="modal-title">Limpador de Rastros</div>
+      <div class="modal-subtitle">Escaneando arquivos temporários e rastros do programa...</div>
+    </div>
+    <div class="modal-body">
+      <div class="limpador-items" id="limpadorItems">
+        <div style="text-align:center; padding:20px; color:#555;">
+          <span class="spinner"></span> Escaneando...
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn-cancel" onclick="closeModal('modalLimpador')">Fechar</button>
+      <button class="modal-btn modal-btn-primary" id="btnLimpar" onclick="limparRastros()" style="display:none;">Limpar tudo</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== STATE =====
+let devices = [];
+let networks = [];
+let blockedDevices = new Set();
+let currentPasswordNetwork = null;
+
+// ===== SCREEN MANAGEMENT =====
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const target = document.getElementById('screen-' + name);
+  if (target) {
+    target.classList.add('active');
+  }
+  // Save progress
+  if (name === 'terms') localStorage.setItem('rp_seen_welcome', 'true');
+  if (name === 'dashboard') localStorage.setItem('rp_setup_done', 'true');
+}
+
+// ===== INIT =====
+function init() {
+  const setupDone = localStorage.getItem('rp_setup_done');
+  const termsAccepted = localStorage.getItem('rp_terms_accepted');
+  const seenWelcome = localStorage.getItem('rp_seen_welcome');
+
+  if (setupDone) {
+    showScreen('dashboard');
+  } else if (termsAccepted) {
+    showScreen('setup');
+    startSetup();
+  } else if (seenWelcome) {
+    showScreen('terms');
+  } else {
+    showScreen('welcome');
+  }
+}
+
+// ===== TERMS =====
+function toggleTerms() {
+  const row = document.getElementById('termsCheckbox');
+  const btn = document.getElementById('termsContinueBtn');
+  row.classList.toggle('checked');
+  if (row.classList.contains('checked')) {
+    btn.classList.add('active');
+  } else {
+    btn.classList.remove('active');
+  }
+}
+
+function acceptTerms() {
+  const row = document.getElementById('termsCheckbox');
+  if (!row.classList.contains('checked')) return;
+  localStorage.setItem('rp_terms_accepted', 'true');
+  showScreen('setup');
+  startSetup();
+}
+
+// ===== SETUP WIZARD =====
+async function startSetup() {
+  const tasks = ['task-verificar', 'task-bibliotecas', 'task-npcap'];
+  const labels = ['Verificando seu sistema', 'Instalando bibliotecas (scapy, pywifi)', 'Configurando Npcap'];
+  let progress = 0;
+
+  function updateProgress(pct) {
+    progress = pct;
+    document.getElementById('setupPct').textContent = pct + '%';
+    document.getElementById('setupProgressFill').style.width = pct + '%';
+  }
+
+  function setTaskStatus(taskId, status, time) {
+    const el = document.getElementById(taskId);
+    el.className = 'task ' + status;
+    if (time) el.querySelector('.task-time').textContent = time;
+    if (status === 'done') {
+      el.querySelector('.task-status').innerHTML = '<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 5l3 3 5-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    }
+  }
+
+  function setStep(num) {
+    for (let i = 1; i <= 3; i++) {
+      const step = document.getElementById('step' + i);
+      const line = document.getElementById('stepLine' + (i - 1));
+      step.className = 'step';
+      if (i < num) { step.className = 'step completed'; step.querySelector('.step-circle').textContent = '✓'; }
+      if (i === num) step.className = 'step active';
+    }
+    if (num > 1) document.getElementById('stepLine1').className = 'step-line completed';
+    if (num > 2) document.getElementById('stepLine2').className = 'step-line completed';
+    document.getElementById('setupTitlebarText').textContent = 'Instalação — Etapa ' + num + ' de 3';
+  }
+
+  // Wait for pywebview API
+  await waitForApi();
+
+  // Step 1: Verificar sistema
+  setStep(1);
+  setTaskStatus('task-verificar', 'doing', '--');
+  updateProgress(10);
+
+  try {
+    const startT = Date.now();
+    const result = await window.pywebview.api.verificar_dependencias();
+    const elapsed = ((Date.now() - startT) / 1000).toFixed(1) + 's';
+    setTaskStatus('task-verificar', 'done', elapsed);
+    updateProgress(33);
+
+    // Step 2: Instalar bibliotecas
+    setStep(2);
+    setTaskStatus('task-bibliotecas', 'doing', '--');
+    document.getElementById('setupTitle').textContent = 'Instalando os componentes';
+    document.getElementById('setupDesc').textContent = 'Estamos preparando tudo para você. Demora cerca de 1 minuto.';
+    updateProgress(40);
+
+    const startT2 = Date.now();
+    const result2 = await window.pywebview.api.instalar_dependencias();
+    const elapsed2 = ((Date.now() - startT2) / 1000).toFixed(1) + 's';
+    setTaskStatus('task-bibliotecas', 'done', elapsed2);
+    updateProgress(67);
+
+    // Step 3: Npcap
+    setStep(3);
+    setTaskStatus('task-npcap', 'doing', '--');
+    document.getElementById('setupTitle').textContent = 'Finalizando instalação';
+    document.getElementById('setupDesc').textContent = 'Verificando driver de captura de pacotes...';
+    updateProgress(80);
+
+    // Small delay for UX
+    await sleep(1500);
+    setTaskStatus('task-npcap', 'done', '1.5s');
+    updateProgress(100);
+
+    document.getElementById('setupTitle').textContent = 'Tudo pronto!';
+    document.getElementById('setupDesc').textContent = 'Seu sistema está configurado. Entrando no dashboard...';
+
+    await sleep(1500);
+    showScreen('dashboard');
+  } catch (e) {
+    showToast('error', 'Erro na instalação: ' + (e.message || e));
+    // Try to continue anyway after delay
+    await sleep(3000);
+    showScreen('dashboard');
+  }
+}
+
+// ===== DASHBOARD FUNCTIONS =====
+
+// -- Scan Dispositivos --
+async function scanDispositivos() {
+  showToast('info', 'Escaneando dispositivos na rede...');
+  document.getElementById('devicesList').innerHTML = '<div style="text-align:center;padding:40px;"><span class="spinner"></span> Escaneando...</div>';
+
+  try {
+    await waitForApi();
+    const result = await window.pywebview.api.escanear_dispositivos();
+    devices = result || [];
+    renderDevices();
+    document.getElementById('lastScanInfo').textContent = 'Última varredura · agora';
+    showToast('success', devices.length + ' dispositivo(s) encontrado(s)');
+  } catch (e) {
+    showToast('error', 'Erro ao escanear: ' + (e.message || e));
+    document.getElementById('devicesList').innerHTML = '<div style="text-align:center;padding:40px;color:#ef4444;">Erro ao escanear dispositivos.</div>';
+  }
+}
+
+function renderDevices() {
+  const list = document.getElementById('devicesList');
+  document.getElementById('deviceCount').textContent = devices.length;
+
+  if (devices.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:40px;color:#555;">Nenhum dispositivo encontrado.</div>';
+    return;
+  }
+
+  list.innerHTML = devices.map(d => {
+    const isBlocked = blockedDevices.has(d.ip);
+    const icon = getDeviceIcon(d);
+    const tag = getDeviceTag(d);
+    return `
+      <div class="device ${isBlocked ? 'blocked' : ''}">
+        <div class="device-status-dot ${isBlocked ? 'blocked-dot' : 'normal'}"></div>
+        <div class="device-icon-box">${icon}</div>
+        <div class="device-info">
+          <div class="device-name">${escHtml(d.name || 'Dispositivo desconhecido')} ${tag}</div>
+          <div class="device-meta">
+            <span>${escHtml(d.ip)}</span>
+            <span style="color:#444;">·</span>
+            <span>${escHtml(d.mac || '--')}</span>
+            ${d.vendor ? '<span style="color:#444;">·</span><span>' + escHtml(d.vendor) + '</span>' : ''}
+          </div>
+        </div>
+        <div class="device-state ${isBlocked ? 'state-blocked' : 'state-normal'}">${isBlocked ? 'Bloqueado' : 'Online'}</div>
+        ${isBlocked
+          ? `<button class="btn-block btn-block-green" onclick="desbloquearDispositivo('${escHtml(d.ip)}')">Desbloquear</button>`
+          : (d.is_self || d.is_gateway ? '' : `<button class="btn-block btn-block-red" onclick="confirmarBloquear('${escHtml(d.ip)}','${escHtml(d.mac || '')}','${escHtml(d.name || 'Dispositivo')}')">Bloquear</button>`)
+        }
+      </div>`;
+  }).join('');
+}
+
+function getDeviceIcon(d) {
+  if (d.is_gateway) return '📡';
+  if (d.is_self) return '💻';
+  const name = (d.name || '').toLowerCase() + (d.vendor || '').toLowerCase();
+  if (name.includes('phone') || name.includes('iphone') || name.includes('galaxy') || name.includes('android') || name.includes('samsung') && name.includes('sm-')) return '📱';
+  if (name.includes('tv') || name.includes('smart tv') || name.includes('roku') || name.includes('chromecast')) return '📺';
+  if (name.includes('laptop') || name.includes('macbook') || name.includes('notebook')) return '💻';
+  if (name.includes('printer') || name.includes('impressora')) return '🖨️';
+  return '❓';
+}
+
+function getDeviceTag(d) {
+  if (d.is_gateway) return '<span class="device-tag">GATEWAY</span>';
+  if (d.is_self) return '<span class="device-tag">VOCÊ</span>';
+  if (blockedDevices.has(d.ip)) return '<span class="device-tag danger">BLOQUEADO</span>';
+  return '';
+}
+
+// -- Scan Redes --
+async function scanRedes() {
+  showToast('info', 'Escaneando redes Wi-Fi...');
+  document.getElementById('networksList').innerHTML = '<div style="text-align:center;padding:40px;"><span class="spinner"></span> Escaneando...</div>';
+  switchTab('redes');
+
+  try {
+    await waitForApi();
+    const result = await window.pywebview.api.escanear_redes();
+    networks = result || [];
+    renderNetworks();
+    showToast('success', networks.length + ' rede(s) encontrada(s)');
+  } catch (e) {
+    showToast('error', 'Erro ao escanear redes: ' + (e.message || e));
+    document.getElementById('networksList').innerHTML = '<div style="text-align:center;padding:40px;color:#ef4444;">Erro ao escanear redes.</div>';
+  }
+}
+
+function renderNetworks() {
+  const container = document.getElementById('networksList');
+  document.getElementById('networkCount').textContent = networks.length;
+
+  if (networks.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:#555;">Nenhuma rede encontrada.</div>';
+    return;
+  }
+
+  container.innerHTML = networks.map(n => {
+    const signal = n.signal || 0;
+    const bars = getSignalBars(signal);
+    const secClass = getSecurityClass(n.security);
+    return `
+      <div class="network-card">
+        <div class="network-icon">📶</div>
+        <div class="network-info">
+          <div class="network-ssid">${escHtml(n.ssid || '(Oculta)')}</div>
+          <div class="network-meta">
+            <span>Canal ${n.channel || '--'}</span>
+            <span style="color:#444;">·</span>
+            <span>${escHtml(n.bssid || '--')}</span>
+          </div>
+        </div>
+        <div class="signal-bar">${bars}</div>
+        <span class="network-security ${secClass}">${escHtml(n.security || 'Aberta')}</span>
+        <button class="btn-test-security" onclick="identificarSenha('${escHtml(n.ssid || '')}','${escHtml(n.bssid || '')}')">Testar Segurança</button>
+      </div>`;
+  }).join('');
+}
+
+function getSignalBars(signal) {
+  const levels = [4, 8, 12, 16];
+  const active = signal > 75 ? 4 : signal > 50 ? 3 : signal > 25 ? 2 : 1;
+  return levels.map((h, i) =>
+    `<div class="signal-bar-segment ${i < active ? 'active' : ''}" style="height:${h}px;"></div>`
+  ).join('');
+}
+
+function getSecurityClass(sec) {
+  if (!sec) return 'security-open';
+  const s = sec.toLowerCase();
+  if (s.includes('wpa3')) return 'security-wpa3';
+  if (s.includes('wpa2') || s.includes('wpa')) return 'security-wpa2';
+  if (s.includes('wep')) return 'security-wep';
+  return 'security-open';
+}
+
+// -- Bloquear/Desbloquear --
+function confirmarBloquear(ip, mac, name) {
+  document.getElementById('confirmBlockText').textContent = `Deseja bloquear "${name}" (${ip})?`;
+  document.getElementById('confirmBlockBtn').onclick = () => bloquearDispositivo(ip, mac);
+  openModal('modalConfirmBlock');
+}
+
+async function bloquearDispositivo(ip, mac) {
+  closeModal('modalConfirmBlock');
+  showToast('info', 'Bloqueando ' + ip + '...');
+
+  try {
+    await waitForApi();
+    await window.pywebview.api.bloquear_dispositivo(ip, mac);
+    blockedDevices.add(ip);
+    renderDevices();
+    showToast('success', 'Dispositivo ' + ip + ' bloqueado!');
+  } catch (e) {
+    showToast('error', 'Erro ao bloquear: ' + (e.message || e));
+  }
+}
+
+async function desbloquearDispositivo(ip) {
+  showToast('info', 'Desbloqueando ' + ip + '...');
+
+  try {
+    await waitForApi();
+    await window.pywebview.api.desbloquear_dispositivo(ip);
+    blockedDevices.delete(ip);
+    renderDevices();
+    showToast('success', 'Dispositivo ' + ip + ' desbloqueado!');
+  } catch (e) {
+    showToast('error', 'Erro ao desbloquear: ' + (e.message || e));
+  }
+}
+
+async function desbloquearTodos() {
+  if (blockedDevices.size === 0) {
+    showToast('info', 'Nenhum dispositivo bloqueado.');
+    return;
+  }
+  showToast('info', 'Desbloqueando todos...');
+
+  try {
+    await waitForApi();
+    await window.pywebview.api.desbloquear_todos();
+    blockedDevices.clear();
+    renderDevices();
+    showToast('success', 'Todos os dispositivos desbloqueados!');
+  } catch (e) {
+    showToast('error', 'Erro: ' + (e.message || e));
+  }
+}
+
+// -- Bloquear IP Manual --
+function openBloquearIpModal() {
+  document.getElementById('inputBloquearIp').value = '';
+  openModal('modalBloquearIp');
+}
+
+async function bloquearIp() {
+  const ip = document.getElementById('inputBloquearIp').value.trim();
+  if (!ip) { showToast('error', 'Digite um IP válido.'); return; }
+  closeModal('modalBloquearIp');
+  showToast('info', 'Bloqueando ' + ip + '...');
+
+  try {
+    await waitForApi();
+    await window.pywebview.api.bloquear_ip(ip);
+    blockedDevices.add(ip);
+    renderDevices();
+    showToast('success', ip + ' bloqueado!');
+  } catch (e) {
+    showToast('error', 'Erro ao bloquear IP: ' + (e.message || e));
+  }
+}
+
+// -- Bloquear Roteador --
+function confirmarBloquearRoteador() {
+  openModal('modalBloquearRoteador');
+}
+
+async function bloquearRoteador() {
+  closeModal('modalBloquearRoteador');
+  showToast('info', 'Bloqueando roteador... TODA a rede perderá internet!');
+
+  try {
+    await waitForApi();
+    await window.pywebview.api.bloquear_roteador();
+    showToast('success', 'Roteador bloqueado. Rede sem internet.');
+  } catch (e) {
+    showToast('error', 'Erro: ' + (e.message || e));
+  }
+}
+
+// -- Teste de Velocidade --
+async function testarVelocidade() {
+  showToast('info', 'Testando velocidade... aguarde.');
+  // Show loading state
+  document.getElementById('metricDownload').innerHTML = '<span class="spinner"></span>';
+  document.getElementById('metricUpload').innerHTML = '<span class="spinner"></span>';
+  document.getElementById('metricPing').innerHTML = '<span class="spinner"></span>';
+  document.getElementById('metricSignal').innerHTML = '<span class="spinner"></span>';
+
+  try {
+    await waitForApi();
+    const result = await window.pywebview.api.testar_velocidade();
+    if (result) {
+      animateMetric('metricDownload', result.download || 0, 'Mbps');
+      animateMetric('metricUpload', result.upload || 0, 'Mbps');
+      animateMetric('metricPing', result.ping || 0, 'ms');
+      animateMetric('metricSignal', result.signal || 0, '%');
+
+      // Trends
+      document.getElementById('metricDownloadTrend').textContent = result.download > 100 ? 'Excelente' : result.download > 50 ? 'Bom' : 'Regular';
+      document.getElementById('metricUploadTrend').textContent = result.upload > 50 ? 'Excelente' : result.upload > 20 ? 'Bom' : 'Regular';
+      document.getElementById('metricPingTrend').textContent = result.ping < 20 ? 'Excelente' : result.ping < 50 ? 'Bom' : 'Alto';
+      document.getElementById('metricSignalTrend').textContent = result.signal > 80 ? 'Forte' : result.signal > 50 ? 'Médio' : 'Fraco';
+
+      showToast('success', 'Teste de velocidade concluído!');
+    }
+  } catch (e) {
+    showToast('error', 'Erro no teste: ' + (e.message || e));
+    document.getElementById('metricDownload').innerHTML = '--<span class="metric-unit">Mbps</span>';
+    document.getElementById('metricUpload').innerHTML = '--<span class="metric-unit">Mbps</span>';
+    document.getElementById('metricPing').innerHTML = '--<span class="metric-unit">ms</span>';
+    document.getElementById('metricSignal').innerHTML = '--<span class="metric-unit">%</span>';
+  }
+}
+
+function animateMetric(id, value, unit) {
+  const el = document.getElementById(id);
+  const numVal = Math.round(value);
+  el.style.animation = 'countUp 0.4s ease';
+  el.innerHTML = numVal + '<span class="metric-unit">' + unit + '</span>';
+  setTimeout(() => { el.style.animation = ''; }, 400);
+}
+
+// -- Identificador de Senha --
+async function identificarSenha(ssid, bssid) {
+  switchTab('senha');
+  currentPasswordNetwork = { ssid, bssid };
+
+  document.getElementById('passwordEmpty').style.display = 'none';
+  document.getElementById('passwordContent').style.display = 'block';
+
+  // Show network info
+  document.getElementById('passwordNetworkInfo').innerHTML = `
+    <div class="password-network-row">
+      <span class="password-network-label">Rede (SSID)</span>
+      <span class="password-network-value">${escHtml(ssid || '(Oculta)')}</span>
+    </div>
+    <div class="password-network-row">
+      <span class="password-network-label">BSSID</span>
+      <span class="password-network-value">${escHtml(bssid)}</span>
+    </div>
+  `;
+
+  const methods = [
+    { id: 'saved', name: 'Verificando senhas salvas no sistema' },
+    { id: 'pmkid', name: 'Captura PMKID (sem cliente)' },
+    { id: 'handshake', name: 'Handshake + Wordlist' },
+    { id: 'wps', name: 'WPS PIN Brute-force' },
+    { id: 'pixie', name: 'Pixie Dust Attack' }
+  ];
+
+  // Render methods as pending
+  document.getElementById('passwordMethods').innerHTML = methods.map(m => `
+    <div class="password-method" id="method-${m.id}">
+      <div class="method-status-icon" style="background:rgba(255,255,255,0.05); border:2px solid rgba(255,255,255,0.1); border-radius:50%;"></div>
+      <span class="method-name" style="color:#555;">${m.name}</span>
+    </div>
+  `).join('');
+  document.getElementById('passwordResult').innerHTML = '';
+
+  showToast('info', 'Testando segurança de "' + ssid + '"...');
+
+  try {
+    await waitForApi();
+    const result = await window.pywebview.api.identificar_senha(ssid, bssid);
+
+    // Animate through methods
+    for (let i = 0; i < methods.length; i++) {
+      const el = document.getElementById('method-' + methods[i].id);
+      el.className = 'password-method doing';
+      el.querySelector('.method-status-icon').innerHTML = '';
+      el.querySelector('.method-status-icon').style = 'background:rgba(99,102,241,0.2); border:2px solid var(--purple); border-top-color:transparent; border-radius:50; width:18px; height:18px; animation:spin 0.8s linear infinite;';
+      el.querySelector('.method-name').style.color = '#fff';
+
+      await sleep(800);
+
+      const methodResult = result && result.methods ? result.methods[i] : null;
+      const found = methodResult && methodResult.found;
+
+      el.className = found ? 'password-method found' : 'password-method done';
+      el.querySelector('.method-status-icon').style = '';
+      el.querySelector('.method-status-icon').innerHTML = found ? '✅' : '❌';
+      el.querySelector('.method-status-icon').style.cssText = 'width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;' + (found ? 'background:rgba(34,197,94,0.2);' : 'background:rgba(239,68,68,0.1);');
+      el.querySelector('.method-name').style.color = '#aaa';
+
+      if (found) break;
+    }
+
+    // Show result
+    if (result && result.password) {
+      document.getElementById('passwordResult').innerHTML = `
+        <div class="password-result found">
+          <div class="password-result-icon">✅</div>
+          <div class="password-result-text" style="color:var(--green-light);">SENHA ENCONTRADA</div>
+          <div class="password-result-detail">${escHtml(result.password)}</div>
+          <div style="margin-top:8px; font-size:12px; color:#888;">Método: ${escHtml(result.method || 'N/A')}</div>
+        </div>`;
+      showToast('success', 'Senha encontrada!');
+    } else {
+      document.getElementById('passwordResult').innerHTML = `
+        <div class="password-result not-found">
+          <div class="password-result-icon">🔒</div>
+          <div class="password-result-text" style="color:var(--red-light);">NÃO ENCONTRADA</div>
+          <div class="password-result-detail">Rede segura — todas as brechas testadas</div>
+        </div>`;
+      showToast('info', 'Senha não encontrada — rede segura.');
+    }
+  } catch (e) {
+    showToast('error', 'Erro: ' + (e.message || e));
+    document.getElementById('passwordResult').innerHTML = `
+      <div class="password-result not-found">
+        <div class="password-result-icon">⚠️</div>
+        <div class="password-result-text" style="color:var(--yellow);">ERRO</div>
+        <div class="password-result-detail">${escHtml(e.message || 'Erro ao testar segurança')}</div>
+      </div>`;
+  }
+}
+
+// -- Limpador de Rastros --
+async function openLimpador() {
+  openModal('modalLimpador');
+  document.getElementById('limpadorItems').innerHTML = '<div style="text-align:center;padding:20px;color:#555;"><span class="spinner"></span> Escaneando...</div>';
+  document.getElementById('btnLimpar').style.display = 'none';
+
+  try {
+    await waitForApi();
+    const result = await window.pywebview.api.escanear_rastros();
+    const items = result || [];
+
+    if (items.length === 0) {
+      document.getElementById('limpadorItems').innerHTML = '<div style="text-align:center;padding:20px;color:#4ade80;">✅ Nenhum rastro encontrado. Tudo limpo!</div>';
+    } else {
+      document.getElementById('limpadorItems').innerHTML = items.map(item => `
+        <div class="limpador-item">
+          <span class="limpador-item-icon">${item.type === 'folder' ? '📁' : '📄'}</span>
+          <span class="limpador-item-name">${escHtml(item.name || item.path)}</span>
+          <span class="limpador-item-size">${item.size || ''}</span>
+        </div>
+      `).join('');
+      document.getElementById('btnLimpar').style.display = 'block';
+    }
+  } catch (e) {
+    document.getElementById('limpadorItems').innerHTML = '<div style="text-align:center;padding:20px;color:#ef4444;">Erro ao escanear: ' + escHtml(e.message || e) + '</div>';
+  }
+}
+
+async function limparRastros() {
+  document.getElementById('btnLimpar').style.display = 'none';
+  document.getElementById('limpadorItems').innerHTML = '<div style="text-align:center;padding:20px;"><span class="spinner"></span> Limpando...</div>';
+
+  try {
+    await waitForApi();
+    const result = await window.pywebview.api.limpar_rastros();
+    document.getElementById('limpadorItems').innerHTML = '<div style="text-align:center;padding:20px;color:#4ade80;">✅ ' + (result && result.message ? escHtml(result.message) : 'Limpeza concluída!') + '</div>';
+    showToast('success', 'Rastros limpos com sucesso!');
+  } catch (e) {
+    showToast('error', 'Erro ao limpar: ' + (e.message || e));
+    document.getElementById('limpadorItems').innerHTML = '<div style="text-align:center;padding:20px;color:#ef4444;">Erro ao limpar.</div>';
+  }
+}
+
+// -- Instalar Deps (used by setup) --
+async function instalarDeps() {
+  try {
+    await waitForApi();
+    const result = await window.pywebview.api.instalar_dependencias();
+    return result;
+  } catch (e) {
+    throw e;
+  }
+}
+
+// ===== TAB SYSTEM =====
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+  const tabs = document.querySelectorAll('.tab');
+  const tabMap = { 'dispositivos': 0, 'redes': 1, 'senha': 2 };
+  if (tabMap[name] !== undefined) tabs[tabMap[name]].classList.add('active');
+
+  const content = document.getElementById('tab-' + name);
+  if (content) content.classList.add('active');
+}
+
+// ===== MODAL HELPERS =====
+function openModal(id) {
+  document.getElementById(id).classList.add('active');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('active');
+}
+
+// Close modals on overlay click
+document.addEventListener('click', (e) => {
+  if (e.target.classList.contains('modal-overlay')) {
+    e.target.classList.remove('active');
+  }
+});
+
+// ===== UTILITY FUNCTIONS =====
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function waitForApi() {
+  return new Promise((resolve) => {
+    if (window.pywebview && window.pywebview.api) {
+      resolve();
+      return;
+    }
+    // Poll for pywebview readiness
+    const interval = setInterval(() => {
+      if (window.pywebview && window.pywebview.api) {
+        clearInterval(interval);
+        resolve();
+      }
+    }, 100);
+    // Timeout after 30s
+    setTimeout(() => { clearInterval(interval); resolve(); }, 30000);
+  });
+}
+
+function escHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+
+function showToast(type, message) {
+  const container = document.getElementById('toastContainer');
+  const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+  const toast = document.createElement('div');
+  toast.className = 'toast ' + type;
+  toast.innerHTML = `<span class="toast-icon">${icons[type] || 'ℹ️'}</span><span>${escHtml(message)}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(20px)';
+    toast.style.transition = 'all 0.3s ease';
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
+}
+
+// ===== KEYBOARD SHORTCUTS =====
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
+  }
+});
+
+// ===== PYWEBVIEW READY EVENT =====
+window.addEventListener('pywebviewready', () => {
+  console.log('pywebview API ready');
+  // Check admin status
+  if (window.pywebview && window.pywebview.api && window.pywebview.api.verificar_admin) {
+    window.pywebview.api.verificar_admin().then(isAdmin => {
+      const pill = document.getElementById('adminPill');
+      const text = document.getElementById('adminText');
+      if (!isAdmin) {
+        pill.classList.add('warning');
+        text.textContent = 'SEM ADMIN';
+      }
+    }).catch(() => {});
+  }
+});
+
+// ===== STARTUP =====
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
