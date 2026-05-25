@@ -1,99 +1,103 @@
+
 ============================================================
   RADIO PROGRAMADOR v6.0
-  Ferramenta de Auditoria Wi-Fi - Windows 11
+  Ferramenta de Auditoria Wi-Fi — Windows 11
 ============================================================
 
-O QUE E ISSO?
---------------
-O Radio Programador e uma ferramenta visual para analise
-de redes Wi-Fi no Windows 11. Ele permite escanear redes,
-testar senhas, capturar handshakes, ver dispositivos
-conectados, medir velocidade, gerar senhas seguras e mais.
+
+╔══════════════════════════════════════════════════════════╗
+║  COMO GERAR O EXECUTAVEL (.exe) — 3 PASSOS             ║
+╚══════════════════════════════════════════════════════════╝
+
+  PASSO 1:  Instale o Python (so precisa fazer 1 vez)
+            Baixe em: https://www.python.org/downloads/
+            IMPORTANTE: Marque a caixa "Add Python to PATH"!
+
+  PASSO 2:  De dois cliques em "GERAR_EXE.bat"
+            Espere 2 a 5 minutos (ele faz tudo sozinho)
+
+  PASSO 3:  Pronto! Seu arquivo esta em:
+            PRONTO\RadioProgramador.exe
+
+  Depois disso, voce so precisa do RadioProgramador.exe!
+  Copie pra onde quiser. Pode deletar todo o resto.
 
 
-REQUISITOS
-----------
-- Windows 11 (64 bits)
-- Python 3.10 ou superior (se for rodar o .py direto)
-- Npcap (gratuito, para funcoes avancadas) - https://npcap.com
+╔══════════════════════════════════════════════════════════╗
+║  O QUE ACONTECE QUANDO VOCE ABRE O .EXE                ║
+╚══════════════════════════════════════════════════════════╝
+
+  - O Windows vai mostrar uma tela escura perguntando:
+    "Deseja permitir que este app faca alteracoes?"
+  - Clique SIM (isso da permissao de Administrador)
+  - O programa abre normalmente com todas as funcoes
 
 
-COMO USAR (2 opcoes)
----------------------
+╔══════════════════════════════════════════════════════════╗
+║  REQUISITO EXTRA (para funcoes avancadas)               ║
+╚══════════════════════════════════════════════════════════╝
 
-OPCAO A - Usar direto (mais simples):
-  1. Instale Python: https://www.python.org/downloads/
-     (Marque "Add Python to PATH" na instalacao!)
-  2. Clique duas vezes em "instalador.py"
-     Ele instala tudo automaticamente.
-  3. Pronto! O programa abre pelo atalho na area de trabalho.
-
-OPCAO B - Criar executavel .exe:
-  1. Instale Python (igual acima)
-  2. Clique duas vezes em "CRIAR_EXE.bat"
-     Espere 2-3 minutos enquanto ele cria os .exe
-  3. Os executaveis ficam na pasta "dist\"
-     - RadioProgramador_Setup.exe (instalador)
-     - RadioProgramador.exe (programa)
+  Para usar Captura de Handshake e Desconectar Clientes:
+  - Instale o Npcap: https://npcap.com
+  - Na instalacao, marque "WinPcap API compatibility"
+  - Isso e gratuito e seguro
 
 
-FUNCIONALIDADES (v6.0)
------------------------
-1. REDES         - Escaneia redes Wi-Fi visiveis
-2. AUDITORIA     - Testa senhas WPA2 com wordlist
-3. HANDSHAKE     - Captura handshake real da rede
-4. DISPOSITIVOS  - Mostra aparelhos conectados na rede
-5. VELOCIDADE    - Mede download, upload e latencia
-6. GERADOR       - Cria senhas aleatorias fortes (NOVO!)
-7. INFO REDE     - Mostra dados completos da conexao (NOVO!)
-8. WORDLIST      - Gerencia lista de senhas para teste
-9. LOG           - Registro completo de todas as acoes
+╔══════════════════════════════════════════════════════════╗
+║  O QUE O PROGRAMA FAZ (9 funcoes)                       ║
+╚══════════════════════════════════════════════════════════╝
+
+  1. REDES         Busca redes Wi-Fi visiveis ao redor
+  2. AUDITORIA     Testa senhas WPA2 com lista de senhas
+  3. HANDSHAKE     Captura dados de conexao da rede
+  4. DISPOSITIVOS  Mostra aparelhos conectados na rede
+  5. VELOCIDADE    Mede velocidade da internet
+  6. GERADOR       Cria senhas aleatorias fortes
+  7. INFO REDE     Mostra dados completos da conexao
+  8. WORDLIST      Gerencia lista de senhas para teste
+  9. LOG           Registro de tudo que foi feito
 
 
-NOVIDADES DA v6.0
-------------------
-- Corrigidos todos os erros de interface (crash ao abrir)
-- Nova aba: Gerador de Senhas Seguras
-- Nova aba: Informacoes da Rede Atual
-- Instalador com popups estilo Windows 11
-- Solicita permissao de Administrador automaticamente
-- Focado 100% em Windows 11
-- Interface mais estavel e responsiva
+╔══════════════════════════════════════════════════════════╗
+║  ARQUIVOS DESTA PASTA (so precisa pra gerar o .exe)     ║
+╚══════════════════════════════════════════════════════════╝
+
+  radio_programador.py   Codigo do programa (nao mexer)
+  instalador.py          Instalador auxiliar
+  GERAR_EXE.bat          Gera o .exe (duplo-clique!)
+  versao.rc              Informacoes do executavel
+  RadioProgramador.spec  Configuracao de build
+  LEIA_PRIMEIRO.txt      Este arquivo
+
+  Depois de gerar o .exe, voce pode deletar tudo.
+  So precisa do RadioProgramador.exe que fica em PRONTO\
 
 
-AVISO LEGAL
-------------
-Esta ferramenta e EXCLUSIVAMENTE para uso educacional
-e em redes PROPRIAS ou com AUTORIZACAO formal por escrito.
+╔══════════════════════════════════════════════════════════╗
+║  PROBLEMAS COMUNS                                        ║
+╚══════════════════════════════════════════════════════════╝
 
-O uso indevido em redes de terceiros e CRIME previsto
-no Codigo Penal (Art. 154-A - Invasao de dispositivo).
+  "Python nao encontrado"
+  → Reinstale o Python e marque "Add Python to PATH"
 
-O desenvolvedor nao se responsabiliza pelo uso indevido.
+  "Antivirus bloqueou o .exe"
+  → Isso e normal com programas gerados por PyInstaller
+  → Adicione uma excecao no antivirus para o arquivo
 
-
-ARQUIVOS DO PACOTE
--------------------
-- radio_programador.py   Programa principal
-- instalador.py          Instalador com interface grafica
-- CRIAR_EXE.bat          Cria os executaveis .exe
-- LEIA_PRIMEIRO.txt      Este arquivo
+  "Npcap nao instalado"
+  → Baixe em https://npcap.com (gratuito)
+  → Marque "WinPcap API compatibility" na instalacao
 
 
-PROBLEMAS COMUNS
------------------
-1. "Python nao encontrado"
-   -> Reinstale o Python marcando "Add Python to PATH"
+╔══════════════════════════════════════════════════════════╗
+║  AVISO LEGAL                                             ║
+╚══════════════════════════════════════════════════════════╝
 
-2. "Npcap nao instalado"
-   -> Baixe em https://npcap.com e instale
-   -> Marque "WinPcap API compatibility"
+  Esta ferramenta e EXCLUSIVAMENTE para uso educacional
+  e em redes PROPRIAS ou com AUTORIZACAO por escrito.
 
-3. "Execute como Administrador"
-   -> Clique direito no programa -> Executar como admin
-
-4. "scapy nao instalado"
-   -> Execute o instalador.py que ele instala tudo
+  O uso em redes de terceiros sem permissao e CRIME
+  (Codigo Penal - Art. 154-A).
 
 
 ============================================================
