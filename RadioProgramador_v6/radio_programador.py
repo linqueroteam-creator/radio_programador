@@ -724,6 +724,24 @@ def aviso_requisitos(pai, faltando: list):
              font=("Consolas", 9), bg=C["fundo"], fg=C["texto_dim"],
              justify='center').pack(pady=8)
 
+    # --- Botao para reabrir com permissoes de Administrador ---
+    def _reabrir_como_admin():
+        """Relanca o programa pedindo elevacao UAC ao Windows."""
+        import ctypes
+        script = os.path.abspath(sys.argv[0])
+        ctypes.windll.shell32.ShellExecuteW(
+            None, "runas", PYTHON, f'"{script}"', None, 1
+        )
+        pai.destroy()  # fecha a instancia atual
+
+    # So mostra o botao se "Administrador" estiver entre os requisitos faltantes
+    if any("Administrador" in item for item in faltando):
+        tk.Button(win, text="\u26a1 REABRIR COMO ADMINISTRADOR",
+                  font=("Consolas", 10, "bold"),
+                  bg=C["amarelo"], fg="#000", relief='flat',
+                  cursor='hand2', pady=8,
+                  command=_reabrir_como_admin).pack(pady=(8, 4))
+
     tk.Button(win, text="Fechar", font=("Consolas", 10, "bold"),
               bg=C["verde_dim"], fg="#fff", relief='flat',
               cursor='hand2', pady=6,
