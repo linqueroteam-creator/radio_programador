@@ -1,0 +1,101 @@
+============================================================
+  RADIO PROGRAMADOR v6.0
+  Ferramenta de Auditoria Wi-Fi - Windows 11
+============================================================
+
+O QUE E ISSO?
+--------------
+O Radio Programador e uma ferramenta visual para analise
+de redes Wi-Fi no Windows 11. Ele permite escanear redes,
+testar senhas, capturar handshakes, ver dispositivos
+conectados, medir velocidade, gerar senhas seguras e mais.
+
+
+REQUISITOS
+----------
+- Windows 11 (64 bits)
+- Python 3.10 ou superior (se for rodar o .py direto)
+- Npcap (gratuito, para funcoes avancadas) - https://npcap.com
+
+
+COMO USAR (2 opcoes)
+---------------------
+
+OPCAO A - Usar direto (mais simples):
+  1. Instale Python: https://www.python.org/downloads/
+     (Marque "Add Python to PATH" na instalacao!)
+  2. Clique duas vezes em "instalador.py"
+     Ele instala tudo automaticamente.
+  3. Pronto! O programa abre pelo atalho na area de trabalho.
+
+OPCAO B - Criar executavel .exe:
+  1. Instale Python (igual acima)
+  2. Clique duas vezes em "CRIAR_EXE.bat"
+     Espere 2-3 minutos enquanto ele cria os .exe
+  3. Os executaveis ficam na pasta "dist\"
+     - RadioProgramador_Setup.exe (instalador)
+     - RadioProgramador.exe (programa)
+
+
+FUNCIONALIDADES (v6.0)
+-----------------------
+1. REDES         - Escaneia redes Wi-Fi visiveis
+2. AUDITORIA     - Testa senhas WPA2 com wordlist
+3. HANDSHAKE     - Captura handshake real da rede
+4. DISPOSITIVOS  - Mostra aparelhos conectados na rede
+5. VELOCIDADE    - Mede download, upload e latencia
+6. GERADOR       - Cria senhas aleatorias fortes (NOVO!)
+7. INFO REDE     - Mostra dados completos da conexao (NOVO!)
+8. WORDLIST      - Gerencia lista de senhas para teste
+9. LOG           - Registro completo de todas as acoes
+
+
+NOVIDADES DA v6.0
+------------------
+- Corrigidos todos os erros de interface (crash ao abrir)
+- Nova aba: Gerador de Senhas Seguras
+- Nova aba: Informacoes da Rede Atual
+- Instalador com popups estilo Windows 11
+- Solicita permissao de Administrador automaticamente
+- Focado 100% em Windows 11
+- Interface mais estavel e responsiva
+
+
+AVISO LEGAL
+------------
+Esta ferramenta e EXCLUSIVAMENTE para uso educacional
+e em redes PROPRIAS ou com AUTORIZACAO formal por escrito.
+
+O uso indevido em redes de terceiros e CRIME previsto
+no Codigo Penal (Art. 154-A - Invasao de dispositivo).
+
+O desenvolvedor nao se responsabiliza pelo uso indevido.
+
+
+ARQUIVOS DO PACOTE
+-------------------
+- radio_programador.py   Programa principal
+- instalador.py          Instalador com interface grafica
+- CRIAR_EXE.bat          Cria os executaveis .exe
+- LEIA_PRIMEIRO.txt      Este arquivo
+
+
+PROBLEMAS COMUNS
+-----------------
+1. "Python nao encontrado"
+   -> Reinstale o Python marcando "Add Python to PATH"
+
+2. "Npcap nao instalado"
+   -> Baixe em https://npcap.com e instale
+   -> Marque "WinPcap API compatibility"
+
+3. "Execute como Administrador"
+   -> Clique direito no programa -> Executar como admin
+
+4. "scapy nao instalado"
+   -> Execute o instalador.py que ele instala tudo
+
+
+============================================================
+  Versao 6.0 | Windows 11 | 2025
+============================================================
