@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Bloqueio Animado — Radio Programador</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: #050507; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 40px;
+}
+.bg-glow {
+  position: fixed; inset: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(239, 68, 68, 0.1) 0%, transparent 50%);
+}
+
+/* Modal de confirmação */
+.modal {
+  position: relative; z-index: 10;
+  width: 480px;
+  background: linear-gradient(180deg, rgba(20,20,28,0.95) 0%, rgba(10,10,15,0.95) 100%);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 24px;
+  box-shadow:
+    0 50px 100px rgba(0,0,0,0.5),
+    0 0 100px rgba(239, 68, 68, 0.15),
+    inset 0 1px 0 rgba(255,255,255,0.1);
+  backdrop-filter: blur(40px);
+  overflow: hidden;
+  animation: modalIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modal-header {
+  display: flex; flex-direction: column;
+  align-items: center; text-align: center;
+  padding: 48px 32px 32px;
+  position: relative;
+}
+
+/* ANIMAÇÃO DO PULSO — destaque principal */
+.pulse-container {
+  position: relative;
+  width: 140px; height: 140px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 32px;
+}
+
+/* Círculo central */
+.pulse-core {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #f87171, #dc2626 60%, #991b1b);
+  box-shadow:
+    0 0 60px rgba(239, 68, 68, 0.7),
+    inset 0 -10px 20px rgba(0,0,0,0.4),
+    inset 0 10px 20px rgba(255,255,255,0.2);
+  position: relative; z-index: 5;
+  animation: coreBeat 1.5s ease-in-out infinite;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px;
+}
+@keyframes coreBeat {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 60px rgba(239, 68, 68, 0.7), inset 0 -10px 20px rgba(0,0,0,0.4), inset 0 10px 20px rgba(255,255,255,0.2);
+  }
+  50% {
+    transform: scale(1.08);
+    box-shadow: 0 0 80px rgba(239, 68, 68, 1), inset 0 -10px 20px rgba(0,0,0,0.4), inset 0 10px 20px rgba(255,255,255,0.3);
+  }
+}
+
+/* Anéis pulsantes */
+.pulse-ring {
+  position: absolute;
+  border: 2px solid rgba(239, 68, 68, 0.5);
+  border-radius: 50%;
+  animation: ringExpand 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+.pulse-ring:nth-child(1) { width: 80px; height: 80px; animation-delay: 0s; }
+.pulse-ring:nth-child(2) { width: 80px; height: 80px; animation-delay: 0.6s; }
+.pulse-ring:nth-child(3) { width: 80px; height: 80px; animation-delay: 1.2s; }
+.pulse-ring:nth-child(4) { width: 80px; height: 80px; animation-delay: 1.8s; }
+@keyframes ringExpand {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+    border-width: 3px;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+    border-width: 1px;
+  }
+}
+
+/* Brilho de fundo do pulso */
+.pulse-glow {
+  position: absolute;
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(239, 68, 68, 0.3) 0%, transparent 60%);
+  animation: glowPulse 1.5s ease-in-out infinite;
+  filter: blur(20px);
+}
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.6; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+.modal-title {
+  font-size: 24px; font-weight: 700;
+  letter-spacing: -0.02em; margin-bottom: 8px;
+  background: linear-gradient(180deg, #fff 0%, #aaa 100%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.modal-subtitle {
+  color: #888; font-size: 14px;
+  line-height: 1.6;
+  max-width: 340px;
+}
+
+/* Info do dispositivo */
+.device-info-box {
+  margin: 0 32px 24px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 14px;
+  padding: 20px;
+}
+.device-row {
+  display: flex; justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  font-size: 13px;
+}
+.device-row:last-child { border-bottom: none; }
+.device-row-label {
+  color: #777; font-weight: 500;
+}
+.device-row-value {
+  color: #fff; font-weight: 500;
+  font-family: 'JetBrains Mono', monospace;
+}
+.device-row-value.danger { color: #f87171; }
+
+/* Status atual */
+.status-banner {
+  margin: 0 32px 28px;
+  padding: 14px 18px;
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.05));
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 12px;
+  display: flex; align-items: center; gap: 12px;
+}
+.status-banner-icon {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+}
+.status-banner-text {
+  flex: 1;
+}
+.status-banner-title {
+  font-size: 13px; font-weight: 600; color: #fca5a5;
+  margin-bottom: 2px;
+}
+.status-banner-desc {
+  font-size: 11px; color: #777;
+  font-family: 'JetBrains Mono', monospace;
+}
+.status-banner-time {
+  font-size: 11px; color: #f87171;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+}
+
+/* Ações */
+.modal-actions {
+  display: flex; gap: 8px;
+  padding: 0 32px 32px;
+}
+.btn {
+  flex: 1; padding: 13px 20px;
+  border: none; border-radius: 11px;
+  font-family: inherit; font-size: 13px; font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: -0.01em;
+}
+.btn-cancel {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #aaa;
+}
+.btn-cancel:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.btn-unblock {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(34, 197, 94, 0.3);
+}
+.btn-unblock:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 32px rgba(34, 197, 94, 0.4);
+}
+
+.back {
+  position: fixed; top: 24px; left: 24px; z-index: 100;
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  color: #aaa; font-size: 13px; text-decoration: none;
+  backdrop-filter: blur(10px);
+}
+.back:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+/* Texto descritivo abaixo */
+.caption {
+  z-index: 10;
+  text-align: center;
+  color: #555;
+  font-size: 13px;
+  font-family: 'JetBrains Mono', monospace;
+}
+</style>
+</head>
+<body>
+<a href="INDEX.html" class="back">← Voltar aos mockups</a>
+<div class="bg-glow"></div>
+
+<div class="modal">
+  <div class="modal-header">
+    <div class="pulse-container">
+      <div class="pulse-glow"></div>
+      <div class="pulse-ring"></div>
+      <div class="pulse-ring"></div>
+      <div class="pulse-ring"></div>
+      <div class="pulse-ring"></div>
+      <div class="pulse-core">🚫</div>
+    </div>
+
+    <h2 class="modal-title">Dispositivo bloqueado</h2>
+    <p class="modal-subtitle">
+      A internet desse aparelho foi cortada.<br>
+      Ele não consegue mais navegar até você desbloquear.
+    </p>
+  </div>
+
+  <div class="device-info-box">
+    <div class="device-row">
+      <span class="device-row-label">Endereço IP</span>
+      <span class="device-row-value">192.168.0.23</span>
+    </div>
+    <div class="device-row">
+      <span class="device-row-label">MAC</span>
+      <span class="device-row-value">FF:00:11:AA:BB:CC</span>
+    </div>
+    <div class="device-row">
+      <span class="device-row-label">Fabricante</span>
+      <span class="device-row-value">Não identificado</span>
+    </div>
+    <div class="device-row">
+      <span class="device-row-label">Status</span>
+      <span class="device-row-value danger">● Bloqueado</span>
+    </div>
+  </div>
+
+  <div class="status-banner">
+    <div class="status-banner-icon">⚡</div>
+    <div class="status-banner-text">
+      <div class="status-banner-title">Sem internet há</div>
+      <div class="status-banner-desc">Pacotes ARP enviados: 247</div>
+    </div>
+    <div class="status-banner-time">04:12</div>
+  </div>
+
+  <div class="modal-actions">
+    <button class="btn btn-cancel">Manter bloqueado</button>
+    <button class="btn btn-unblock">↺ Desbloquear agora</button>
+  </div>
+</div>
+
+<div class="caption">
+  ⬆ A animação do círculo é REAL — observe os anéis se expandindo continuamente
+</div>
+</body>
+</html>

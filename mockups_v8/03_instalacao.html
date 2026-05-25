@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Instalação — Radio Programador</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: #050507; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+}
+.bg-glow {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(circle at 30% 50%, rgba(34, 211, 238, 0.15) 0%, transparent 40%),
+    radial-gradient(circle at 70% 50%, rgba(99, 102, 241, 0.15) 0%, transparent 40%);
+}
+
+.window {
+  position: relative; z-index: 10;
+  width: 760px; height: 580px;
+  background: linear-gradient(180deg, rgba(20,20,28,0.92) 0%, rgba(10,10,15,0.92) 100%);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px;
+  box-shadow: 0 50px 100px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+  backdrop-filter: blur(40px);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  animation: in 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes in { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+
+.titlebar {
+  display: flex; align-items: center;
+  height: 38px; padding: 0 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.dot { width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; }
+.dot.r { background: #ff5f57; } .dot.y { background: #febc2e; } .dot.g { background: #28c840; }
+.titlebar-title {
+  flex: 1; text-align: center; font-size: 12px; color: #666;
+  font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em;
+}
+
+.content { padding: 50px 60px; flex: 1; display: flex; flex-direction: column; }
+
+/* Steps Header */
+.steps {
+  display: flex; align-items: center; justify-content: center;
+  gap: 0; margin-bottom: 50px;
+}
+.step {
+  display: flex; align-items: center; gap: 12px;
+}
+.step-circle {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.03);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 600; color: #555;
+  font-family: 'JetBrains Mono', monospace;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+.step.completed .step-circle {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.15);
+}
+.step.active .step-circle {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+  animation: activePulse 2s ease-in-out infinite;
+}
+@keyframes activePulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2); }
+  50% { box-shadow: 0 0 0 8px rgba(99, 102, 241, 0.1); }
+}
+
+.step-line {
+  width: 80px; height: 2px;
+  background: rgba(255,255,255,0.1);
+  position: relative; overflow: hidden;
+  border-radius: 2px;
+}
+.step-line.completed {
+  background: linear-gradient(90deg, #22c55e, #6366f1);
+}
+
+.step-label {
+  font-size: 12px; color: #666;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+.step.active .step-label, .step.completed .step-label { color: #fff; }
+
+/* Hero do step ativo */
+.step-content {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; text-align: center;
+  justify-content: center;
+}
+
+.icon-big {
+  width: 96px; height: 96px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 32px;
+  box-shadow:
+    0 25px 50px rgba(99, 102, 241, 0.4),
+    inset 0 1px 0 rgba(255,255,255,0.3);
+  position: relative;
+  animation: bob 4s ease-in-out infinite;
+}
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+.icon-big::before {
+  content: ''; position: absolute; inset: 0;
+  border-radius: 24px;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4), transparent 60%);
+}
+.icon-big-emoji { font-size: 48px; position: relative; z-index: 1; }
+
+.step-title {
+  font-size: 32px; font-weight: 700;
+  letter-spacing: -0.03em; margin-bottom: 12px;
+  background: linear-gradient(180deg, #fff 0%, #aaa 100%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.step-desc {
+  color: #888; font-size: 15px; line-height: 1.6;
+  max-width: 440px; margin-bottom: 40px;
+}
+
+/* Progress bar de download/instalação */
+.progress-container {
+  width: 400px;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 32px;
+}
+.progress-info {
+  display: flex; justify-content: space-between;
+  font-size: 12px; margin-bottom: 10px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.progress-info-label { color: #aaa; }
+.progress-info-pct { color: #6366f1; font-weight: 600; }
+.progress-bar {
+  height: 6px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 3px; overflow: hidden;
+  position: relative;
+}
+.progress-fill {
+  height: 100%; width: 67%;
+  background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+  border-radius: 3px;
+  position: relative;
+  animation: shimmer 2s ease-in-out infinite;
+}
+.progress-fill::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  animation: shine 1.5s linear infinite;
+}
+@keyframes shine {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+@keyframes shimmer {
+  0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.4); }
+  50% { box-shadow: 0 0 30px rgba(168, 85, 247, 0.6); }
+}
+
+/* Lista de tarefas */
+.tasks {
+  width: 400px; text-align: left;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.task {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 10px;
+  font-size: 13px;
+  transition: all 0.3s ease;
+}
+.task.done { background: rgba(34, 197, 94, 0.05); border-color: rgba(34, 197, 94, 0.2); }
+.task.doing { background: rgba(99, 102, 241, 0.05); border-color: rgba(99, 102, 241, 0.3); }
+.task-status {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.task.done .task-status { background: #22c55e; }
+.task.doing .task-status {
+  background: rgba(99, 102, 241, 0.2);
+  border: 2px solid #6366f1;
+  border-top-color: transparent;
+  animation: spin 0.8s linear infinite;
+}
+.task.pending .task-status {
+  background: rgba(255,255,255,0.05);
+  border: 2px solid rgba(255,255,255,0.1);
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.task-name { flex: 1; }
+.task.done .task-name { color: #aaa; }
+.task.doing .task-name { color: #fff; font-weight: 500; }
+.task.pending .task-name { color: #555; }
+.task-time { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #666; }
+
+/* Footer */
+.footer-actions {
+  padding: 24px 60px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  display: flex; justify-content: space-between;
+  align-items: center;
+}
+.help { color: #555; font-size: 12px; }
+.btn-cancel {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #888; padding: 10px 20px;
+  border-radius: 10px; font-size: 13px;
+  cursor: pointer; font-family: inherit;
+  transition: all 0.2s ease;
+}
+.btn-cancel:hover { color: #fff; border-color: rgba(255,255,255,0.2); }
+
+.back {
+  position: fixed; top: 24px; left: 24px; z-index: 100;
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px; color: #aaa; font-size: 13px;
+  text-decoration: none; backdrop-filter: blur(10px);
+  transition: all 0.2s ease;
+}
+.back:hover { background: rgba(255,255,255,0.1); color: #fff; }
+</style>
+</head>
+<body>
+<a href="INDEX.html" class="back">← Voltar aos mockups</a>
+<div class="bg-glow"></div>
+
+<div class="window">
+  <div class="titlebar">
+    <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+    <span class="titlebar-title">Instalação — Etapa 2 de 3</span>
+  </div>
+
+  <div class="content">
+    <div class="steps">
+      <div class="step completed">
+        <div class="step-circle">✓</div>
+      </div>
+      <div class="step-line completed"></div>
+      <div class="step active">
+        <div class="step-circle">2</div>
+      </div>
+      <div class="step-line"></div>
+      <div class="step">
+        <div class="step-circle">3</div>
+      </div>
+    </div>
+
+    <div class="step-content">
+      <div class="icon-big">
+        <span class="icon-big-emoji">⚡</span>
+      </div>
+      <h1 class="step-title">Instalando os componentes</h1>
+      <p class="step-desc">
+        Estamos preparando tudo para você. Demora cerca de 1 minuto.
+      </p>
+
+      <div class="progress-container">
+        <div class="progress-info">
+          <span class="progress-info-label">Progresso</span>
+          <span class="progress-info-pct">67%</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill"></div>
+        </div>
+      </div>
+
+      <div class="tasks">
+        <div class="task done">
+          <div class="task-status">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+              <path d="M1 5l3 3 5-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <span class="task-name">Verificando seu sistema</span>
+          <span class="task-time">2.1s</span>
+        </div>
+        <div class="task done">
+          <div class="task-status">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+              <path d="M1 5l3 3 5-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <span class="task-name">Baixando bibliotecas (scapy, pywifi)</span>
+          <span class="task-time">12.4s</span>
+        </div>
+        <div class="task doing">
+          <div class="task-status"></div>
+          <span class="task-name">Instalando driver Npcap...</span>
+          <span class="task-time">--</span>
+        </div>
+        <div class="task pending">
+          <div class="task-status"></div>
+          <span class="task-name">Criando atalho na área de trabalho</span>
+          <span class="task-time">--</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-actions">
+    <span class="help">Não feche essa janela durante a instalação.</span>
+    <button class="btn-cancel">Cancelar</button>
+  </div>
+</div>
+</body>
+</html>

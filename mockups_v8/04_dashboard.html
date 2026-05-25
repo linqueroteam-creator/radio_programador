@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Dashboard — Radio Programador</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: #050507; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh; padding: 40px 20px;
+}
+.bg-glow {
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.12) 0%, transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(236, 72, 153, 0.08) 0%, transparent 40%);
+  pointer-events: none;
+}
+
+.window {
+  position: relative; z-index: 10;
+  width: 1100px;
+  background: linear-gradient(180deg, rgba(15,15,22,0.95) 0%, rgba(8,8,14,0.95) 100%);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px;
+  box-shadow: 0 50px 100px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+  backdrop-filter: blur(40px);
+  overflow: hidden;
+  animation: in 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes in { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+
+/* Title bar */
+.titlebar {
+  display: flex; align-items: center;
+  height: 44px; padding: 0 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  background: rgba(255,255,255,0.02);
+}
+.dot { width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; }
+.dot.r { background: #ff5f57; } .dot.y { background: #febc2e; } .dot.g { background: #28c840; }
+
+/* Header do app */
+.app-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 24px 32px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand-logo {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: linear-gradient(135deg, #6366f1 0%, #ec4899 100%);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800; font-size: 13px; letter-spacing: -0.05em;
+}
+.brand-name { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
+.brand-version {
+  font-size: 11px; color: #555;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.header-actions { display: flex; align-items: center; gap: 8px; }
+.status-pill {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 12px;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  border-radius: 999px;
+  font-size: 11px; font-weight: 600; color: #4ade80;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.05em;
+}
+.status-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: #22c55e;
+  box-shadow: 0 0 8px #22c55e;
+  animation: blink 2s ease-in-out infinite;
+}
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+.btn-icon {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  color: #aaa; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s ease;
+}
+.btn-icon:hover {
+  background: rgba(255,255,255,0.08);
+  color: #fff; transform: translateY(-1px);
+}
+
+/* Cards de métrica */
+.metrics {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 14px; padding: 24px 32px 16px;
+}
+.metric-card {
+  position: relative;
+  padding: 22px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+.metric-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255,255,255,0.12);
+  background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%);
+}
+.metric-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: var(--accent);
+  opacity: 0.6;
+}
+.metric-icon {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: var(--accent-bg);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 14px;
+  font-size: 14px;
+}
+.metric-label {
+  font-size: 11px; font-weight: 500;
+  color: #777; text-transform: uppercase;
+  letter-spacing: 0.08em; margin-bottom: 6px;
+}
+.metric-value {
+  font-size: 32px; font-weight: 700;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  display: flex; align-items: baseline; gap: 6px;
+}
+.metric-unit {
+  font-size: 13px; color: #666; font-weight: 500;
+}
+.metric-trend {
+  display: flex; align-items: center; gap: 4px;
+  margin-top: 8px;
+  font-size: 11px; color: #4ade80;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.card-dl { --accent: linear-gradient(90deg, #22c55e, #16a34a); --accent-bg: rgba(34, 197, 94, 0.15); }
+.card-dl .metric-value { color: #4ade80; }
+.card-ul { --accent: linear-gradient(90deg, #3b82f6, #1d4ed8); --accent-bg: rgba(59, 130, 246, 0.15); }
+.card-ul .metric-value { color: #60a5fa; }
+.card-ping { --accent: linear-gradient(90deg, #f59e0b, #d97706); --accent-bg: rgba(245, 158, 11, 0.15); }
+.card-ping .metric-value { color: #fbbf24; }
+.card-signal { --accent: linear-gradient(90deg, #06b6d4, #0891b2); --accent-bg: rgba(6, 182, 212, 0.15); }
+.card-signal .metric-value { color: #22d3ee; }
+
+/* Sparkline mini */
+.sparkline {
+  position: absolute; bottom: 16px; right: 16px;
+  width: 60px; height: 24px;
+  opacity: 0.4;
+}
+
+/* Toolbar de ações */
+.toolbar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 32px 24px;
+}
+.btn-action {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 11px 18px;
+  border-radius: 11px;
+  font-family: inherit; font-size: 13px; font-weight: 600;
+  cursor: pointer; border: none;
+  transition: all 0.2s ease; letter-spacing: -0.01em;
+}
+.btn-primary {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.3);
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(99, 102, 241, 0.4); }
+.btn-secondary {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #ddd;
+}
+.btn-secondary:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.btn-ghost {
+  background: transparent;
+  color: #888;
+}
+.btn-ghost:hover { color: #fff; background: rgba(255,255,255,0.04); }
+.toolbar-spacer { flex: 1; }
+.toolbar-info {
+  font-size: 12px; color: #666;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Lista de dispositivos */
+.devices-section {
+  padding: 0 32px 28px;
+}
+.devices-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.devices-title {
+  font-size: 13px; font-weight: 600;
+  color: #888; text-transform: uppercase;
+  letter-spacing: 0.08em;
+  display: flex; align-items: center; gap: 8px;
+}
+.devices-title-count {
+  background: rgba(99, 102, 241, 0.15);
+  color: #a5b4fc;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.devices-legend {
+  display: flex; gap: 16px; font-size: 11px; color: #666;
+}
+.legend-item { display: flex; align-items: center; gap: 6px; }
+.legend-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+}
+.legend-dot.green { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+.legend-dot.red {
+  background: #ef4444;
+  box-shadow: 0 0 6px #ef4444;
+  animation: legPulse 1.5s ease-in-out infinite;
+}
+@keyframes legPulse {
+  0%, 100% { box-shadow: 0 0 6px #ef4444; }
+  50% { box-shadow: 0 0 16px #ef4444; }
+}
+
+/* Cards de dispositivos */
+.devices { display: flex; flex-direction: column; gap: 8px; }
+.device {
+  display: flex; align-items: center; gap: 16px;
+  padding: 14px 18px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 12px;
+  transition: all 0.25s ease;
+}
+.device:hover {
+  background: linear-gradient(90deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+  border-color: rgba(255,255,255,0.1);
+  transform: translateX(2px);
+}
+.device.blocked {
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.08) 0%, rgba(239, 68, 68, 0.02) 100%);
+  border-color: rgba(239, 68, 68, 0.25);
+}
+.device.blocked:hover {
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.12) 0%, rgba(239, 68, 68, 0.04) 100%);
+}
+
+.device-status {
+  width: 12px; height: 12px; border-radius: 50%;
+  flex-shrink: 0;
+  position: relative;
+}
+.device-status.normal {
+  background: #22c55e;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+}
+.device-status.blocked {
+  background: #ef4444;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.6);
+  animation: devicePulse 1.2s ease-in-out infinite;
+}
+@keyframes devicePulse {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.6);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 24px rgba(239, 68, 68, 1);
+    transform: scale(1.15);
+  }
+}
+/* Anel pulsante extra para bloqueado */
+.device-status.blocked::before {
+  content: '';
+  position: absolute; inset: -4px;
+  border: 2px solid rgba(239, 68, 68, 0.5);
+  border-radius: 50%;
+  animation: ring 1.5s ease-out infinite;
+}
+@keyframes ring {
+  0% { transform: scale(0.8); opacity: 1; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+.device-icon {
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.05);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.device.blocked .device-icon {
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.device-info { flex: 1; min-width: 0; }
+.device-name {
+  font-size: 14px; font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-bottom: 3px;
+  display: flex; align-items: center; gap: 8px;
+}
+.device-tag {
+  font-size: 10px; font-weight: 500;
+  padding: 2px 7px;
+  background: rgba(99, 102, 241, 0.15);
+  color: #a5b4fc;
+  border-radius: 4px;
+  letter-spacing: 0.02em;
+}
+.device-tag.warn { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+.device-tag.danger { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+.device-meta {
+  font-size: 12px; color: #666;
+  font-family: 'JetBrains Mono', monospace;
+  display: flex; gap: 12px;
+}
+.device-meta-item { display: flex; align-items: center; gap: 4px; }
+.device-meta-sep { color: #444; }
+
+.device-state {
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 4px 10px; border-radius: 6px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.state-normal { background: rgba(34, 197, 94, 0.12); color: #4ade80; }
+.state-blocked { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+
+.btn-block {
+  padding: 9px 16px;
+  border-radius: 9px;
+  font-family: inherit; font-size: 12px; font-weight: 600;
+  cursor: pointer; border: none;
+  transition: all 0.2s ease;
+  letter-spacing: -0.01em;
+}
+.btn-block-action {
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+.btn-block-action:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fff;
+}
+.btn-unblock-action {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+}
+.btn-unblock-action:hover { transform: translateY(-1px); }
+
+.back {
+  position: fixed; top: 24px; left: 24px; z-index: 100;
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  color: #aaa; font-size: 13px; text-decoration: none;
+  backdrop-filter: blur(10px);
+}
+.back:hover { background: rgba(255,255,255,0.1); color: #fff; }
+</style>
+</head>
+<body>
+<a href="INDEX.html" class="back">← Voltar aos mockups</a>
+<div class="bg-glow"></div>
+
+<div class="window">
+  <div class="titlebar">
+    <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+  </div>
+
+  <div class="app-header">
+    <div class="brand">
+      <div class="brand-logo">RP</div>
+      <div>
+        <div class="brand-name">Radio Programador</div>
+        <div class="brand-version">v8.0 · Premium</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="status-pill">
+        <div class="status-dot"></div>
+        ADMINISTRADOR
+      </div>
+      <button class="btn-icon" title="Configurações">⚙</button>
+      <button class="btn-icon" title="Limpar rastros">🧹</button>
+      <button class="btn-icon" title="Ajuda">?</button>
+    </div>
+  </div>
+
+  <div class="metrics">
+    <div class="metric-card card-dl">
+      <div class="metric-icon">⬇</div>
+      <div class="metric-label">Download</div>
+      <div class="metric-value">847<span class="metric-unit">Mbps</span></div>
+      <div class="metric-trend">↑ 12% vs ontem</div>
+    </div>
+    <div class="metric-card card-ul">
+      <div class="metric-icon">⬆</div>
+      <div class="metric-label">Upload</div>
+      <div class="metric-value">142<span class="metric-unit">Mbps</span></div>
+      <div class="metric-trend">↑ 4% vs ontem</div>
+    </div>
+    <div class="metric-card card-ping">
+      <div class="metric-icon">⚡</div>
+      <div class="metric-label">Latência</div>
+      <div class="metric-value">8<span class="metric-unit">ms</span></div>
+      <div class="metric-trend" style="color:#4ade80;">Excelente</div>
+    </div>
+    <div class="metric-card card-signal">
+      <div class="metric-icon">📶</div>
+      <div class="metric-label">Sinal Wi-Fi</div>
+      <div class="metric-value">94<span class="metric-unit">%</span></div>
+      <div class="metric-trend">5GHz · Canal 36</div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <button class="btn-action btn-primary">
+      🔍 Atualizar dispositivos
+    </button>
+    <button class="btn-action btn-secondary">
+      ⚡ Testar velocidade
+    </button>
+    <button class="btn-action btn-ghost">
+      📄 Gerar relatório
+    </button>
+    <div class="toolbar-spacer"></div>
+    <span class="toolbar-info">Última varredura · há 2 min</span>
+  </div>
+
+  <div class="devices-section">
+    <div class="devices-header">
+      <div class="devices-title">
+        Dispositivos na rede
+        <span class="devices-title-count">5</span>
+      </div>
+      <div class="devices-legend">
+        <div class="legend-item">
+          <div class="legend-dot green"></div>
+          Conectado
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot red"></div>
+          Bloqueado
+        </div>
+      </div>
+    </div>
+
+    <div class="devices">
+      <div class="device">
+        <div class="device-status normal"></div>
+        <div class="device-icon">📡</div>
+        <div class="device-info">
+          <div class="device-name">Roteador TP-Link <span class="device-tag">GATEWAY</span></div>
+          <div class="device-meta">
+            <span class="device-meta-item">192.168.0.1</span>
+            <span class="device-meta-sep">·</span>
+            <span class="device-meta-item">B0:C0:90:XX:XX:XX</span>
+          </div>
+        </div>
+        <div class="device-state state-normal">Online</div>
+      </div>
+
+      <div class="device">
+        <div class="device-status normal"></div>
+        <div class="device-icon">💻</div>
+        <div class="device-info">
+          <div class="device-name">Meu MacBook Pro <span class="device-tag">VOCÊ</span></div>
+          <div class="device-meta">
+            <span class="device-meta-item">192.168.0.10</span>
+            <span class="device-meta-sep">·</span>
+            <span class="device-meta-item">A4:5E:60:XX:XX:XX</span>
+            <span class="device-meta-sep">·</span>
+            <span class="device-meta-item">Apple</span>
+          </div>
+        </div>
+        <div class="device-state state-normal">Online</div>
+      </div>
+
+      <div class="device">
+        <div class="device-status normal"></div>
+        <div class="device-icon">📱</div>
+        <div class="device-info">
+          <div class="device-name">Galaxy S24</div>
+          <div class="device-meta">
+            <span class="device-meta-item">192.168.0.15</span>
+            <span class="device-meta-sep">·</span>
+            <span class="device-meta-item">C4:34:6B:XX:XX:XX</span>
+            <span class="device-meta-sep">·</span>
+            <span class="device-meta-item">Samsung</span>
+          </div>
+        </div>
+        <button class="btn-block btn-block-action">Bloquear</button>
+      </div>
+
+      <div class="device blocked">
+        <div class="device-status blocked"></div>
+        <div class="device-icon">❓</div>
+        <div class="device-info">
+          <div class="device-name">Dispositivo desconhecido <span class="device-tag danger">INTRUSO</span></div>
+          <div class="device-meta">
+            <span class="device-meta-item">192.168.0.23</span>
+            <span class="device-meta-sep">·</span>
+            <span class="device-meta-item">FF:00:11:XX:XX:XX</span>
+            <span class="device-meta-sep">·</span>
+            <span class="device-meta-item">Fabricante não identificado</span>
+          </div>
+        </div>
+        <div class="device-state state-blocked">Bloqueado</div>
+        <button class="btn-block btn-unblock-action">Desbloquear</button>
+      </div>
+
+      <div class="device">
+        <div class="device-status normal"></div>
+        <div class="device-icon">📺</div>
+        <div class="device-info">
+          <div class="device-name">Smart TV Samsung</div>
+          <div class="device-meta">
+            <span class="device-meta-item">192.168.0.18</span>
+            <span class="device-meta-sep">·</span>
+            <span class="device-meta-item">CC:F9:E8:XX:XX:XX</span>
+          </div>
+        </div>
+        <button class="btn-block btn-block-action">Bloquear</button>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Radio Programador v8 — Mockups</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: #0a0a0f;
+  color: #fff;
+  min-height: 100vh;
+  padding: 60px 40px;
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(120, 119, 198, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(255, 119, 198, 0.1) 0%, transparent 50%);
+}
+.container { max-width: 1100px; margin: 0 auto; }
+h1 {
+  font-size: 56px; font-weight: 800; letter-spacing: -0.03em;
+  background: linear-gradient(135deg, #fff 0%, #888 100%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 16px;
+}
+.subtitle { color: #888; font-size: 18px; margin-bottom: 60px; max-width: 600px; line-height: 1.6; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; }
+.card {
+  background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px;
+  padding: 32px; cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none; color: inherit;
+  display: block;
+  backdrop-filter: blur(10px);
+}
+.card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(120, 119, 198, 0.4);
+  background: linear-gradient(135deg, rgba(120, 119, 198, 0.08) 0%, rgba(255,255,255,0.02) 100%);
+}
+.card-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px; color: #6366f1; font-weight: 600;
+  letter-spacing: 0.1em;
+}
+.card-title {
+  font-size: 22px; font-weight: 700; margin: 12px 0 8px;
+  letter-spacing: -0.02em;
+}
+.card-desc { color: #888; font-size: 14px; line-height: 1.6; }
+.card-emoji { font-size: 36px; margin-bottom: 16px; display: block; }
+.footer {
+  margin-top: 80px; padding-top: 40px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  color: #666; font-size: 13px; text-align: center;
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Radio Programador v8</h1>
+  <p class="subtitle">Mockups visuais da nova interface premium. Clique em cada cartão para ver a tela em ação.</p>
+
+  <div class="grid">
+    <a href="01_boas_vindas.html" class="card">
+      <span class="card-emoji">✨</span>
+      <div class="card-num">01 / WELCOME</div>
+      <div class="card-title">Tela de Boas-vindas</div>
+      <div class="card-desc">Hero animado com logo respirando, gradientes sutis e microcopy convidativo.</div>
+    </a>
+
+    <a href="02_termos.html" class="card">
+      <span class="card-emoji">📜</span>
+      <div class="card-num">02 / LEGAL</div>
+      <div class="card-title">Termos de Uso</div>
+      <div class="card-desc">Modal elegante com checkbox custom e scroll suave. Sem cara de jurídico chato.</div>
+    </a>
+
+    <a href="03_instalacao.html" class="card">
+      <span class="card-emoji">⚡</span>
+      <div class="card-num">03 / WIZARD</div>
+      <div class="card-title">Instalação Guiada</div>
+      <div class="card-desc">3 etapas com progress bar elegante, animações de transição e feedback visual.</div>
+    </a>
+
+    <a href="04_dashboard.html" class="card">
+      <span class="card-emoji">🎯</span>
+      <div class="card-num">04 / DASHBOARD</div>
+      <div class="card-title">Painel Principal</div>
+      <div class="card-desc">Glass morphism, cards de métricas com gradientes e lista de dispositivos viva.</div>
+    </a>
+
+    <a href="05_bloqueio.html" class="card">
+      <span class="card-emoji">🔴</span>
+      <div class="card-num">05 / ANIMATION</div>
+      <div class="card-title">Bloqueio Animado</div>
+      <div class="card-desc">Animação de pulso vermelho realista, com glow respirando. Hipnotizante.</div>
+    </a>
+  </div>
+
+  <div class="footer">
+    Mockups apenas para aprovação visual — depois eu implemento no programa real.
+  </div>
+</div>
+</body>
+</html>

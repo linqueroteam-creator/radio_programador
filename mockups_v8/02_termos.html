@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Termos de Uso — Radio Programador</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: #050507;
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+}
+.bg-glow {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(34, 211, 238, 0.15) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(168, 85, 247, 0.12) 0%, transparent 40%);
+}
+
+.window {
+  position: relative; z-index: 10;
+  width: 720px; height: 640px;
+  background: linear-gradient(180deg, rgba(20,20,28,0.92) 0%, rgba(10,10,15,0.92) 100%);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px;
+  box-shadow: 0 50px 100px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+  backdrop-filter: blur(40px);
+  overflow: hidden;
+  animation: in 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex; flex-direction: column;
+}
+@keyframes in { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+
+.titlebar {
+  display: flex; align-items: center;
+  height: 38px; padding: 0 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.dot { width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; }
+.dot.r { background: #ff5f57; }
+.dot.y { background: #febc2e; }
+.dot.g { background: #28c840; }
+.titlebar-title {
+  flex: 1; text-align: center;
+  font-size: 12px; color: #666;
+  font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em;
+}
+
+.content {
+  padding: 40px 48px 32px;
+  flex: 1; display: flex; flex-direction: column;
+}
+
+/* Header com ícone */
+.header { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
+.icon-box {
+  width: 52px; height: 52px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(99,102,241,0.2) 0%, rgba(168,85,247,0.2) 100%);
+  border: 1px solid rgba(99,102,241,0.3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px;
+}
+.title { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+.subtitle { color: #888; font-size: 14px; margin-top: 4px; }
+
+/* Caixa de termos */
+.terms-box {
+  flex: 1;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 14px;
+  padding: 24px;
+  overflow-y: auto;
+  margin-bottom: 24px;
+  position: relative;
+}
+.terms-box::-webkit-scrollbar { width: 6px; }
+.terms-box::-webkit-scrollbar-track { background: transparent; }
+.terms-box::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.1);
+  border-radius: 3px;
+}
+.terms-box::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+.terms-box h3 {
+  font-size: 14px; font-weight: 600;
+  color: #a5b4fc;
+  margin: 18px 0 8px;
+  letter-spacing: -0.01em;
+  display: flex; align-items: center; gap: 8px;
+}
+.terms-box h3:first-child { margin-top: 0; }
+.terms-box h3::before {
+  content: ''; width: 4px; height: 4px;
+  border-radius: 50%; background: #a5b4fc;
+}
+.terms-box p {
+  color: #aaa; font-size: 13px; line-height: 1.7;
+}
+
+/* Checkbox custom */
+.checkbox-row {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 16px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  margin-bottom: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.checkbox-row:hover {
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(99,102,241,0.4);
+}
+.checkbox-row.checked {
+  background: rgba(99,102,241,0.08);
+  border-color: rgba(99,102,241,0.5);
+}
+
+.checkbox {
+  width: 22px; height: 22px;
+  border-radius: 7px;
+  border: 2px solid rgba(255,255,255,0.2);
+  background: rgba(0,0,0,0.3);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.checkbox-row.checked .checkbox {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  border-color: transparent;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+}
+.checkbox svg {
+  opacity: 0; transform: scale(0.5);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.checkbox-row.checked .checkbox svg { opacity: 1; transform: scale(1); }
+
+.checkbox-text { flex: 1; }
+.checkbox-text strong {
+  display: block; font-size: 14px; font-weight: 600;
+  color: #fff; margin-bottom: 4px;
+}
+.checkbox-text small {
+  display: block; color: #888; font-size: 12px; line-height: 1.5;
+}
+
+/* Botões */
+.actions { display: flex; gap: 12px; }
+.btn {
+  flex: 1; padding: 14px 24px;
+  border: none; border-radius: 11px;
+  font-family: inherit; font-size: 14px; font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: -0.01em;
+}
+.btn-secondary {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #aaa;
+}
+.btn-secondary:hover {
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+}
+.btn-primary {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+  position: relative;
+  opacity: 0.5;
+  pointer-events: none;
+  transition: all 0.3s ease;
+}
+.btn-primary.active {
+  opacity: 1;
+  pointer-events: all;
+}
+.btn-primary.active:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 32px rgba(99, 102, 241, 0.4);
+}
+
+.back {
+  position: fixed; top: 24px; left: 24px; z-index: 100;
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  color: #aaa; font-size: 13px; text-decoration: none;
+  backdrop-filter: blur(10px);
+  transition: all 0.2s ease;
+}
+.back:hover { background: rgba(255,255,255,0.1); color: #fff; }
+</style>
+</head>
+<body>
+<a href="INDEX.html" class="back">← Voltar aos mockups</a>
+<div class="bg-glow"></div>
+
+<div class="window">
+  <div class="titlebar">
+    <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+    <span class="titlebar-title">Termos de Uso</span>
+  </div>
+
+  <div class="content">
+    <div class="header">
+      <div class="icon-box">📜</div>
+      <div>
+        <div class="title">Antes de começar</div>
+        <div class="subtitle">Leia rapidinho. É curto, prometo.</div>
+      </div>
+    </div>
+
+    <div class="terms-box">
+      <h3>Para que serve esse programa</h3>
+      <p>O Radio Programador é uma ferramenta de auditoria e controle de redes Wi-Fi para uso pessoal ou profissional autorizado. Permite escanear dispositivos, medir velocidade e bloquear conexões na sua própria rede.</p>
+
+      <h3>Uso responsável</h3>
+      <p>Use apenas em redes que você possui ou tem autorização formal para auditar. Usar essa ferramenta em redes de terceiros sem permissão é crime previsto no Art. 154-A do Código Penal Brasileiro.</p>
+
+      <h3>Privacidade</h3>
+      <p>O programa não coleta dados, não envia informações para servidores externos e não rastreia você. Tudo roda local na sua máquina. Os logs ficam apenas no seu computador.</p>
+
+      <h3>Sem garantias</h3>
+      <p>O software é fornecido "como está", sem garantias. O desenvolvedor não se responsabiliza por uso indevido ou consequências de bloqueios em dispositivos críticos (servidores, equipamentos médicos, etc).</p>
+
+      <h3>Funções avançadas</h3>
+      <p>Recursos como ARP Spoofing e Deauth requerem permissão de Administrador e drivers Npcap. Eles modificam temporariamente a tabela ARP da rede, mas restauram automaticamente ao desbloquear.</p>
+    </div>
+
+    <div class="checkbox-row" onclick="toggle(this)">
+      <div class="checkbox">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M2 7l3.5 3.5L12 3.5" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="checkbox-text">
+        <strong>Eu li e concordo com os termos acima</strong>
+        <small>Confirmo que vou usar a ferramenta apenas em redes autorizadas e assumo responsabilidade pelo uso.</small>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-secondary">Não concordo</button>
+      <button class="btn btn-primary" id="continueBtn">Continuar →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggle(el) {
+  el.classList.toggle('checked');
+  const btn = document.getElementById('continueBtn');
+  if (el.classList.contains('checked')) {
+    btn.classList.add('active');
+  } else {
+    btn.classList.remove('active');
+  }
+}
+</script>
+</body>
+</html>
