@@ -12,6 +12,8 @@ import TextStyle from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
 import Toolbar from './Toolbar';
 import TagBar from './TagBar';
+import PredictiveBar from './PredictiveBar';
+import engine from '../engine/PredictiveEngine';
 import {
   Star, Trash2, BookOpen, Clock, Sparkles
 } from 'lucide-react';
@@ -49,6 +51,13 @@ export default function Editor({ store }) {
       setTitle(selectedNote.title || '');
       if (editor.getHTML() !== selectedNote.content) {
         editor.commands.setContent(selectedNote.content || '');
+      }
+      // Ensinar o motor preditivo com o conteúdo da nota
+      if (selectedNote.content) {
+        engine.learn(selectedNote.content);
+      }
+      if (selectedNote.title) {
+        engine.learn(selectedNote.title);
       }
     }
   }, [selectedNote?.id]);
@@ -156,6 +165,9 @@ export default function Editor({ store }) {
 
       {/* Toolbar de formatação */}
       <Toolbar editor={editor} onAiRequest={handleAiRequest} />
+
+      {/* Barra de texto preditivo */}
+      <PredictiveBar editor={editor} />
 
       {/* Editor de conteúdo */}
       <div className="flex-1 overflow-y-auto">
