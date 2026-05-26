@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import {
   FileText, Star, Trash2, BookOpen, Tag, Plus,
-  ChevronDown, ChevronRight, Search, Sparkles, X
+  ChevronDown, ChevronRight, Search, Sparkles, X,
+  ChevronLeft, Menu, LayoutDashboard, SpellCheck
 } from 'lucide-react';
 
-export default function Sidebar({ store }) {
+export default function Sidebar({ store, isCollapsed, onToggle }) {
   const [notebooksOpen, setNotebooksOpen] = useState(true);
   const [tagsOpen, setTagsOpen] = useState(true);
   const [showNewNotebook, setShowNewNotebook] = useState(false);
@@ -32,12 +33,72 @@ export default function Sidebar({ store }) {
   const favCount = store.notes.filter(n => n.isFavorite && !n.isTrash).length;
   const trashCount = store.notes.filter(n => n.isTrash).length;
 
+  // Versão recolhida (apenas ícones)
+  if (isCollapsed) {
+    return (
+      <aside className="w-14 bg-anotata-sidebar border-r border-anotata-border flex flex-col h-full transition-all duration-300 ease-in-out">
+        <div className="p-3 border-b border-anotata-border flex justify-center">
+          <button
+            onClick={onToggle}
+            className="p-1.5 rounded-lg hover:bg-anotata-hover text-anotata-roxo transition-colors"
+            title="Expandir menu"
+          >
+            <Menu size={18} />
+          </button>
+        </div>
+
+        <nav className="flex-1 py-3 flex flex-col items-center gap-1">
+          <SidebarIconBtn
+            icon={<LayoutDashboard size={18} />}
+            active={store.currentView === 'dashboard'}
+            onClick={() => { store.setCurrentView('dashboard'); store.setSelectedNoteId(null); }}
+            title="Dashboard"
+          />
+          <SidebarIconBtn
+            icon={<FileText size={18} />}
+            active={store.currentView === 'all'}
+            onClick={() => { store.setCurrentView('all'); store.setSelectedNoteId(null); }}
+            title={`Todas as notas (${totalNotes})`}
+          />
+          <SidebarIconBtn
+            icon={<Star size={18} />}
+            active={store.currentView === 'favorites'}
+            onClick={() => { store.setCurrentView('favorites'); store.setSelectedNoteId(null); }}
+            title={`Favoritos (${favCount})`}
+          />
+          <SidebarIconBtn
+            icon={<SpellCheck size={18} />}
+            active={store.currentView === 'corretor'}
+            onClick={() => { store.setCurrentView('corretor'); store.setSelectedNoteId(null); }}
+            title="Corretor Ortográfico"
+          />
+          <SidebarIconBtn
+            icon={<Trash2 size={18} />}
+            active={store.currentView === 'trash'}
+            onClick={() => { store.setCurrentView('trash'); store.setSelectedNoteId(null); }}
+            title={`Lixeira (${trashCount})`}
+          />
+        </nav>
+      </aside>
+    );
+  }
+
+  // Versão expandida
   return (
-    <aside className="w-64 min-w-[240px] bg-anotata-sidebar border-r border-anotata-border flex flex-col h-full">
-      {/* Logo */}
-      <div className="p-4 border-b border-anotata-border">
-        <h1 className="text-xl font-bold text-anotata-accent tracking-wide">ANOTATA</h1>
-        <p className="text-xs text-anotata-muted mt-1">Suas anotações, seu jeito</p>
+    <aside className="w-64 min-w-[240px] bg-anotata-sidebar border-r border-anotata-border flex flex-col h-full transition-all duration-300 ease-in-out">
+      {/* Header com botão de recolher */}
+      <div className="p-4 border-b border-anotata-border flex items-start justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-anotata-roxo tracking-wide">ANOTATA</h1>
+          <p className="text-xs text-anotata-muted mt-0.5">Suas anotações, seu jeito</p>
+        </div>
+        <button
+          onClick={onToggle}
+          className="p-1.5 rounded-lg hover:bg-anotata-hover text-anotata-text-suave transition-colors -mr-1"
+          title="Recolher menu"
+        >
+          <ChevronLeft size={16} />
+        </button>
       </div>
 
       {/* Busca */}
@@ -49,12 +110,12 @@ export default function Sidebar({ store }) {
             placeholder="Buscar notas..."
             value={store.searchQuery}
             onChange={(e) => store.setSearchQuery(e.target.value)}
-            className="w-full bg-anotata-bg border border-anotata-border rounded-lg pl-9 pr-3 py-2 text-sm text-anotata-text placeholder:text-anotata-muted focus:outline-none focus:border-anotata-accent"
+            className="w-full bg-white border border-anotata-border rounded-lg pl-9 pr-3 py-2 text-sm text-anotata-text placeholder:text-anotata-muted focus:outline-none focus:border-anotata-roxo focus:ring-2 focus:ring-anotata-roxo/10"
           />
           {store.searchQuery && (
             <button
               onClick={() => store.setSearchQuery('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-anotata-muted hover:text-anotata-accent"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-anotata-muted hover:text-anotata-goiaba"
             >
               <X size={14} />
             </button>
@@ -64,50 +125,58 @@ export default function Sidebar({ store }) {
 
       {/* Menu principal */}
       <nav className="flex-1 overflow-y-auto px-2">
+        {/* Dashboard */}
+        <NavBtn
+          icon={<LayoutDashboard size={16} />}
+          label="Dashboard"
+          active={store.currentView === 'dashboard'}
+          onClick={() => { store.setCurrentView('dashboard'); store.setSelectedNoteId(null); }}
+        />
+
         {/* Todas as notas */}
-        <button
+        <NavBtn
+          icon={<FileText size={16} />}
+          label="Todas as Notas"
+          count={totalNotes}
+          active={store.currentView === 'all'}
           onClick={() => { store.setCurrentView('all'); store.setSelectedNoteId(null); }}
-          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-            store.currentView === 'all' ? 'bg-anotata-hover text-anotata-accent' : 'text-anotata-text hover:bg-anotata-hover'
-          }`}
-        >
-          <FileText size={16} />
-          <span>Todas as Notas</span>
-          <span className="ml-auto text-xs text-anotata-muted">{totalNotes}</span>
-        </button>
+        />
 
         {/* Favoritos */}
-        <button
+        <NavBtn
+          icon={<Star size={16} />}
+          label="Favoritos"
+          count={favCount}
+          active={store.currentView === 'favorites'}
           onClick={() => { store.setCurrentView('favorites'); store.setSelectedNoteId(null); }}
-          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-            store.currentView === 'favorites' ? 'bg-anotata-hover text-anotata-accent' : 'text-anotata-text hover:bg-anotata-hover'
-          }`}
-        >
-          <Star size={16} />
-          <span>Favoritos</span>
-          <span className="ml-auto text-xs text-anotata-muted">{favCount}</span>
-        </button>
+        />
+
+        {/* Corretor Ortográfico */}
+        <NavBtn
+          icon={<SpellCheck size={16} />}
+          label="Corretor"
+          active={store.currentView === 'corretor'}
+          onClick={() => { store.setCurrentView('corretor'); store.setSelectedNoteId(null); }}
+          highlight
+        />
 
         {/* Lixeira */}
-        <button
+        <NavBtn
+          icon={<Trash2 size={16} />}
+          label="Lixeira"
+          count={trashCount}
+          active={store.currentView === 'trash'}
           onClick={() => { store.setCurrentView('trash'); store.setSelectedNoteId(null); }}
-          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-            store.currentView === 'trash' ? 'bg-anotata-hover text-anotata-accent' : 'text-anotata-text hover:bg-anotata-hover'
-          }`}
-        >
-          <Trash2 size={16} />
-          <span>Lixeira</span>
-          <span className="ml-auto text-xs text-anotata-muted">{trashCount}</span>
-        </button>
+        />
 
         {/* IA (porta aberta) */}
         <button
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-anotata-muted hover:bg-anotata-hover transition-colors opacity-60 cursor-not-allowed"
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-anotata-muted opacity-60 cursor-not-allowed"
           title="IA será conectada futuramente"
         >
           <Sparkles size={16} />
           <span>Assistente IA</span>
-          <span className="ml-auto text-[10px] bg-anotata-accent2 px-1.5 py-0.5 rounded text-white">Em breve</span>
+          <span className="ml-auto text-[9px] bg-anotata-roxo px-1.5 py-0.5 rounded text-white">Em breve</span>
         </button>
 
         {/* Separador */}
@@ -117,17 +186,18 @@ export default function Sidebar({ store }) {
         <div className="mb-2">
           <button
             onClick={() => setNotebooksOpen(!notebooksOpen)}
-            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-semibold uppercase text-anotata-muted hover:text-anotata-text"
+            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-semibold uppercase text-anotata-text-suave hover:text-anotata-roxo transition-colors"
           >
             {notebooksOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
             <BookOpen size={12} />
             <span>Cadernos</span>
-            <button
+            <span
+              role="button"
               onClick={(e) => { e.stopPropagation(); setShowNewNotebook(true); }}
-              className="ml-auto hover:text-anotata-accent"
+              className="ml-auto hover:text-anotata-goiaba cursor-pointer"
             >
               <Plus size={12} />
-            </button>
+            </span>
           </button>
 
           {notebooksOpen && (
@@ -142,7 +212,7 @@ export default function Sidebar({ store }) {
                   }}
                   className={`w-full flex items-center gap-2 px-3 py-1.5 rounded text-sm transition-colors ${
                     store.currentView === 'notebook' && store.currentNotebookId === nb.id
-                      ? 'bg-anotata-hover text-anotata-accent'
+                      ? 'bg-anotata-hover text-anotata-roxo font-medium'
                       : 'text-anotata-text hover:bg-anotata-hover'
                   }`}
                 >
@@ -160,9 +230,9 @@ export default function Sidebar({ store }) {
                     value={newNotebookName}
                     onChange={(e) => setNewNotebookName(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') handleCreateNotebook(); if (e.key === 'Escape') setShowNewNotebook(false); }}
-                    className="flex-1 bg-anotata-bg border border-anotata-border rounded px-2 py-1 text-xs text-anotata-text focus:outline-none focus:border-anotata-accent"
+                    className="flex-1 bg-white border border-anotata-border rounded px-2 py-1 text-xs text-anotata-text focus:outline-none focus:border-anotata-roxo"
                   />
-                  <button onClick={handleCreateNotebook} className="text-anotata-green hover:opacity-80">
+                  <button onClick={handleCreateNotebook} className="text-anotata-roxo hover:opacity-80">
                     <Plus size={14} />
                   </button>
                 </div>
@@ -175,17 +245,18 @@ export default function Sidebar({ store }) {
         <div className="mb-2">
           <button
             onClick={() => setTagsOpen(!tagsOpen)}
-            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-semibold uppercase text-anotata-muted hover:text-anotata-text"
+            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-semibold uppercase text-anotata-text-suave hover:text-anotata-roxo transition-colors"
           >
             {tagsOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
             <Tag size={12} />
             <span>Tags</span>
-            <button
+            <span
+              role="button"
               onClick={(e) => { e.stopPropagation(); setShowNewTag(true); }}
-              className="ml-auto hover:text-anotata-accent"
+              className="ml-auto hover:text-anotata-goiaba cursor-pointer"
             >
               <Plus size={12} />
-            </button>
+            </span>
           </button>
 
           {tagsOpen && (
@@ -200,11 +271,11 @@ export default function Sidebar({ store }) {
                   }}
                   className={`w-full flex items-center gap-2 px-3 py-1.5 rounded text-sm transition-colors ${
                     store.currentView === 'tag' && store.currentTagFilter === tag
-                      ? 'bg-anotata-hover text-anotata-accent'
+                      ? 'bg-anotata-hover text-anotata-roxo font-medium'
                       : 'text-anotata-text hover:bg-anotata-hover'
                   }`}
                 >
-                  <span className="text-anotata-accent">#</span>
+                  <span className="text-anotata-goiaba">#</span>
                   <span className="truncate">{tag}</span>
                 </button>
               ))}
@@ -217,9 +288,9 @@ export default function Sidebar({ store }) {
                     value={newTagName}
                     onChange={(e) => setNewTagName(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') handleCreateTag(); if (e.key === 'Escape') setShowNewTag(false); }}
-                    className="flex-1 bg-anotata-bg border border-anotata-border rounded px-2 py-1 text-xs text-anotata-text focus:outline-none focus:border-anotata-accent"
+                    className="flex-1 bg-white border border-anotata-border rounded px-2 py-1 text-xs text-anotata-text focus:outline-none focus:border-anotata-roxo"
                   />
-                  <button onClick={handleCreateTag} className="text-anotata-green hover:opacity-80">
+                  <button onClick={handleCreateTag} className="text-anotata-roxo hover:opacity-80">
                     <Plus size={14} />
                   </button>
                 </div>
@@ -231,8 +302,47 @@ export default function Sidebar({ store }) {
 
       {/* Footer */}
       <div className="p-3 border-t border-anotata-border">
-        <p className="text-[10px] text-anotata-muted text-center">ANOTATA v1.0 • Uso pessoal</p>
+        <p className="text-[10px] text-anotata-muted text-center">ANOTATA v2.0 • Uso pessoal</p>
       </div>
     </aside>
+  );
+}
+
+function NavBtn({ icon, label, count, active, onClick, highlight }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+        active
+          ? 'bg-anotata-roxo text-white shadow-sm'
+          : highlight
+            ? 'text-anotata-roxo hover:bg-anotata-hover font-medium'
+            : 'text-anotata-text hover:bg-anotata-hover'
+      }`}
+    >
+      {icon}
+      <span>{label}</span>
+      {count !== undefined && (
+        <span className={`ml-auto text-xs ${active ? 'text-white/80' : 'text-anotata-muted'}`}>
+          {count}
+        </span>
+      )}
+    </button>
+  );
+}
+
+function SidebarIconBtn({ icon, active, onClick, title }) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      className={`p-2.5 rounded-lg transition-colors ${
+        active
+          ? 'bg-anotata-roxo text-white'
+          : 'text-anotata-text-suave hover:bg-anotata-hover hover:text-anotata-roxo'
+      }`}
+    >
+      {icon}
+    </button>
   );
 }

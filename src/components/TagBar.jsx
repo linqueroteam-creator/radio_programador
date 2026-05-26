@@ -18,12 +18,12 @@ export default function TagBar({ store, noteId, noteTags }) {
       {noteTags.map(tag => (
         <span
           key={tag}
-          className="inline-flex items-center gap-1 text-xs bg-anotata-card px-2 py-0.5 rounded-full text-anotata-accent border border-anotata-border"
+          className="inline-flex items-center gap-1 text-xs bg-anotata-lavanda-clara px-2 py-0.5 rounded-full text-anotata-roxo border border-anotata-lavanda font-medium"
         >
           #{tag}
           <button
             onClick={() => store.removeTagFromNote(noteId, tag)}
-            className="hover:text-red-400 transition-colors"
+            className="hover:text-anotata-goiaba transition-colors"
           >
             <X size={10} />
           </button>
@@ -38,7 +38,7 @@ export default function TagBar({ store, noteId, noteTags }) {
             onChange={(e) => setNewTag(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') handleAdd(); if (e.key === 'Escape') setShowInput(false); }}
             placeholder="tag..."
-            className="text-xs bg-anotata-bg border border-anotata-border rounded px-2 py-0.5 text-anotata-text w-20 focus:outline-none focus:border-anotata-accent"
+            className="text-xs bg-white border border-anotata-border rounded px-2 py-0.5 text-anotata-text w-20 focus:outline-none focus:border-anotata-roxo"
             list="tag-suggestions"
           />
           <datalist id="tag-suggestions">
@@ -50,7 +50,7 @@ export default function TagBar({ store, noteId, noteTags }) {
       ) : (
         <button
           onClick={() => setShowInput(true)}
-          className="inline-flex items-center gap-0.5 text-xs text-anotata-muted hover:text-anotata-accent transition-colors"
+          className="inline-flex items-center gap-0.5 text-xs text-anotata-muted hover:text-anotata-roxo transition-colors"
         >
           <Plus size={10} />
           tag
