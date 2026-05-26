@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import {
   FileText, Star, Trash2, BookOpen, Tag, Plus,
   ChevronDown, ChevronRight, Search, Sparkles, X,
-  ChevronLeft, Menu, LayoutDashboard, SpellCheck
+  ChevronLeft, Menu, LayoutDashboard, SpellCheck,
+  Home as HomeIcon, TrendingUp
 } from 'lucide-react';
 
 export default function Sidebar({ store, isCollapsed, onToggle }) {
@@ -49,10 +50,10 @@ export default function Sidebar({ store, isCollapsed, onToggle }) {
 
         <nav className="flex-1 py-3 flex flex-col items-center gap-1">
           <SidebarIconBtn
-            icon={<LayoutDashboard size={18} />}
-            active={store.currentView === 'dashboard'}
-            onClick={() => { store.setCurrentView('dashboard'); store.setSelectedNoteId(null); }}
-            title="Dashboard"
+            icon={<HomeIcon size={18} />}
+            active={store.currentView === 'home'}
+            onClick={() => { store.setCurrentView('home'); store.setSelectedNoteId(null); }}
+            title="Início"
           />
           <SidebarIconBtn
             icon={<FileText size={18} />}
@@ -71,6 +72,12 @@ export default function Sidebar({ store, isCollapsed, onToggle }) {
             active={store.currentView === 'corretor'}
             onClick={() => { store.setCurrentView('corretor'); store.setSelectedNoteId(null); }}
             title="Corretor Ortográfico"
+          />
+          <SidebarIconBtn
+            icon={<TrendingUp size={18} />}
+            active={store.currentView === 'insights'}
+            onClick={() => { store.setCurrentView('insights'); store.setSelectedNoteId(null); }}
+            title="Insights / Estatísticas"
           />
           <SidebarIconBtn
             icon={<Trash2 size={18} />}
@@ -125,12 +132,12 @@ export default function Sidebar({ store, isCollapsed, onToggle }) {
 
       {/* Menu principal */}
       <nav className="flex-1 overflow-y-auto px-2">
-        {/* Dashboard */}
+        {/* Início (Home) */}
         <NavBtn
-          icon={<LayoutDashboard size={16} />}
-          label="Dashboard"
-          active={store.currentView === 'dashboard'}
-          onClick={() => { store.setCurrentView('dashboard'); store.setSelectedNoteId(null); }}
+          icon={<HomeIcon size={16} />}
+          label="Início"
+          active={store.currentView === 'home'}
+          onClick={() => { store.setCurrentView('home'); store.setSelectedNoteId(null); }}
         />
 
         {/* Todas as notas */}

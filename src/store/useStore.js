@@ -34,7 +34,7 @@ function loadFromStorage() {
 
 export function useStore() {
   const [data, setData] = useState(defaultData);
-  const [currentView, setCurrentView] = useState('all');
+  const [currentView, setCurrentView] = useState('home');
   const [currentNotebookId, setCurrentNotebookId] = useState(null);
   const [currentTagFilter, setCurrentTagFilter] = useState(null);
   const [selectedNoteId, setSelectedNoteId] = useState(null);

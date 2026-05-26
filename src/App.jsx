@@ -5,6 +5,7 @@ import NoteList from './components/NoteList';
 import Editor from './components/Editor';
 import Dashboard from './components/Dashboard';
 import Corretor from './components/Corretor';
+import Home from './components/Home';
 
 export default function App() {
   const store = useStore();
@@ -23,7 +24,15 @@ export default function App() {
 
   // Renderiza a área principal baseado na view
   const renderMainArea = () => {
-    if (store.currentView === 'dashboard') {
+    if (store.currentView === 'home') {
+      return (
+        <Home
+          store={store}
+          onOpenInsights={() => { store.setCurrentView('insights'); store.setSelectedNoteId(null); }}
+        />
+      );
+    }
+    if (store.currentView === 'insights' || store.currentView === 'dashboard') {
       return <Dashboard store={store} />;
     }
     if (store.currentView === 'corretor') {
