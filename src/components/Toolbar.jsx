@@ -29,8 +29,8 @@ export default function Toolbar({ editor }) {
   if (!editor) return null;
 
   const colors = [
-    '#ffffff', '#e94560', '#00d4aa', '#ffd93d', '#6c63ff',
-    '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ff9ff3'
+    '#f5f0ff', '#e8637c', '#c9b8e8', '#ffd93d', '#9b59b6',
+    '#ff6b9d', '#b088f9', '#7c4dff', '#e0aaff', '#ff9ff3'
   ];
 
   const addLink = () => {

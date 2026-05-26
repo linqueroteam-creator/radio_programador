@@ -5,13 +5,13 @@ const STORAGE_KEY = 'anotata-data';
 
 const defaultData = {
   notebooks: [
-    { id: 'default', name: 'Meu Caderno', color: '#e94560', createdAt: new Date().toISOString() }
+    { id: 'default', name: 'Meu Caderno', color: '#e8637c', createdAt: new Date().toISOString() }
   ],
   notes: [
     {
       id: uuidv4(),
       title: 'Bem-vindo ao ANOTATA!',
-      content: '<h2>Bem-vindo ao ANOTATA! 🎉</h2><p>Seu app de anotações pessoal.</p><p>Aqui você pode:</p><ul><li>Criar notas com texto formatado</li><li>Organizar em cadernos</li><li>Usar tags para categorizar</li><li>Criar checklists</li><li>Adicionar imagens</li><li>Marcar favoritos</li><li>E muito mais!</li></ul><p><br></p><p>Comece criando sua primeira nota! ✨</p>',
+      content: '<h2>Bem-vindo ao ANOTATA! 🎉</h2><p>Seu app de anotações pessoal na web.</p><p>Aqui você pode:</p><ul><li>Criar notas com texto formatado</li><li>Organizar em cadernos</li><li>Usar tags para categorizar</li><li>Criar checklists</li><li>Adicionar imagens</li><li>Marcar favoritos</li><li>E muito mais!</li></ul><p><br></p><p>Comece criando sua primeira nota! ✨</p>',
       notebookId: 'default',
       tags: ['boas-vindas'],
       isFavorite: true,
@@ -23,45 +23,31 @@ const defaultData = {
   tags: ['boas-vindas', 'importante', 'ideia', 'tarefa', 'projeto'],
 };
 
-// Tenta usar Electron IPC, senão usa localStorage
-const isElectron = typeof window !== 'undefined' && window.process && window.process.type;
-
-async function saveToStorage(data) {
-  if (isElectron) {
-    const { ipcRenderer } = window.require('electron');
-    await ipcRenderer.invoke('save-data', data);
-  } else {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  }
+function saveToStorage(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
-async function loadFromStorage() {
-  if (isElectron) {
-    const { ipcRenderer } = window.require('electron');
-    return await ipcRenderer.invoke('load-data');
-  } else {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? JSON.parse(saved) : null;
-  }
+function loadFromStorage() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  return saved ? JSON.parse(saved) : null;
 }
 
 export function useStore() {
   const [data, setData] = useState(defaultData);
-  const [currentView, setCurrentView] = useState('all'); // 'all', 'notebook', 'favorites', 'trash', 'tag'
+  const [currentView, setCurrentView] = useState('all');
   const [currentNotebookId, setCurrentNotebookId] = useState(null);
   const [currentTagFilter, setCurrentTagFilter] = useState(null);
   const [selectedNoteId, setSelectedNoteId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Carregar dados
+  // Carregar dados do navegador
   useEffect(() => {
-    loadFromStorage().then((saved) => {
-      if (saved) {
-        setData(saved);
-      }
-      setIsLoaded(true);
-    });
+    const saved = loadFromStorage();
+    if (saved) {
+      setData(saved);
+    }
+    setIsLoaded(true);
   }, []);
 
   // Salvar automaticamente quando dados mudam
@@ -154,7 +140,7 @@ export function useStore() {
   }, [data.notes]);
 
   // === CADERNOS ===
-  const createNotebook = useCallback((name, color = '#e94560') => {
+  const createNotebook = useCallback((name, color = '#e8637c') => {
     const newNotebook = {
       id: uuidv4(),
       name,
@@ -178,7 +164,6 @@ export function useStore() {
   }, []);
 
   const deleteNotebook = useCallback((notebookId) => {
-    // Move notas do caderno para o default
     setData(prev => ({
       ...prev,
       notebooks: prev.notebooks.filter(nb => nb.id !== notebookId),
@@ -238,7 +223,6 @@ export function useStore() {
   const getFilteredNotes = useCallback(() => {
     let filtered = data.notes;
 
-    // Filtro por view
     switch (currentView) {
       case 'all':
         filtered = filtered.filter(n => !n.isTrash);
@@ -259,7 +243,6 @@ export function useStore() {
         filtered = filtered.filter(n => !n.isTrash);
     }
 
-    // Filtro por busca
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       filtered = filtered.filter(n =>
@@ -269,9 +252,7 @@ export function useStore() {
       );
     }
 
-    // Ordenar por data de atualização (mais recente primeiro)
     filtered.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-
     return filtered;
   }, [data.notes, currentView, currentNotebookId, currentTagFilter, searchQuery]);
 
@@ -286,7 +267,6 @@ export function useStore() {
   }, [data.notes]);
 
   return {
-    // Dados
     notebooks: data.notebooks,
     notes: data.notes,
     tags: data.tags,
@@ -294,21 +274,18 @@ export function useStore() {
     filteredNotes: getFilteredNotes(),
     isLoaded,
 
-    // Estado da UI
     currentView,
     currentNotebookId,
     currentTagFilter,
     selectedNoteId,
     searchQuery,
 
-    // Setters de UI
     setCurrentView,
     setCurrentNotebookId,
     setCurrentTagFilter,
     setSelectedNoteId,
     setSearchQuery,
 
-    // Ações de notas
     createNote,
     updateNote,
     moveToTrash,
@@ -318,14 +295,12 @@ export function useStore() {
     toggleFavorite,
     duplicateNote,
 
-    // Ações de cadernos
     createNotebook,
     renameNotebook,
     deleteNotebook,
     getNotebookById,
     getNoteCount,
 
-    // Ações de tags
     addTag,
     removeTag,
     addTagToNote,

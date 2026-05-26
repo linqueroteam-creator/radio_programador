@@ -8,16 +8,19 @@ export default {
     extend: {
       colors: {
         'anotata': {
-          'bg': '#1a1a2e',
-          'sidebar': '#16213e',
-          'card': '#0f3460',
-          'accent': '#e94560',
-          'accent2': '#533483',
-          'text': '#eaeaea',
-          'muted': '#8892b0',
-          'border': '#233554',
-          'hover': '#1e3a5f',
-          'green': '#00d4aa',
+          'bg': '#1c1028',
+          'sidebar': '#2d1b4e',
+          'card': '#3b2066',
+          'accent': '#e8637c',
+          'accent2': '#9b59b6',
+          'text': '#f5f0ff',
+          'muted': '#b8a9d4',
+          'border': '#4a2d73',
+          'hover': '#3d2460',
+          'green': '#e8637c',
+          'lavanda': '#c9b8e8',
+          'roxo': '#5b2d8e',
+          'goiaba': '#e8637c',
         }
       }
     },

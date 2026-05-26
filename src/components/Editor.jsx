@@ -69,22 +69,9 @@ export default function Editor({ store }) {
     }
   };
 
-  // Solicitar IA (porta aberta)
+  // Solicitar IA (porta aberta para futuro)
   const handleAiRequest = async (action) => {
-    const content = editor?.getHTML() || '';
-    // Tenta usar Electron IPC se disponível
-    const isElectron = typeof window !== 'undefined' && window.process && window.process.type;
-    if (isElectron) {
-      const { ipcRenderer } = window.require('electron');
-      const result = await ipcRenderer.invoke('ai-request', { action, content });
-      if (result.success && result.result) {
-        editor.commands.setContent(result.result);
-      } else {
-        alert(result.message || 'IA não configurada ainda.');
-      }
-    } else {
-      alert('🤖 Porta de IA aberta!\n\nConecte sua IA no arquivo electron/main.js\nAções disponíveis: resumir, expandir, traduzir, sugerir');
-    }
+    alert('🤖 Porta de IA aberta!\n\nQuando sua IA estiver pronta, ela será conectada aqui.\nAções disponíveis: resumir, expandir, traduzir, sugerir');
   };
 
   if (!selectedNote) {
