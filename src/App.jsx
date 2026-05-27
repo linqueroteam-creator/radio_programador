@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useStore } from './store/useStore';
 import Sidebar from './components/Sidebar';
 import NoteList from './components/NoteList';
@@ -11,7 +11,8 @@ import AuthGate from './components/AuthGate';
 import TemplatePicker from './components/TemplatePicker';
 import CommandPalette from './components/CommandPalette';
 import useKeyboardShortcuts from './hooks/useKeyboardShortcuts';
-import { LogOut, Command, AlertTriangle } from 'lucide-react';
+import useIsMobile from './hooks/useIsMobile';
+import { LogOut, Command, AlertTriangle, Menu } from 'lucide-react';
 
 // === Error Boundary ===
 // Em vez de tela branca silenciosa, mostra o erro real na tela.
@@ -58,11 +59,17 @@ class ErrorBoundary extends React.Component {
 
 function MainApp({ logout }) {
   const store = useStore();
+
+  // === Layout responsivo ===
+  // Em telas < 768px (md do Tailwind), Sidebar e NoteList viram gavetas
+  // sobrepostas. Em desktop o comportamento original (recolher) continua.
+  const isMobile = useIsMobile();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  // === Recolher a coluna "Todas as Notas" (NoteList) ===
-  // Mesmo padrão da Sidebar: estado em App.jsx, com transição de 300ms.
-  // Persiste entre trocas de view enquanto a sessão durar.
   const [noteListCollapsed, setNoteListCollapsed] = useState(false);
+  // Estados específicos do mobile (gavetas): começam fechadas.
+  const [sidebarOpenMobile, setSidebarOpenMobile] = useState(false);
+  const [noteListOpenMobile, setNoteListOpenMobile] = useState(false);
+
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
 
@@ -79,12 +86,52 @@ function MainApp({ logout }) {
       // Esc fecha modais nesta ordem
       if (showCommandPalette) setShowCommandPalette(false);
       else if (showTemplatePicker) setShowTemplatePicker(false);
+      else if (sidebarOpenMobile) setSidebarOpenMobile(false);
+      else if (noteListOpenMobile) setNoteListOpenMobile(false);
     },
   });
 
   // ATENÇÃO: TODOS os hooks (useCallback / useMemo / useState / useEffect) PRECISAM
   // ser chamados ANTES de qualquer early return. Caso contrário, o React quebra com
   // "Rendered more hooks than during the previous render" e a tela fica branca.
+
+  // Ao redimensionar de mobile pra desktop, garante que as gavetas fechem
+  // (caso contrário fica um sidebar aberto no canto da tela em desktop).
+  useEffect(() => {
+    if (!isMobile) {
+      if (sidebarOpenMobile) setSidebarOpenMobile(false);
+      if (noteListOpenMobile) setNoteListOpenMobile(false);
+    }
+  }, [isMobile]);
+
+  // Quando uma gaveta abre em mobile, trava o scroll do body pra evitar
+  // que a página inteira role atrás do drawer.
+  useEffect(() => {
+    const anyDrawerOpen = isMobile && (sidebarOpenMobile || noteListOpenMobile);
+    if (anyDrawerOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [isMobile, sidebarOpenMobile, noteListOpenMobile]);
+
+  // Fecha as gavetas automaticamente quando o usuário troca de view em mobile.
+  // Se ele clicou num caderno na sidebar, ele quer ver o conteúdo, não o menu.
+  useEffect(() => {
+    if (isMobile) {
+      setSidebarOpenMobile(false);
+      setNoteListOpenMobile(false);
+    }
+  }, [store.currentView, store.currentNotebookId, store.currentTagFilter, store.currentCollectionId]);
+
+  // Fecha a NoteList em mobile quando uma nota é selecionada (foco no editor).
+  useEffect(() => {
+    if (isMobile && store.selectedNoteId) {
+      setNoteListOpenMobile(false);
+    }
+  }, [store.selectedNoteId]);
+
   const handleNewNote = useCallback(() => {
     setShowTemplatePicker(true);
   }, []);
@@ -128,6 +175,10 @@ function MainApp({ logout }) {
     }
   }, [store]);
 
+  // Handlers compartilhados (passados pra Editor / Home)
+  const openSidebarMobile = useCallback(() => setSidebarOpenMobile(true), []);
+  const openNoteListMobile = useCallback(() => setNoteListOpenMobile(true), []);
+
   // === A PARTIR DAQUI, NENHUM HOOK NOVO === (early return é seguro só depois de todos os hooks)
 
   if (!store.isLoaded) {
@@ -154,17 +205,18 @@ function MainApp({ logout }) {
           store={store}
           onOpenInsights={() => { store.setCurrentView('insights'); store.setSelectedNoteId(null); }}
           onCreateNote={handleNewNote}
+          onOpenMobileMenu={isMobile ? openSidebarMobile : undefined}
         />
       );
     }
     if (store.currentView === 'insights' || store.currentView === 'dashboard') {
-      return <Dashboard store={store} />;
+      return <Dashboard store={store} onOpenMobileMenu={isMobile ? openSidebarMobile : undefined} />;
     }
     if (store.currentView === 'corretor') {
-      return <Corretor store={store} />;
+      return <Corretor store={store} onOpenMobileMenu={isMobile ? openSidebarMobile : undefined} />;
     }
     if (store.currentView === 'timeline') {
-      return <Timeline store={store} />;
+      return <Timeline store={store} onOpenMobileMenu={isMobile ? openSidebarMobile : undefined} />;
     }
     return (
       <>
@@ -173,8 +225,15 @@ function MainApp({ logout }) {
           onCreateNote={handleNewNote}
           isCollapsed={noteListCollapsed}
           onToggle={() => setNoteListCollapsed(v => !v)}
+          isMobile={isMobile}
+          isOpenMobile={noteListOpenMobile}
+          onCloseMobile={() => setNoteListOpenMobile(false)}
         />
-        <Editor store={store} />
+        <Editor
+          store={store}
+          onOpenMobileMenu={isMobile ? openSidebarMobile : undefined}
+          onOpenMobileNoteList={isMobile ? openNoteListMobile : undefined}
+        />
       </>
     );
   };
@@ -185,6 +244,11 @@ function MainApp({ logout }) {
         store={store}
         isCollapsed={sidebarCollapsed}
         onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+        isMobile={isMobile}
+        isOpenMobile={sidebarOpenMobile}
+        onCloseMobile={() => setSidebarOpenMobile(false)}
+        onLogout={handleLogout}
+        onOpenCommandPalette={() => setShowCommandPalette(true)}
       />
       <div className="flex-1 flex overflow-hidden">
         {renderMainArea()}
@@ -207,25 +271,32 @@ function MainApp({ logout }) {
         onAction={handlePaletteAction}
       />
 
-      {/* Botão Ctrl+K (sempre visível) */}
-      <button
-        onClick={() => setShowCommandPalette(true)}
-        className="fixed bottom-3 left-12 z-50 px-2.5 py-1.5 bg-white border border-anotata-border rounded-lg text-anotata-text-suave hover:text-anotata-roxo hover:border-anotata-roxo transition-all shadow-sm hover:shadow-md flex items-center gap-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-anotata-roxo/50 focus-visible:ring-offset-1"
-        aria-label="Abrir central de comandos (Ctrl+K)"
-        title="Central de comandos (Ctrl+K)"
-      >
-        <Command size={12} aria-hidden="true" />
-        <kbd className="text-2xs bg-anotata-lavanda-clara px-1 rounded">K</kbd>
-      </button>
+      {/* === BOTÕES FIXOS DO RODAPÉ ===
+          Em desktop: ficam no canto inferior esquerdo (Ctrl+K, Logout).
+          Em mobile: escondidos — Ctrl+K não faz sentido sem teclado e Logout
+          mudou pra dentro da Sidebar (drawer). */}
+      {!isMobile && (
+        <>
+          <button
+            onClick={() => setShowCommandPalette(true)}
+            className="fixed bottom-3 left-12 z-30 px-2.5 py-1.5 bg-white border border-anotata-border rounded-lg text-anotata-text-suave hover:text-anotata-roxo hover:border-anotata-roxo transition-all shadow-sm hover:shadow-md flex items-center gap-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-anotata-roxo/50 focus-visible:ring-offset-1"
+            aria-label="Abrir central de comandos (Ctrl+K)"
+            title="Central de comandos (Ctrl+K)"
+          >
+            <Command size={12} aria-hidden="true" />
+            <kbd className="text-2xs bg-anotata-lavanda-clara px-1 rounded">K</kbd>
+          </button>
 
-      <button
-        onClick={handleLogout}
-        className="fixed bottom-3 left-3 z-50 p-2 bg-white border border-anotata-border rounded-lg text-anotata-muted hover:text-anotata-goiaba hover:border-anotata-goiaba transition-all shadow-sm hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-anotata-goiaba/50 focus-visible:ring-offset-1"
-        aria-label="Sair do ANOTATA"
-        title="Sair do ANOTATA"
-      >
-        <LogOut size={14} aria-hidden="true" />
-      </button>
+          <button
+            onClick={handleLogout}
+            className="fixed bottom-3 left-3 z-30 p-2 bg-white border border-anotata-border rounded-lg text-anotata-muted hover:text-anotata-goiaba hover:border-anotata-goiaba transition-all shadow-sm hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-anotata-goiaba/50 focus-visible:ring-offset-1"
+            aria-label="Sair do ANOTATA"
+            title="Sair do ANOTATA"
+          >
+            <LogOut size={14} aria-hidden="true" />
+          </button>
+        </>
+      )}
     </div>
   );
 }

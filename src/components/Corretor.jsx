@@ -13,7 +13,7 @@ const CATEGORY_LABELS = {
   punct: { label: 'Pontuação', color: '#7C4DC9', bg: '#EDE8F2' },
 };
 
-export default function Corretor({ store }) {
+export default function Corretor({ store, onOpenMobileMenu }) {
   const [text, setText] = useState('');
   const [issues, setIssues] = useState([]);
   const [stats, setStats] = useState(null);
@@ -123,14 +123,24 @@ export default function Corretor({ store }) {
   return (
     <div className="flex-1 flex flex-col h-full bg-anotata-bg overflow-hidden">
       {/* Header */}
-      <div className="border-b border-anotata-border bg-white px-6 py-4">
+      <div className="border-b border-anotata-border bg-white px-4 sm:px-6 py-4">
         <div className="flex items-center gap-3 mb-1">
+          {onOpenMobileMenu && (
+            <button
+              onClick={onOpenMobileMenu}
+              className="md:hidden p-2 rounded-lg text-anotata-text-suave hover:text-anotata-roxo hover:bg-anotata-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-anotata-roxo/50"
+              aria-label="Abrir menu"
+              title="Abrir menu"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+          )}
           <div className="p-2 bg-anotata-roxo/10 rounded-lg">
             <SpellCheck size={20} className="text-anotata-roxo" />
           </div>
           <div>
             <h1 className="text-lg font-bold text-anotata-text">Corretor Ortográfico</h1>
-            <p className="text-xs text-anotata-muted">
+            <p className="text-xs text-anotata-muted hidden sm:block">
               Correção gramatical, ortográfica e de estilo em Português do Brasil
             </p>
           </div>
@@ -138,9 +148,9 @@ export default function Corretor({ store }) {
       </div>
 
       {/* Conteúdo principal em duas colunas */}
-      <div className="flex-1 overflow-hidden flex">
+      <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
         {/* Coluna esquerda: editor de texto */}
-        <div className="flex-1 flex flex-col border-r border-anotata-border">
+        <div className="flex-1 flex flex-col border-r-0 md:border-r border-anotata-border min-h-0">
           {/* Toolbar */}
           <div className="bg-white border-b border-anotata-border px-4 py-2 flex items-center gap-2 flex-wrap">
             <button
@@ -221,7 +231,7 @@ export default function Corretor({ store }) {
         </div>
 
         {/* Coluna direita: lista de correções */}
-        <div className="w-[380px] flex flex-col bg-anotata-sidebar">
+        <div className="w-full md:w-[380px] flex flex-col bg-anotata-sidebar border-t md:border-t-0 md:border-l border-anotata-border max-h-[50vh] md:max-h-none">
           {/* Resumo */}
           <div className="p-4 border-b border-anotata-border">
             <div className="flex items-center justify-between mb-3">
