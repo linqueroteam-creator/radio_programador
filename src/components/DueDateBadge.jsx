@@ -15,7 +15,7 @@ export default function DueDateBadge({ dueDate, size = 'sm', onRemove }) {
   const Icon = status === 'vencido' ? AlertCircle : status === 'hoje' || status === 'amanha' ? Clock : Calendar;
 
   const sizes = {
-    sm: 'text-[10px] px-1.5 py-0.5 gap-1',
+    sm: 'text-2xs px-1.5 py-0.5 gap-1',
     md: 'text-xs px-2 py-1 gap-1.5',
   };
 
@@ -61,19 +61,19 @@ export function DueDatePicker({ value, onChange, onClear }) {
       <div className="flex flex-wrap gap-1">
         <button
           onClick={() => handleQuick(today)}
-          className="text-[10px] px-2 py-1 bg-anotata-lavanda-clara text-anotata-roxo rounded hover:bg-anotata-lavanda font-medium"
+          className="text-2xs px-2 py-1 bg-anotata-lavanda-clara text-anotata-roxo rounded hover:bg-anotata-lavanda font-medium"
         >
           Hoje
         </button>
         <button
           onClick={() => handleQuick(tomorrow)}
-          className="text-[10px] px-2 py-1 bg-anotata-lavanda-clara text-anotata-roxo rounded hover:bg-anotata-lavanda font-medium"
+          className="text-2xs px-2 py-1 bg-anotata-lavanda-clara text-anotata-roxo rounded hover:bg-anotata-lavanda font-medium"
         >
           Amanhã
         </button>
         <button
           onClick={() => handleQuick(nextWeek)}
-          className="text-[10px] px-2 py-1 bg-anotata-lavanda-clara text-anotata-roxo rounded hover:bg-anotata-lavanda font-medium"
+          className="text-2xs px-2 py-1 bg-anotata-lavanda-clara text-anotata-roxo rounded hover:bg-anotata-lavanda font-medium"
         >
           + 1 semana
         </button>
@@ -93,7 +93,7 @@ export function DueDatePicker({ value, onChange, onClear }) {
         {value && onClear && (
           <button
             onClick={onClear}
-            className="text-[10px] text-anotata-goiaba hover:underline"
+            className="text-2xs text-anotata-goiaba hover:underline"
           >
             Remover
           </button>

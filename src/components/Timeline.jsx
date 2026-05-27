@@ -28,13 +28,13 @@ import {
 // === Tipos de evento ===
 const EVENT_TYPES = {
   created:    { icon: FileText,     color: '#5B2D8E', bg: '#EDE8F2', label: 'Criada' },
-  edited:     { icon: Pencil,       color: '#6B5E80', bg: '#F2F1F4', label: 'Editada' },
+  edited:     { icon: Pencil,       color: '#5B4A7A', bg: '#F2F1F4', label: 'Editada' },
   reviewed:   { icon: CheckCircle2, color: '#0F7A3F', bg: '#D4F4DD', label: 'Revisada' },
   completed:  { icon: Target,       color: '#0F7A3F', bg: '#D4F4DD', label: 'Concluída' },
   due:        { icon: Calendar,     color: '#9B6F00', bg: '#FFF4D9', label: 'Prazo' },
-  dueOverdue: { icon: Calendar,     color: '#E8637C', bg: '#FFE3E8', label: 'Prazo vencido' },
+  dueOverdue: { icon: Calendar,     color: '#E8637C', bg: '#FCE7EB', label: 'Prazo vencido' },
   connected:  { icon: Link2,        color: '#5B2D8E', bg: '#EDE8F2', label: 'Conexão criada' },
-  versioned:  { icon: History,      color: '#6B5E80', bg: '#F2F1F4', label: 'Versão salva' },
+  versioned:  { icon: History,      color: '#5B4A7A', bg: '#F2F1F4', label: 'Versão salva' },
 };
 
 const FILTER_GROUPS = [
@@ -215,11 +215,11 @@ export default function Timeline({ store }) {
       <div className="px-6 py-4 border-b border-anotata-border bg-white">
         <div className="flex items-center gap-3 mb-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-anotata-roxo to-anotata-roxo-escuro flex items-center justify-center text-white shadow-sm">
-            <Clock size={18} />
+            <Clock size={16} />
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-lg font-semibold text-anotata-text">Linha do tempo</h1>
-            <p className="text-[12px] text-anotata-text-suave">
+            <p className="text-xs text-anotata-text-suave">
               {totalEvents === totalRaw
                 ? `${totalEvents} ${totalEvents === 1 ? 'evento' : 'eventos'} no total`
                 : `${totalEvents} de ${totalRaw} eventos exibidos · ${totalRaw - totalEvents} ocultos por filtro`}
@@ -238,7 +238,7 @@ export default function Timeline({ store }) {
               <button
                 key={f.id}
                 onClick={() => toggleFilter(f.id)}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] border transition-all ${
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs border transition-all ${
                   active
                     ? 'border-transparent text-white'
                     : 'border-anotata-border text-anotata-text-suave hover:border-anotata-roxo'
@@ -254,7 +254,7 @@ export default function Timeline({ store }) {
           {activeFilters.size < FILTER_GROUPS.length && (
             <button
               onClick={() => setActiveFilters(new Set(FILTER_GROUPS.map(f => f.id)))}
-              className="ml-1 text-[10px] text-anotata-muted hover:text-anotata-roxo underline"
+              className="ml-1 text-2xs text-anotata-muted hover:text-anotata-roxo underline"
             >
               mostrar tudo
             </button>
@@ -292,7 +292,7 @@ export default function Timeline({ store }) {
 function BucketSection({ label, items, onOpenNote }) {
   return (
     <section className="mb-7">
-      <h2 className="sticky top-0 z-10 -mx-6 px-6 py-2 bg-anotata-bg/95 backdrop-blur-sm text-[10px] uppercase font-bold tracking-wider text-anotata-muted">
+      <h2 className="sticky top-0 z-10 -mx-6 px-6 py-2 bg-anotata-bg/95 backdrop-blur-sm text-2xs uppercase font-bold tracking-wider text-anotata-muted">
         {label} <span className="text-anotata-text-suave">· {items.length}</span>
       </h2>
       <ol className="relative ml-3 mt-2 border-l-2 border-anotata-lavanda">
@@ -317,7 +317,7 @@ function EventItem({ event, onOpenNote }) {
         className="absolute -left-[10px] top-3.5 w-[18px] h-[18px] rounded-full flex items-center justify-center ring-4 ring-anotata-bg group-hover:scale-110 transition-transform"
         style={{ backgroundColor: meta.color }}
       >
-        <Icon size={9} color="white" strokeWidth={3} />
+        <Icon size={10} color="white" strokeWidth={3} />
       </span>
 
       <button
@@ -326,12 +326,12 @@ function EventItem({ event, onOpenNote }) {
       >
         <div className="flex items-center gap-2 mb-0.5">
           <span
-            className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded"
+            className="text-2xs uppercase font-bold tracking-wider px-1.5 py-0.5 rounded"
             style={{ backgroundColor: meta.bg, color: meta.color }}
           >
             {meta.label}
           </span>
-          <span className="text-[11px] text-anotata-muted">
+          <span className="text-xs text-anotata-muted">
             {formatTime(event.date)} · {formatDate(event.date)}
           </span>
         </div>

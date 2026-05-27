@@ -69,7 +69,7 @@ export default function ConnectionModal({ currentNote, store, onClose }) {
               <h3 className="text-base font-bold text-anotata-text">
                 {step === 'search' ? 'Conectar com outra nota' : 'Motivo da conexão'}
               </h3>
-              <p className="text-[11px] text-anotata-muted">
+              <p className="text-xs text-anotata-muted">
                 {step === 'search' ? 'Escolha uma nota para conectar' : 'Opcional — explica a relação'}
               </p>
             </div>
@@ -78,7 +78,7 @@ export default function ConnectionModal({ currentNote, store, onClose }) {
             onClick={onClose}
             className="p-1 text-anotata-muted hover:text-anotata-text rounded hover:bg-anotata-hover transition-colors"
           >
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
 
@@ -144,7 +144,7 @@ export default function ConnectionModal({ currentNote, store, onClose }) {
                             {(note.tags || []).length > 0 && (
                               <div className="flex gap-1 mt-1">
                                 {note.tags.slice(0, 3).map(t => (
-                                  <span key={t} className="text-[9px] bg-anotata-lavanda text-anotata-roxo px-1.5 py-0.5 rounded">
+                                  <span key={t} className="text-2xs bg-anotata-lavanda text-anotata-roxo px-1.5 py-0.5 rounded">
                                     #{t}
                                   </span>
                                 ))}
@@ -183,7 +183,7 @@ export default function ConnectionModal({ currentNote, store, onClose }) {
             <div className="p-5 flex-1 overflow-y-auto">
               {selectedNote && (
                 <div className="mb-4 p-3 bg-anotata-lavanda-clara rounded-lg">
-                  <div className="text-[10px] uppercase font-semibold text-anotata-roxo mb-1">Conectando com:</div>
+                  <div className="text-2xs uppercase font-semibold text-anotata-roxo mb-1">Conectando com:</div>
                   <div className="text-sm font-medium text-anotata-text">
                     {selectedNote.title || 'Sem título'}
                   </div>
@@ -212,7 +212,7 @@ export default function ConnectionModal({ currentNote, store, onClose }) {
               </div>
 
               {/* Custom reason */}
-              <div className="text-[10px] uppercase font-semibold text-anotata-muted mb-1.5">
+              <div className="text-2xs uppercase font-semibold text-anotata-muted mb-1.5">
                 Ou escreva o seu
               </div>
               <textarea

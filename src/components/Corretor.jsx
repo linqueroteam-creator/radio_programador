@@ -4,6 +4,7 @@ import {
   Loader2, Copy, RotateCcw, FileText
 } from 'lucide-react';
 import grammarEngine from '../engine/GrammarEngine';
+import IconButton from './ui/IconButton';
 
 const CATEGORY_LABELS = {
   spell: { label: 'Ortografia', color: '#C44862', bg: '#FCE7EB' },
@@ -153,37 +154,33 @@ export default function Corretor({ store }) {
 
             <button
               onClick={importFromNote}
-              className="flex items-center gap-2 px-3 py-1.5 bg-anotata-lavanda text-anotata-roxo rounded-lg hover:bg-anotata-hover text-sm transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 bg-anotata-lavanda text-anotata-roxo rounded-lg hover:bg-anotata-hover text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-anotata-roxo/50"
               title="Trazer texto da nota selecionada"
             >
               <FileText size={14} />
               Importar nota
             </button>
 
-            <div className="w-px h-5 bg-anotata-border mx-1"></div>
+            <div className="w-px h-5 bg-anotata-border mx-1" aria-hidden="true"></div>
 
-            <button
+            <IconButton
+              icon={Copy}
+              label="Copiar texto"
               onClick={copyText}
               disabled={!text}
-              className="p-1.5 text-anotata-text-suave hover:bg-anotata-hover rounded disabled:opacity-30 transition-colors"
-              title="Copiar texto"
-            >
-              <Copy size={14} />
-            </button>
+            />
 
-            <button
+            <IconButton
+              icon={RotateCcw}
+              label="Limpar"
               onClick={clearAll}
               disabled={!text}
-              className="p-1.5 text-anotata-text-suave hover:bg-anotata-hover rounded disabled:opacity-30 transition-colors"
-              title="Limpar"
-            >
-              <RotateCcw size={14} />
-            </button>
+            />
 
             {/* Indicador */}
             <div className="ml-auto flex items-center gap-2">
               {isOffline && (
-                <span className="text-[11px] text-anotata-goiaba bg-anotata-goiaba/10 px-2 py-0.5 rounded-full">
+                <span className="text-xs text-anotata-goiaba bg-anotata-goiaba/10 px-2 py-0.5 rounded-full">
                   Modo offline (regras básicas)
                 </span>
               )}
@@ -235,7 +232,7 @@ export default function Corretor({ store }) {
                 }
               </h3>
               {issues.length === 0 && stats && (
-                <Check size={18} className="text-green-600" />
+                <Check size={16} className="text-anotata-success" />
               )}
             </div>
 
@@ -285,7 +282,7 @@ export default function Corretor({ store }) {
 
             {issues.length === 0 && text && stats && !isChecking && (
               <div className="text-center py-12 px-4">
-                <Check size={48} className="mx-auto text-green-600 mb-3" />
+                <Check size={48} className="mx-auto text-anotata-success mb-3" />
                 <p className="text-sm text-anotata-text font-medium mb-1">
                   Texto sem erros!
                 </p>
@@ -334,7 +331,7 @@ function FilterPill({ active, count, label, onClick, color, bg }) {
   return (
     <button
       onClick={onClick}
-      className={`text-[11px] px-2.5 py-1 rounded-full font-medium transition-all ${
+      className={`text-xs px-2.5 py-1 rounded-full font-medium transition-all ${
         active
           ? 'ring-2 ring-anotata-roxo'
           : 'opacity-70 hover:opacity-100'
@@ -358,14 +355,14 @@ function IssueCard({ issue, onApply, onIgnore }) {
       {/* Categoria */}
       <div className="flex items-center justify-between mb-2">
         <span
-          className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded"
+          className="text-2xs font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded"
           style={{ backgroundColor: cat.bg, color: cat.color }}
         >
           {cat.label}
         </span>
         <button
           onClick={onIgnore}
-          className="text-[10px] text-anotata-muted hover:text-anotata-text-suave"
+          className="text-2xs text-anotata-muted hover:text-anotata-text-suave"
           title="Ignorar"
         >
           ignorar

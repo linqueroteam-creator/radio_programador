@@ -39,14 +39,14 @@ export default function TemplatePicker({ store, onClose, defaultNotebookId }) {
             </div>
             <div>
               <h3 className="text-base font-bold text-anotata-text">Nova anotação</h3>
-              <p className="text-[11px] text-anotata-muted">Escolha um modelo para começar mais rápido</p>
+              <p className="text-xs text-anotata-muted">Escolha um modelo para começar mais rápido</p>
             </div>
           </div>
           <button
             onClick={onClose}
             className="p-1 text-anotata-muted hover:text-anotata-text rounded hover:bg-anotata-hover transition-colors"
           >
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
 
@@ -71,7 +71,7 @@ export default function TemplatePicker({ store, onClose, defaultNotebookId }) {
             </button>
           </div>
 
-          <div className="text-[10px] uppercase font-semibold text-anotata-muted mb-2">Modelos prontos</div>
+          <div className="text-2xs uppercase font-semibold text-anotata-muted mb-2">Modelos prontos</div>
 
           <div className="grid grid-cols-2 gap-2">
             {TEMPLATE_LIST.map(tmpl => {
@@ -90,7 +90,7 @@ export default function TemplatePicker({ store, onClose, defaultNotebookId }) {
                     <span className="text-xl shrink-0">{tmpl.icon}</span>
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-semibold text-anotata-text">{tmpl.name}</div>
-                      <div className="text-[11px] text-anotata-text-suave line-clamp-2">{tmpl.description}</div>
+                      <div className="text-xs text-anotata-text-suave line-clamp-2">{tmpl.description}</div>
                     </div>
                   </div>
                 </button>
@@ -101,7 +101,7 @@ export default function TemplatePicker({ store, onClose, defaultNotebookId }) {
 
         <div className="p-4 bg-anotata-lavanda-clara border-t border-anotata-border space-y-3">
           <div>
-            <label className="text-[10px] uppercase font-semibold text-anotata-text-suave block mb-1">
+            <label className="text-2xs uppercase font-semibold text-anotata-text-suave block mb-1">
               Título (opcional)
             </label>
             <input

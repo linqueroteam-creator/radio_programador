@@ -196,11 +196,11 @@ export default function RephrasePopover({
         <div className="w-6 h-6 rounded-md bg-anotata-roxo flex items-center justify-center shrink-0">
           <RotateCw size={12} className="text-white" />
         </div>
-        <span className="text-[12px] font-semibold text-anotata-text">Reescrever trecho</span>
-        <span className="text-[10px] text-anotata-muted ml-auto whitespace-nowrap">
+        <span className="text-xs font-semibold text-anotata-text">Reescrever trecho</span>
+        <span className="text-2xs text-anotata-muted ml-auto whitespace-nowrap">
           {charsBefore} → {charsAfter}
-          {reduction > 0 && <span className="ml-1.5 text-green-700 font-semibold">−{reduction}%</span>}
-          {reduction < 0 && <span className="ml-1.5 text-amber-700 font-semibold">+{Math.abs(reduction)}%</span>}
+          {reduction > 0 && <span className="ml-1.5 text-anotata-success font-semibold">−{reduction}%</span>}
+          {reduction < 0 && <span className="ml-1.5 text-anotata-warn font-semibold">+{Math.abs(reduction)}%</span>}
         </span>
         <button
           onClick={onClose}
@@ -208,7 +208,7 @@ export default function RephrasePopover({
           title="Fechar (Esc)"
           aria-label="Fechar"
         >
-          <X size={13} />
+          <X size={14} />
         </button>
       </div>
 
@@ -222,14 +222,14 @@ export default function RephrasePopover({
               key={m}
               onClick={() => setMode(m)}
               title={`${meta.label} — ${meta.tagline} (atalho ${idx + 1})`}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium whitespace-nowrap transition-all ${
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-all ${
                 active
                   ? 'text-white shadow-sm'
                   : 'bg-anotata-bg/50 border border-anotata-border text-anotata-text-suave hover:border-anotata-roxo hover:text-anotata-roxo'
               }`}
               style={active ? { backgroundColor: meta.color } : {}}
             >
-              <span className={`text-[9px] font-bold ${active ? 'opacity-60' : 'opacity-40'}`}>
+              <span className={`text-2xs font-bold ${active ? 'opacity-60' : 'opacity-40'}`}>
                 {idx + 1}
               </span>
               {meta.label}
@@ -242,10 +242,10 @@ export default function RephrasePopover({
       <div className="flex-1 overflow-y-auto">
         {/* ORIGINAL */}
         <div className="px-4 pt-3 pb-2.5">
-          <div className="text-[10px] uppercase font-bold tracking-wider text-anotata-muted mb-1.5">
+          <div className="text-2xs uppercase font-bold tracking-wider text-anotata-muted mb-1.5">
             Original
           </div>
-          <div className="text-[13px] leading-relaxed text-anotata-text-suave italic break-words">
+          <div className="text-sm leading-relaxed text-anotata-text-suave italic break-words">
             {originalText}
           </div>
         </div>
@@ -253,25 +253,25 @@ export default function RephrasePopover({
         {/* SETA DE TRANSFORMACAO */}
         <div className="px-4 flex items-center gap-2">
           <div className="flex-1 h-px bg-anotata-border" />
-          <ArrowDown size={11} className="text-anotata-roxo" />
+          <ArrowDown size={12} className="text-anotata-roxo" />
           <div className="flex-1 h-px bg-anotata-border" />
         </div>
 
         {/* REESCRITO */}
         <div className="px-4 pt-2.5 pb-3">
           <div
-            className="text-[10px] uppercase font-bold tracking-wider mb-1.5 flex items-center gap-1.5"
+            className="text-2xs uppercase font-bold tracking-wider mb-1.5 flex items-center gap-1.5"
             style={{ color: MODE_META[mode].color }}
           >
             Reescrito · {MODE_META[mode].label}
           </div>
           {isIdentical ? (
-            <div className="text-[12px] leading-relaxed text-anotata-text-suave italic bg-anotata-bg/40 px-2.5 py-2 rounded-md flex items-start gap-1.5">
+            <div className="text-xs leading-relaxed text-anotata-text-suave italic bg-anotata-bg/40 px-2.5 py-2 rounded-md flex items-start gap-1.5">
               <Info size={12} className="shrink-0 mt-0.5 text-anotata-muted" />
               <span>Este modo não encontrou nada para alterar. Tente outro modo.</span>
             </div>
           ) : (
-            <div className="text-[13px] leading-relaxed text-anotata-text font-medium break-words">
+            <div className="text-sm leading-relaxed text-anotata-text font-medium break-words">
               {result.result}
             </div>
           )}
@@ -282,9 +282,9 @@ export default function RephrasePopover({
           <div className="border-t border-anotata-border">
             <button
               onClick={() => setShowChanges(s => !s)}
-              className="w-full px-4 py-2 flex items-center gap-1.5 text-[11px] text-anotata-text-suave hover:bg-anotata-sidebar/40 transition-colors"
+              className="w-full px-4 py-2 flex items-center gap-1.5 text-xs text-anotata-text-suave hover:bg-anotata-sidebar/40 transition-colors"
             >
-              {showChanges ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
+              {showChanges ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
               <span className="font-medium">
                 {totalChanges} mudança{totalChanges === 1 ? '' : 's'} aplicada{totalChanges === 1 ? '' : 's'}
               </span>
@@ -295,7 +295,7 @@ export default function RephrasePopover({
                   <ChangeRow key={i} change={c} />
                 ))}
                 {totalChanges > 12 && (
-                  <div className="text-[10px] text-anotata-muted italic px-1 pt-1">
+                  <div className="text-2xs text-anotata-muted italic px-1 pt-1">
                     + {totalChanges - 12} mudança{totalChanges - 12 === 1 ? '' : 's'} adiciona{totalChanges - 12 === 1 ? 'l' : 'is'}
                   </div>
                 )}
@@ -307,7 +307,7 @@ export default function RephrasePopover({
 
       {/* FOOTER */}
       <div className="px-3.5 py-2.5 border-t border-anotata-border bg-white flex items-center gap-2 shrink-0">
-        <span className="text-[10px] text-anotata-muted hidden sm:flex items-center gap-1">
+        <span className="text-2xs text-anotata-muted hidden sm:flex items-center gap-1">
           <Kbd>Esc</Kbd> fechar
           <span className="text-anotata-border mx-0.5">·</span>
           <Kbd>1-5</Kbd> trocar modo
@@ -315,20 +315,20 @@ export default function RephrasePopover({
         <div className="flex-1" />
         <button
           onClick={onClose}
-          className="px-3 py-1.5 text-[11px] text-anotata-text-suave hover:text-anotata-text transition-colors"
+          className="px-3 py-1.5 text-xs text-anotata-text-suave hover:text-anotata-text transition-colors"
         >
           Cancelar
         </button>
         <button
           onClick={handleApply}
           disabled={isIdentical}
-          className={`px-3 py-1.5 text-[11px] font-medium rounded-md flex items-center gap-1.5 transition-all ${
+          className={`px-3 py-1.5 text-xs font-medium rounded-md flex items-center gap-1.5 transition-all ${
             isIdentical
               ? 'bg-anotata-bg text-anotata-muted cursor-not-allowed'
               : 'bg-anotata-roxo text-white hover:bg-anotata-roxo-escuro shadow-sm'
           }`}
         >
-          <Check size={11} />
+          <Check size={12} />
           Aplicar
           <Kbd dim>⏎</Kbd>
         </button>
@@ -341,7 +341,7 @@ export default function RephrasePopover({
 function Kbd({ children, dim }) {
   return (
     <kbd
-      className={`px-1 py-0.5 rounded border text-[9px] font-mono ${
+      className={`px-1 py-0.5 rounded border text-2xs font-mono ${
         dim
           ? 'bg-white/20 border-white/30 text-white/70'
           : 'bg-anotata-bg border-anotata-border text-anotata-text-suave'
@@ -357,7 +357,7 @@ function ChangeRow({ change }) {
   const meta = ruleMeta[change.rule?.split(':')[0]] || ruleMeta.default;
   const truncate = (s, n) => (s && s.length > n ? s.slice(0, n - 1) + '…' : s);
   return (
-    <div className="flex items-start gap-1.5 text-[11px] py-0.5">
+    <div className="flex items-start gap-1.5 text-xs py-0.5">
       <span
         className="px-1.5 py-0.5 rounded text-[8px] uppercase font-bold tracking-wide shrink-0 mt-0.5"
         style={{ backgroundColor: meta.bg, color: meta.color }}
@@ -367,7 +367,7 @@ function ChangeRow({ change }) {
       </span>
       <div className="flex-1 min-w-0">
         <span className="text-anotata-goiaba line-through opacity-70">"{truncate(change.from, 40)}"</span>
-        <ArrowRight size={9} className="inline mx-1 text-anotata-muted" />
+        <ArrowRight size={12} className="inline mx-1 text-anotata-muted" />
         <span className="text-anotata-roxo font-medium">"{truncate(change.to, 40)}"</span>
       </div>
     </div>
@@ -377,10 +377,10 @@ function ChangeRow({ change }) {
 const ruleMeta = {
   default:         { label: 'mudança',   bg: '#EDE8F2', color: '#5B2D8E' },
   gerundism:       { label: 'gerundismo',  bg: '#FFF4D9', color: '#9B6F00' },
-  redundancy:      { label: 'pleonasmo',   bg: '#FCEEF1', color: '#C44862' },
+  redundancy:      { label: 'pleonasmo',   bg: '#FCE7EB', color: '#C44862' },
   colloquialism:   { label: 'coloquial',   bg: '#F0E9F8', color: '#5B2D8E' },
   connectors:      { label: 'conector',    bg: '#EDE8F2', color: '#5B2D8E' },
-  simplification:  { label: 'simples',     bg: '#FFE3E8', color: '#E8637C' },
+  simplification:  { label: 'simples',     bg: '#FCE7EB', color: '#E8637C' },
   voice:           { label: 'voz ativa',   bg: '#D4F4DD', color: '#0F7A3F' },
   clause:          { label: 'quebra',      bg: '#D4F4DD', color: '#0F7A3F' },
   concise:         { label: 'enxugar',     bg: '#D4F4DD', color: '#0F7A3F' },

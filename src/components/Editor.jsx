@@ -24,6 +24,7 @@ import ConnectionModal from './ConnectionModal';
 import ConnectionMap from './ConnectionMap';
 import RephrasePanel from './RephrasePanel';
 import SelectionBubbleMenu from './SelectionBubbleMenu';
+import IconButton from './ui/IconButton';
 import predictiveEngine from '../engine/PredictiveEngine';
 import grammarEngine from '../engine/GrammarEngine';
 import rulesEngine from '../engine/RulesEngine';
@@ -535,76 +536,66 @@ export default function Editor({ store }) {
           </div>
 
           <div className="flex items-center gap-1">
-            <button
+            <IconButton
+              icon={ImageIcon}
+              label="Inserir imagem do computador (também pode colar com Ctrl+V)"
               onClick={insertImageFromFile}
-              className="p-1.5 rounded text-anotata-text-suave hover:bg-anotata-hover hover:text-anotata-roxo transition-colors"
-              title="Inserir imagem do computador (também pode colar com Ctrl+V)"
-            >
-              <ImageIcon size={16} />
-            </button>
-            <button
+              size="lg"
+            />
+            <IconButton
+              icon={Link2}
+              label="Conectar com outra nota"
               onClick={() => setShowConnectionModal(true)}
-              className="p-1.5 rounded text-anotata-text-suave hover:bg-anotata-hover hover:text-anotata-roxo transition-colors"
-              title="Conectar com outra nota"
-            >
-              <Link2 size={16} />
-            </button>
-            <button
+              size="lg"
+            />
+            <IconButton
+              icon={MapIcon}
+              label="Mapa visual de conexões"
               onClick={() => setShowConnectionMap(true)}
-              className="p-1.5 rounded text-anotata-text-suave hover:bg-anotata-hover hover:text-anotata-roxo transition-colors"
-              title="Mapa visual de conexões"
-            >
-              <MapIcon size={16} />
-            </button>
-            <button
+              size="lg"
+            />
+            <IconButton
+              icon={RotateCw}
+              label="Reescrever (seleção ou nota inteira)"
               onClick={openRephrase}
-              className="p-1.5 rounded text-anotata-text-suave hover:bg-anotata-hover hover:text-anotata-roxo transition-colors"
-              title="Reescrever (seleção ou nota inteira)"
-            >
-              <RotateCw size={16} />
-            </button>
-            <button
+              size="lg"
+            />
+            <IconButton
+              icon={SpellCheck}
+              label="Verificar gramática"
               onClick={checkGrammar}
               disabled={isCheckingGrammar}
-              className={`p-1.5 rounded transition-colors ${
-                showGrammar ? 'bg-anotata-roxo text-white' : 'text-anotata-text-suave hover:bg-anotata-hover hover:text-anotata-roxo'
-              }`}
-              title="Verificar gramática"
-            >
-              <SpellCheck size={16} />
-            </button>
-            <button
+              isActive={showGrammar}
+              size="lg"
+            />
+            <IconButton
+              icon={PanelRight}
+              label="Painel de diagnóstico"
               onClick={() => setShowInsightPanel(!showInsightPanel)}
-              className={`p-1.5 rounded transition-colors ${
-                showInsightPanel ? 'bg-anotata-roxo text-white' : 'text-anotata-text-suave hover:bg-anotata-hover hover:text-anotata-roxo'
-              }`}
-              title="Painel de diagnóstico"
-            >
-              <PanelRight size={16} />
-            </button>
-            <button
+              isActive={showInsightPanel}
+              size="lg"
+            />
+            <IconButton
+              icon={Sparkles}
+              label="Assistente IA (em breve)"
               onClick={handleAiRequest}
-              className="p-1.5 rounded hover:bg-anotata-hover text-anotata-text-suave hover:text-anotata-roxo transition-colors"
-              title="Assistente IA (em breve)"
-            >
-              <Sparkles size={16} />
-            </button>
-            <button
+              size="lg"
+            />
+            <IconButton
+              icon={Star}
+              label={selectedNote.isFavorite ? 'Remover dos favoritos' : 'Favoritar'}
               onClick={() => store.toggleFavorite(selectedNote.id)}
-              className={`p-1.5 rounded hover:bg-anotata-hover transition-colors ${
-                selectedNote.isFavorite ? 'text-yellow-500' : 'text-anotata-text-suave hover:text-yellow-500'
-              }`}
-              title={selectedNote.isFavorite ? 'Remover dos favoritos' : 'Favoritar'}
-            >
-              <Star size={16} className={selectedNote.isFavorite ? 'fill-yellow-500' : ''} />
-            </button>
-            <button
+              size="lg"
+              className={selectedNote.isFavorite ? 'text-anotata-favorite hover:text-anotata-favorite' : ''}
+              iconClassName={selectedNote.isFavorite ? 'fill-anotata-favorite' : ''}
+            />
+            <IconButton
+              icon={Trash2}
+              label="Mover para lixeira"
               onClick={() => store.moveToTrash(selectedNote.id)}
-              className="p-1.5 rounded hover:bg-anotata-hover text-anotata-text-suave hover:text-anotata-goiaba transition-colors"
-              title="Mover para lixeira"
-            >
-              <Trash2 size={16} />
-            </button>
+              variant="danger"
+              size="lg"
+            />
           </div>
         </div>
 
@@ -726,15 +717,15 @@ function SaveIndicator({ status }) {
   if (status === 'saving') {
     return (
       <span className="flex items-center gap-1 text-anotata-muted">
-        <Cloud size={11} className="animate-pulse" />
+        <Cloud size={12} className="animate-pulse" />
         Salvando...
       </span>
     );
   }
   if (status === 'saved') {
     return (
-      <span className="flex items-center gap-1 text-green-600">
-        <CheckCircle size={11} />
+      <span className="flex items-center gap-1 text-anotata-success">
+        <CheckCircle size={12} />
         Salvo
       </span>
     );
@@ -742,7 +733,7 @@ function SaveIndicator({ status }) {
   if (status === 'error') {
     return (
       <span className="flex items-center gap-1 text-anotata-goiaba">
-        <CloudOff size={11} />
+        <CloudOff size={12} />
         Erro ao salvar
       </span>
     );
@@ -755,16 +746,16 @@ function NextActionCard({ suggestion, onApply }) {
     <div className="mt-3 flex items-center justify-between gap-3 p-2.5 bg-gradient-to-r from-anotata-lavanda-clara to-white border border-anotata-lavanda rounded-lg">
       <div className="flex items-center gap-2 flex-1 min-w-0">
         <div className="w-7 h-7 rounded-full bg-anotata-roxo flex items-center justify-center shrink-0">
-          <Sparkles size={13} className="text-white" />
+          <Sparkles size={14} className="text-white" />
         </div>
         <div className="min-w-0">
-          <div className="text-[10px] uppercase font-semibold text-anotata-roxo tracking-wide">
+          <div className="text-2xs uppercase font-semibold text-anotata-roxo tracking-wide">
             Próxima ação
           </div>
           <div className="text-sm text-anotata-text font-medium truncate">
             {suggestion.label}
           </div>
-          <div className="text-[10px] text-anotata-muted">{suggestion.reason}</div>
+          <div className="text-2xs text-anotata-muted">{suggestion.reason}</div>
         </div>
       </div>
       <button

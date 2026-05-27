@@ -216,9 +216,9 @@ export default function LinkPickerPopover({
       {/* HEADER */}
       <div className="px-3 py-2.5 border-b border-anotata-border bg-anotata-sidebar flex items-center gap-2 shrink-0">
         <div className="w-6 h-6 rounded-md bg-anotata-roxo flex items-center justify-center shrink-0">
-          <Link2 size={11} className="text-white" />
+          <Link2 size={12} className="text-white" />
         </div>
-        <span className="text-[12px] font-semibold text-anotata-text">Ligar a...</span>
+        <span className="text-xs font-semibold text-anotata-text">Ligar a...</span>
         <button
           onClick={onClose}
           className="ml-auto p-1 rounded text-anotata-muted hover:text-anotata-goiaba hover:bg-white transition-colors"
@@ -242,7 +242,7 @@ export default function LinkPickerPopover({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar notas e cadernos..."
-            className="w-full pl-8 pr-3 py-1.5 text-[12px] bg-anotata-bg/40 rounded-md border border-anotata-border focus:outline-none focus:border-anotata-roxo focus:ring-1 focus:ring-anotata-roxo/20 placeholder:text-anotata-muted"
+            className="w-full pl-8 pr-3 py-1.5 text-xs bg-anotata-bg/40 rounded-md border border-anotata-border focus:outline-none focus:border-anotata-roxo focus:ring-1 focus:ring-anotata-roxo/20 placeholder:text-anotata-muted"
           />
         </div>
       </div>
@@ -251,8 +251,8 @@ export default function LinkPickerPopover({
       <div ref={listRef} className="flex-1 overflow-y-auto">
         {filtered.length === 0 ? (
           <div className="p-5 text-center">
-            <p className="text-[12px] text-anotata-muted">Nenhum resultado.</p>
-            <p className="text-[10px] text-anotata-muted mt-1">
+            <p className="text-xs text-anotata-muted">Nenhum resultado.</p>
+            <p className="text-2xs text-anotata-muted mt-1">
               Tente outras palavras ou crie a nota primeiro.
             </p>
           </div>
@@ -286,12 +286,12 @@ export default function LinkPickerPopover({
                     >
                       {isNotebook ? 'caderno' : 'nota'}
                     </span>
-                    <h4 className="text-[12px] font-medium text-anotata-text truncate">
+                    <h4 className="text-xs font-medium text-anotata-text truncate">
                       {item.title}
                     </h4>
                   </div>
                   {item.subtitle && (
-                    <p className="text-[10px] text-anotata-text-suave truncate mt-0.5">
+                    <p className="text-2xs text-anotata-text-suave truncate mt-0.5">
                       {item.subtitle}
                     </p>
                   )}
@@ -300,7 +300,7 @@ export default function LinkPickerPopover({
                       {item.tags.slice(0, 3).map((t) => (
                         <span
                           key={t}
-                          className="text-[9px] bg-anotata-lavanda text-anotata-roxo px-1.5 py-0.5 rounded"
+                          className="text-2xs bg-anotata-lavanda text-anotata-roxo px-1.5 py-0.5 rounded"
                         >
                           #{t}
                         </span>
@@ -317,13 +317,13 @@ export default function LinkPickerPopover({
       {/* FOOTER COM ATALHOS */}
       <div className="px-3 py-2 border-t border-anotata-border bg-white flex items-center gap-1.5 shrink-0">
         <Kbd>↑↓</Kbd>
-        <span className="text-[10px] text-anotata-muted">navegar</span>
+        <span className="text-2xs text-anotata-muted">navegar</span>
         <span className="text-anotata-border mx-1">·</span>
         <Kbd>↵</Kbd>
-        <span className="text-[10px] text-anotata-muted">confirmar</span>
+        <span className="text-2xs text-anotata-muted">confirmar</span>
         <span className="text-anotata-border mx-1">·</span>
         <Kbd>Esc</Kbd>
-        <span className="text-[10px] text-anotata-muted">fechar</span>
+        <span className="text-2xs text-anotata-muted">fechar</span>
       </div>
     </div>,
     document.body
@@ -333,7 +333,7 @@ export default function LinkPickerPopover({
 function Kbd({ children }) {
   return (
     <kbd
-      className="px-1 py-0.5 bg-anotata-bg rounded border border-anotata-border text-[9px] font-mono text-anotata-text-suave"
+      className="px-1 py-0.5 bg-anotata-bg rounded border border-anotata-border text-2xs font-mono text-anotata-text-suave"
       style={{ lineHeight: 1 }}
     >
       {children}

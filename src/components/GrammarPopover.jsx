@@ -68,6 +68,7 @@ export default function GrammarPopover({
       role="dialog"
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
+      className="shadow-popover"
       style={{
         position: 'fixed',
         top: pos.top,
@@ -77,7 +78,6 @@ export default function GrammarPopover({
         background: '#FFFFFF',
         border: '1px solid #E0D7EC',
         borderRadius: 14,
-        boxShadow: '0 8px 28px rgba(45, 27, 78, 0.18)',
         overflow: 'hidden',
         animation: 'fadeIn 120ms ease-out',
       }}
@@ -85,8 +85,8 @@ export default function GrammarPopover({
       {/* Cabeçalho */}
       <div className="px-3 py-2 flex items-center gap-2 border-b border-anotata-border-suave"
            style={{ backgroundColor: meta.bg }}>
-        <Icon size={13} color={meta.color} strokeWidth={2.5} />
-        <span className="text-[11px] uppercase font-semibold tracking-wider" style={{ color: meta.color }}>
+        <Icon size={14} color={meta.color} strokeWidth={2.5} />
+        <span className="text-xs uppercase font-semibold tracking-wider" style={{ color: meta.color }}>
           {meta.label}
         </span>
         <button
@@ -94,13 +94,13 @@ export default function GrammarPopover({
           className="ml-auto text-anotata-muted hover:text-anotata-goiaba transition-colors"
           title="Fechar"
         >
-          <X size={13} />
+          <X size={14} />
         </button>
       </div>
 
       {/* Mensagem do erro */}
       {issue.message && (
-        <div className="px-3 pt-2.5 pb-1 text-[12px] text-anotata-text-suave leading-snug">
+        <div className="px-3 pt-2.5 pb-1 text-xs text-anotata-text-suave leading-snug">
           {issue.message}
         </div>
       )}
@@ -112,7 +112,7 @@ export default function GrammarPopover({
             <button
               key={`${r}-${i}`}
               onClick={() => onApply && onApply(r)}
-              className="px-2.5 py-1 text-[12px] rounded-md bg-anotata-lavanda-clara border border-anotata-lavanda
+              className="px-2.5 py-1 text-xs rounded-md bg-anotata-lavanda-clara border border-anotata-lavanda
                          text-anotata-roxo hover:bg-anotata-roxo hover:text-white hover:border-anotata-roxo
                          transition-all font-medium"
               title={`Substituir por "${r}"`}
@@ -122,7 +122,7 @@ export default function GrammarPopover({
           ))}
         </div>
       ) : (
-        <div className="px-3 py-2 text-[11px] text-anotata-muted italic">
+        <div className="px-3 py-2 text-xs text-anotata-muted italic">
           Sem sugestão automática para este caso.
         </div>
       )}
@@ -131,13 +131,13 @@ export default function GrammarPopover({
       <div className="px-3 py-2 border-t border-anotata-border-suave flex items-center justify-between bg-anotata-bg">
         <button
           onClick={onIgnore}
-          className="flex items-center gap-1 text-[11px] text-anotata-muted hover:text-anotata-text-suave transition-colors"
+          className="flex items-center gap-1 text-xs text-anotata-muted hover:text-anotata-text-suave transition-colors"
           title="Manter o texto como está"
         >
-          <EyeOff size={11} />
+          <EyeOff size={12} />
           Ignorar
         </button>
-        <span className="text-[10px] text-anotata-muted">
+        <span className="text-2xs text-anotata-muted">
           Esc para fechar
         </span>
       </div>
@@ -150,13 +150,13 @@ const META = {
     label: 'Ortografia',
     icon: AlertCircle,
     color: '#C44862',
-    bg: '#FCEEF1',
+    bg: '#FCE7EB',
   },
   grammar: {
     label: 'Gramática',
     icon: AlertCircle,
     color: '#E8637C',
-    bg: '#FCEEF1',
+    bg: '#FCE7EB',
   },
   style: {
     label: 'Estilo',

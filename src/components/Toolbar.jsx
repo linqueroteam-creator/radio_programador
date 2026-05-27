@@ -5,23 +5,7 @@ import {
   Heading1, Heading2, Heading3, Link2, Image,
   Highlighter, Undo2, Redo2, Palette
 } from 'lucide-react';
-
-function ToolBtn({ onClick, isActive, title, children, disabled }) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      title={title}
-      className={`p-1.5 rounded transition-colors ${
-        isActive
-          ? 'bg-anotata-roxo text-white'
-          : 'text-anotata-text-suave hover:text-anotata-roxo hover:bg-anotata-hover'
-      } ${disabled ? 'opacity-30 cursor-not-allowed' : ''}`}
-    >
-      {children}
-    </button>
-  );
-}
+import IconButton from './ui/IconButton';
 
 export default function Toolbar({ editor }) {
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -45,63 +29,100 @@ export default function Toolbar({ editor }) {
 
   return (
     <div className="border-b border-anotata-border px-4 py-2 flex flex-wrap items-center gap-0.5 bg-white">
-      <ToolBtn onClick={() => editor.chain().focus().undo().run()} title="Desfazer" disabled={!editor.can().undo()}>
-        <Undo2 size={14} />
-      </ToolBtn>
-      <ToolBtn onClick={() => editor.chain().focus().redo().run()} title="Refazer" disabled={!editor.can().redo()}>
-        <Redo2 size={14} />
-      </ToolBtn>
+      <IconButton
+        icon={Undo2}
+        label="Desfazer"
+        onClick={() => editor.chain().focus().undo().run()}
+        disabled={!editor.can().undo()}
+      />
+      <IconButton
+        icon={Redo2}
+        label="Refazer"
+        onClick={() => editor.chain().focus().redo().run()}
+        disabled={!editor.can().redo()}
+      />
 
-      <div className="w-px h-5 bg-anotata-border mx-1"></div>
+      <div className="w-px h-5 bg-anotata-border mx-1" aria-hidden="true"></div>
 
-      <ToolBtn onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} isActive={editor.isActive('heading', { level: 1 })} title="Título 1">
-        <Heading1 size={14} />
-      </ToolBtn>
-      <ToolBtn onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} isActive={editor.isActive('heading', { level: 2 })} title="Título 2">
-        <Heading2 size={14} />
-      </ToolBtn>
-      <ToolBtn onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} isActive={editor.isActive('heading', { level: 3 })} title="Título 3">
-        <Heading3 size={14} />
-      </ToolBtn>
+      <IconButton
+        icon={Heading1}
+        label="Título 1"
+        onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+        isActive={editor.isActive('heading', { level: 1 })}
+      />
+      <IconButton
+        icon={Heading2}
+        label="Título 2"
+        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+        isActive={editor.isActive('heading', { level: 2 })}
+      />
+      <IconButton
+        icon={Heading3}
+        label="Título 3"
+        onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+        isActive={editor.isActive('heading', { level: 3 })}
+      />
 
-      <div className="w-px h-5 bg-anotata-border mx-1"></div>
+      <div className="w-px h-5 bg-anotata-border mx-1" aria-hidden="true"></div>
 
-      <ToolBtn onClick={() => editor.chain().focus().toggleBold().run()} isActive={editor.isActive('bold')} title="Negrito">
-        <Bold size={14} />
-      </ToolBtn>
-      <ToolBtn onClick={() => editor.chain().focus().toggleItalic().run()} isActive={editor.isActive('italic')} title="Itálico">
-        <Italic size={14} />
-      </ToolBtn>
-      <ToolBtn onClick={() => editor.chain().focus().toggleUnderline().run()} isActive={editor.isActive('underline')} title="Sublinhado">
-        <Underline size={14} />
-      </ToolBtn>
-      <ToolBtn onClick={() => editor.chain().focus().toggleStrike().run()} isActive={editor.isActive('strike')} title="Tachado">
-        <Strikethrough size={14} />
-      </ToolBtn>
-      <ToolBtn onClick={() => editor.chain().focus().toggleHighlight().run()} isActive={editor.isActive('highlight')} title="Destaque">
-        <Highlighter size={14} />
-      </ToolBtn>
-      <ToolBtn onClick={() => editor.chain().focus().toggleCode().run()} isActive={editor.isActive('code')} title="Código">
-        <Code size={14} />
-      </ToolBtn>
+      <IconButton
+        icon={Bold}
+        label="Negrito"
+        onClick={() => editor.chain().focus().toggleBold().run()}
+        isActive={editor.isActive('bold')}
+      />
+      <IconButton
+        icon={Italic}
+        label="Itálico"
+        onClick={() => editor.chain().focus().toggleItalic().run()}
+        isActive={editor.isActive('italic')}
+      />
+      <IconButton
+        icon={Underline}
+        label="Sublinhado"
+        onClick={() => editor.chain().focus().toggleUnderline().run()}
+        isActive={editor.isActive('underline')}
+      />
+      <IconButton
+        icon={Strikethrough}
+        label="Tachado"
+        onClick={() => editor.chain().focus().toggleStrike().run()}
+        isActive={editor.isActive('strike')}
+      />
+      <IconButton
+        icon={Highlighter}
+        label="Destaque"
+        onClick={() => editor.chain().focus().toggleHighlight().run()}
+        isActive={editor.isActive('highlight')}
+      />
+      <IconButton
+        icon={Code}
+        label="Código"
+        onClick={() => editor.chain().focus().toggleCode().run()}
+        isActive={editor.isActive('code')}
+      />
 
       <div className="relative">
-        <ToolBtn onClick={() => setShowColorPicker(!showColorPicker)} title="Cor do texto">
-          <Palette size={14} />
-        </ToolBtn>
+        <IconButton
+          icon={Palette}
+          label="Cor do texto"
+          onClick={() => setShowColorPicker(!showColorPicker)}
+          isActive={showColorPicker}
+        />
         {showColorPicker && (
           <div className="absolute top-full left-0 mt-1 bg-white border border-anotata-border rounded-lg p-2 grid grid-cols-5 gap-1 z-50 shadow-xl">
             {colors.map(color => (
               <button
                 key={color}
                 onClick={() => { editor.chain().focus().setColor(color).run(); setShowColorPicker(false); }}
-                className="w-5 h-5 rounded-full border border-anotata-border hover:scale-125 transition-transform"
+                className="w-5 h-5 rounded-full border border-anotata-border hover:scale-125 transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-anotata-roxo/50"
                 style={{ backgroundColor: color }}
+                aria-label={`Cor ${color}`}
               />
             ))}
             <button
               onClick={() => { editor.chain().focus().unsetColor().run(); setShowColorPicker(false); }}
-              className="col-span-5 text-[10px] text-anotata-muted hover:text-anotata-text mt-1"
+              className="col-span-5 text-2xs text-anotata-muted hover:text-anotata-text mt-1 focus-visible:outline-none focus-visible:underline"
             >
               Remover cor
             </button>
@@ -109,35 +130,54 @@ export default function Toolbar({ editor }) {
         )}
       </div>
 
-      <div className="w-px h-5 bg-anotata-border mx-1"></div>
+      <div className="w-px h-5 bg-anotata-border mx-1" aria-hidden="true"></div>
 
-      <ToolBtn onClick={() => editor.chain().focus().toggleBulletList().run()} isActive={editor.isActive('bulletList')} title="Lista">
-        <List size={14} />
-      </ToolBtn>
-      <ToolBtn onClick={() => editor.chain().focus().toggleOrderedList().run()} isActive={editor.isActive('orderedList')} title="Lista numerada">
-        <ListOrdered size={14} />
-      </ToolBtn>
-      <ToolBtn onClick={() => editor.chain().focus().toggleTaskList().run()} isActive={editor.isActive('taskList')} title="Checklist">
-        <CheckSquare size={14} />
-      </ToolBtn>
+      <IconButton
+        icon={List}
+        label="Lista"
+        onClick={() => editor.chain().focus().toggleBulletList().run()}
+        isActive={editor.isActive('bulletList')}
+      />
+      <IconButton
+        icon={ListOrdered}
+        label="Lista numerada"
+        onClick={() => editor.chain().focus().toggleOrderedList().run()}
+        isActive={editor.isActive('orderedList')}
+      />
+      <IconButton
+        icon={CheckSquare}
+        label="Checklist"
+        onClick={() => editor.chain().focus().toggleTaskList().run()}
+        isActive={editor.isActive('taskList')}
+      />
 
-      <div className="w-px h-5 bg-anotata-border mx-1"></div>
+      <div className="w-px h-5 bg-anotata-border mx-1" aria-hidden="true"></div>
 
-      <ToolBtn onClick={() => editor.chain().focus().toggleBlockquote().run()} isActive={editor.isActive('blockquote')} title="Citação">
-        <Quote size={14} />
-      </ToolBtn>
-      <ToolBtn onClick={() => editor.chain().focus().setHorizontalRule().run()} title="Linha separadora">
-        <Minus size={14} />
-      </ToolBtn>
+      <IconButton
+        icon={Quote}
+        label="Citação"
+        onClick={() => editor.chain().focus().toggleBlockquote().run()}
+        isActive={editor.isActive('blockquote')}
+      />
+      <IconButton
+        icon={Minus}
+        label="Linha separadora"
+        onClick={() => editor.chain().focus().setHorizontalRule().run()}
+      />
 
-      <div className="w-px h-5 bg-anotata-border mx-1"></div>
+      <div className="w-px h-5 bg-anotata-border mx-1" aria-hidden="true"></div>
 
-      <ToolBtn onClick={addLink} isActive={editor.isActive('link')} title="Inserir link">
-        <Link2 size={14} />
-      </ToolBtn>
-      <ToolBtn onClick={addImage} title="Inserir imagem">
-        <Image size={14} />
-      </ToolBtn>
+      <IconButton
+        icon={Link2}
+        label="Inserir link"
+        onClick={addLink}
+        isActive={editor.isActive('link')}
+      />
+      <IconButton
+        icon={Image}
+        label="Inserir imagem"
+        onClick={addImage}
+      />
     </div>
   );
 }

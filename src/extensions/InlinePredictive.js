@@ -139,7 +139,7 @@ export const InlinePredictive = Extension.create({
             span.textContent = suffix;
             span.setAttribute('data-anotata-ghost', 'true');
             span.style.cssText = [
-              'color: #A89DC0',
+              'color: #9888B5',
               'opacity: 0.65',
               'pointer-events: none',
               'user-select: none',

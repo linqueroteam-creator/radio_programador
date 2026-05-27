@@ -80,7 +80,7 @@ function SizeBtn({ active, onClick, children }) {
   return (
     <button
       onClick={onClick}
-      className={`text-[11px] px-2 py-1 rounded font-medium transition-colors ${
+      className={`text-xs px-2 py-1 rounded font-medium transition-colors ${
         active
           ? 'bg-anotata-roxo text-white'
           : 'text-anotata-text-suave hover:bg-anotata-hover hover:text-anotata-roxo'

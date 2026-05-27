@@ -57,7 +57,7 @@ export default function PredictiveBar({ editor }) {
       <div className="border-b border-anotata-border px-4 py-1.5 flex items-center justify-between bg-white">
         <button
           onClick={() => setIsActive(true)}
-          className="flex items-center gap-1.5 text-[11px] text-anotata-muted hover:text-anotata-roxo transition-colors"
+          className="flex items-center gap-1.5 text-xs text-anotata-muted hover:text-anotata-roxo transition-colors"
         >
           <Brain size={12} />
           Ativar sugestões
@@ -70,12 +70,12 @@ export default function PredictiveBar({ editor }) {
     <div className="border-b border-anotata-border px-4 py-1.5 flex items-center gap-2 overflow-x-auto bg-white">
       <button
         onClick={() => setIsActive(!isActive)}
-        className={`flex items-center gap-1 text-[11px] shrink-0 transition-colors ${
+        className={`flex items-center gap-1 text-xs shrink-0 transition-colors ${
           isActive ? 'text-anotata-roxo' : 'text-anotata-muted'
         }`}
         title={`Vocabulário: ${stats.vocabulario} palavras aprendidas`}
       >
-        <Brain size={13} className={isActive ? 'pulse-soft' : ''} />
+        <Brain size={14} className={isActive ? 'pulse-soft' : ''} />
         <span className="hidden sm:inline">{stats.vocabulario > 0 ? stats.vocabulario : ''}</span>
       </button>
 
@@ -98,8 +98,8 @@ export default function PredictiveBar({ editor }) {
       </div>
 
       {suggestions.length === 0 && isActive && (
-        <span className="text-[11px] text-anotata-muted italic">
-          As sugestões aparecem em <span className="text-anotata-roxo not-italic">cinza dentro do texto</span> — aperte <kbd className="px-1 py-0.5 text-[9px] bg-anotata-lavanda-clara border border-anotata-lavanda rounded font-sans not-italic">→</kbd> para aceitar
+        <span className="text-xs text-anotata-muted italic">
+          As sugestões aparecem em <span className="text-anotata-roxo not-italic">cinza dentro do texto</span> — aperte <kbd className="px-1 py-0.5 text-2xs bg-anotata-lavanda-clara border border-anotata-lavanda rounded font-sans not-italic">→</kbd> para aceitar
         </span>
       )}
     </div>

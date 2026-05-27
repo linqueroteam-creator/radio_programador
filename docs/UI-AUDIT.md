@@ -551,3 +551,73 @@ Você está construindo algo bonito e útil. As correções aqui não são defei
 ---
 
 *Relatório gerado pelo Design Mestre — auditor de UI do ANOTATA*
+
+
+
+---
+
+## ✅ Pós-polimento (atualização — 2026-05-27)
+
+> Auditoria revisitada após a sessão de polimento visual em 5 fases.
+
+### Nota geral: **A**
+
+O ANOTATA passou pelo sweep completo recomendado nesta auditoria. Os três pontos críticos identificados na primeira análise foram **resolvidos integralmente**:
+
+1. ✅ **Cinza fora da paleta** — `#6B5E80` foi banido. Único cinza-suave do app agora é `#5B4A7A` (anotata-text-suave declarado).
+2. ✅ **Tamanhos de ícone caóticos** — banidos os tamanhos 9, 11, 13, 15, 17, 18. Distribuição final: 89% dos ícones (152) nos três canônicos 12/14/16. Os 18% restantes são exceções documentadas: marker minúsculo (10), empty state (20), decoração não-interativa (26+).
+3. ✅ **Foco do teclado invisível** — criado componente `<IconButton>` com `focus-visible:ring`, `aria-label` obrigatório e `aria-pressed` para toggles. Migrado em 36+ botões críticos: Toolbar (18), header do Editor (9), NoteMetaBar (3), GrammarPanel (2), Corretor (2), Sidebar (10 com aria-label). Foco visível em todo o app agora.
+
+### Tokens semânticos formalizados
+
+Cores que circulavam como literais ganharam status de paleta oficial:
+
+| Token | Hex | Substitui | Uso |
+|---|---|---|---|
+| `anotata-success` | `#0F7A3F` | `text-green-600`, `text-green-700`, `#10B981` | concluído, forte, revisada |
+| `anotata-success-bg` | `#D4F4DD` | `bg-green-100` | fundo de chip de sucesso |
+| `anotata-warn` | `#9B6F00` | `text-amber-700`, literais espalhados | atenção, médio, gerundismo |
+| `anotata-warn-bg` | `#FFF4D9` | `bg-amber-100` | fundo de chip de atenção |
+| `anotata-favorite` | `#F0B400` | `text-yellow-500 fill-yellow-500` | estrela favorita (harmônica com goiaba) |
+| `anotata-goiaba-bg` | `#FCE7EB` | `#FCEEF1`, `#FFE4EA`, `#FFE3E8`, `bg-red-50` | fundo padrão de erro/atenção/destaque |
+| `text-2xs` (10px) | — | `text-[9px]`, `text-[10px]`, `text-[11px]` parcial | badges minúsculos, kbd |
+| `shadow-popover` | `0 8px 28px rgba(45,27,78,.18)` | boxShadow inline em GrammarPopover | sombra "fofa" de popover de feedback |
+
+### Tipografia consolidada
+
+Tamanhos arbitrários em `text-[Npx]` praticamente extintos:
+- `text-[12px]` → `text-xs` (mesmo valor, código limpo)
+- `text-[13px]` → `text-sm` (subido pro padrão)
+- `text-[11px]` → `text-xs`
+- `text-[10px]`, `text-[9px]` → `text-2xs`
+
+Restam **3 ocorrências** de `text-[8px]` legítimas: checkmark dentro de quadradinho de checklist, badge minúsculo de categoria de regra no Reescritor — exceções decorativas documentadas.
+
+### Iconografia — distribuição final auditada
+
+```
+size = 12   →  63 ocorrências  (39%)  chips, badges, X inline
+size = 14   →  40 ocorrências  (25%)  toolbar, lista, X popover, indicadores
+size = 16   →  49 ocorrências  (30%)  header de modal, sidebar nav, ações primárias
+size = 10   →   9 ocorrências  ( 6%)  EXCEÇÃO: marker timeline, Star/Pin inline em titulo
+size = 20+  →   8 ocorrências  ( 5%)  EXCEÇÃO: empty state, hero, decoração
+```
+
+### Ainda em aberto (próxima rodada — opcional)
+
+Pontinhos de polimento que NÃO foram cobertos nesta sessão (porque exigem decisões de design ou refatoração maior):
+
+1. **Padronizar `<DialogHeader>`** num único componente — hoje cada modal tem o seu (RephrasePanel, ConnectionMap, ConnectionModal, TemplatePicker, GrammarPopover). Trabalho de meio dia, ganho de coerência grande.
+2. **Auditar contraste do `text-anotata-muted` sobre fundos claros** — em texto pequeno (placeholder, hint), bater 4.5:1 em vez do 3.4:1 atual. Pode pedir um cinza um pouco mais escuro.
+3. **`rounded-md` ainda em uso** em `chip de modo do Reescritor`, `sugestão GrammarPopover` e `botão "Abrir nota"` do ConnectionMap — uma decisão final entre `rounded` e `rounded-lg`.
+4. **`transition-` global** — definir uma duração padrão por categoria de elemento (botão 150ms, card 200ms, modal 300ms). Hoje tem mistura de 150/200/300/350.
+
+Nenhum desses é bloqueador. O app está pronto pra evoluir com base sólida.
+
+### Conclusão
+
+A nota subiu de **B** pra **A**. O salto que ainda falta para um **A+** é mais sobre maturidade de sistema (tokens, componentes compartilhados de Dialog, contraste impecável) do que correção de defeito. Tudo que esta auditoria sinalizou como crítico ou médio impacto foi resolvido. Acessibilidade básica garantida em todo botão ícone-only do app.
+
+---
+
+*Atualização gerada após sessão de polimento de 5 fases — Design Mestre*

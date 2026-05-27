@@ -47,13 +47,13 @@ export default function VersionHistory({ note, store, onClose }) {
             </div>
             <div>
               <h3 className="text-base font-bold text-anotata-text">Histórico de versões</h3>
-              <p className="text-[11px] text-anotata-muted">
+              <p className="text-xs text-anotata-muted">
                 Versões salvas automaticamente desta nota
               </p>
             </div>
           </div>
           <button onClick={onClose} className="p-1 text-anotata-muted hover:text-anotata-text rounded hover:bg-anotata-hover">
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
 
@@ -70,12 +70,12 @@ export default function VersionHistory({ note, store, onClose }) {
               }`}
             >
               <div className="flex items-center gap-2 mb-1">
-                <span className={`text-[10px] uppercase font-semibold tracking-wide ${
+                <span className={`text-2xs uppercase font-semibold tracking-wide ${
                   previewIndex === null ? 'text-white/80' : 'text-anotata-roxo'
                 }`}>
                   Versão atual
                 </span>
-                <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${
+                <span className={`text-2xs px-1.5 py-0.5 rounded font-medium ${
                   previewIndex === null ? 'bg-white/20 text-white' : 'bg-anotata-lavanda text-anotata-roxo'
                 }`}>
                   agora
@@ -86,7 +86,7 @@ export default function VersionHistory({ note, store, onClose }) {
               }`}>
                 {note.title || 'Sem título'}
               </div>
-              <div className={`text-[10px] mt-0.5 ${
+              <div className={`text-2xs mt-0.5 ${
                 previewIndex === null ? 'text-white/70' : 'text-anotata-muted'
               }`}>
                 {formatDateTime(note.updatedAt)}
@@ -96,7 +96,7 @@ export default function VersionHistory({ note, store, onClose }) {
             {/* Versões salvas */}
             {versions.length === 0 ? (
               <div className="p-4 text-center">
-                <p className="text-[11px] text-anotata-muted">
+                <p className="text-xs text-anotata-muted">
                   Nenhuma versão salva ainda. As versões são salvas automaticamente a cada 10 edições.
                 </p>
               </div>
@@ -114,14 +114,14 @@ export default function VersionHistory({ note, store, onClose }) {
                   >
                     <div className="flex items-center gap-1.5 mb-1">
                       <Clock size={10} className="text-anotata-muted" />
-                      <span className="text-[10px] uppercase font-semibold text-anotata-text-suave tracking-wide">
+                      <span className="text-2xs uppercase font-semibold text-anotata-text-suave tracking-wide">
                         Versão {realIdx + 1}
                       </span>
                     </div>
                     <div className="text-xs font-medium text-anotata-text truncate">
                       {v.title || 'Sem título'}
                     </div>
-                    <div className="text-[10px] text-anotata-muted mt-0.5">
+                    <div className="text-2xs text-anotata-muted mt-0.5">
                       {formatDateTime(v.timestamp)}
                     </div>
                   </button>

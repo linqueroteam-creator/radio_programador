@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, Loader2, Check, RefreshCw, SpellCheck } from 'lucide-react';
+import IconButton from './ui/IconButton';
 
 const CATEGORY_LABELS = {
   spell: { label: 'Ortografia', color: '#C44862', bg: '#FCE7EB' },
@@ -24,21 +25,19 @@ export default function GrammarPanel({ issues, isLoading, onApply, onIgnore, onC
           </h3>
         </div>
         <div className="flex items-center gap-1">
-          <button
+          <IconButton
+            icon={RefreshCw}
+            label="Verificar de novo"
             onClick={onRecheck}
             disabled={isLoading}
-            className="p-1 text-anotata-text-suave hover:text-anotata-roxo rounded hover:bg-anotata-hover transition-colors disabled:opacity-30"
-            title="Verificar de novo"
-          >
-            <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
-          </button>
-          <button
+            iconClassName={isLoading ? 'animate-spin' : ''}
+          />
+          <IconButton
+            icon={X}
+            label="Fechar painel"
             onClick={onClose}
-            className="p-1 text-anotata-text-suave hover:text-anotata-goiaba rounded hover:bg-anotata-hover transition-colors"
-            title="Fechar"
-          >
-            <X size={14} />
-          </button>
+            variant="danger"
+          />
         </div>
       </div>
 
@@ -52,7 +51,7 @@ export default function GrammarPanel({ issues, isLoading, onApply, onIgnore, onC
 
         {!isLoading && issues.length === 0 && (
           <div className="text-center py-12">
-            <Check size={40} className="mx-auto text-green-600 mb-2" />
+            <Check size={40} className="mx-auto text-anotata-success mb-2" />
             <p className="text-sm font-medium text-anotata-text">Tudo certo!</p>
             <p className="text-xs text-anotata-muted mt-1">Nenhum erro encontrado</p>
           </div>
@@ -67,14 +66,14 @@ export default function GrammarPanel({ issues, isLoading, onApply, onIgnore, onC
             >
               <div className="flex items-center justify-between mb-2">
                 <span
-                  className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded"
+                  className="text-2xs font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded"
                   style={{ backgroundColor: cat.bg, color: cat.color }}
                 >
                   {cat.label}
                 </span>
                 <button
                   onClick={() => onIgnore(issue)}
-                  className="text-[10px] text-anotata-muted hover:text-anotata-text-suave"
+                  className="text-2xs text-anotata-muted hover:text-anotata-text-suave"
                 >
                   ignorar
                 </button>

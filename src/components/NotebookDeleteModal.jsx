@@ -24,11 +24,11 @@ export default function NotebookDeleteModal({ notebook, noteCount, onConfirm, on
         <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
           <div className="p-5 border-b border-anotata-border flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <AlertTriangle size={18} className="text-anotata-goiaba" />
+              <AlertTriangle size={16} className="text-anotata-goiaba" />
               <h3 className="text-base font-bold text-anotata-text">Não é possível excluir</h3>
             </div>
             <button onClick={onCancel} className="p-1 text-anotata-muted hover:text-anotata-text rounded">
-              <X size={18} />
+              <X size={16} />
             </button>
           </div>
           <div className="p-5">
@@ -58,11 +58,11 @@ export default function NotebookDeleteModal({ notebook, noteCount, onConfirm, on
             </div>
             <div>
               <h3 className="text-base font-bold text-anotata-text">Excluir caderno</h3>
-              <p className="text-[11px] text-anotata-muted">Esta ação remove o caderno, mas guarda as notas</p>
+              <p className="text-xs text-anotata-muted">Esta ação remove o caderno, mas guarda as notas</p>
             </div>
           </div>
           <button onClick={onCancel} className="p-1 text-anotata-muted hover:text-anotata-text rounded hover:bg-anotata-hover">
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
 
@@ -84,7 +84,7 @@ export default function NotebookDeleteModal({ notebook, noteCount, onConfirm, on
             </div>
           </div>
 
-          <div className="p-3 bg-red-50 border-l-2 border-red-400 rounded text-xs text-red-700">
+          <div className="p-3 bg-anotata-goiaba-bg border-l-2 border-anotata-goiaba rounded text-xs text-anotata-goiaba-escuro">
             <strong>O caderno será removido permanentemente.</strong> Para confirmar, digite{' '}
             <code className="bg-white px-1 rounded font-mono text-red-800">EXCLUIR</code> abaixo.
           </div>

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Flag, Activity, Pin, Archive, Eye, Sparkles } from 'lucide-react';
 import { NOTE_TYPES, NOTE_STATUS, NOTE_PRIORITY } from '../engine/RulesEngine';
+import IconButton from './ui/IconButton';
 
 /**
  * Barra de metadados da nota — badges clicáveis para
@@ -48,10 +49,10 @@ function Badge({ icon: Icon, label, color, bg, onClick, suggested }) {
       }}
       title={suggested ? 'Sugerido pelas regras locais — clique para mudar' : 'Clique para mudar'}
     >
-      {Icon && <Icon size={11} />}
+      {Icon && <Icon size={12} />}
       <span>{label}</span>
-      <ChevronDown size={9} className="opacity-60" />
-      {suggested && <Sparkles size={9} className="opacity-70" />}
+      <ChevronDown size={12} className="opacity-60" />
+      {suggested && <Sparkles size={12} className="opacity-70" />}
     </button>
   );
 }
@@ -84,7 +85,7 @@ export default function NoteMetaBar({ note, store, suggestions }) {
           />
         }
       >
-        <div className="px-3 py-1.5 text-[10px] uppercase font-semibold text-anotata-muted">Tipo</div>
+        <div className="px-3 py-1.5 text-2xs uppercase font-semibold text-anotata-muted">Tipo</div>
         {Object.entries(NOTE_TYPES).map(([key, meta]) => (
           <button
             key={key}
@@ -113,7 +114,7 @@ export default function NoteMetaBar({ note, store, suggestions }) {
           />
         }
       >
-        <div className="px-3 py-1.5 text-[10px] uppercase font-semibold text-anotata-muted">Status</div>
+        <div className="px-3 py-1.5 text-2xs uppercase font-semibold text-anotata-muted">Status</div>
         {Object.entries(NOTE_STATUS).map(([key, meta]) => (
           <button
             key={key}
@@ -140,7 +141,7 @@ export default function NoteMetaBar({ note, store, suggestions }) {
           />
         }
       >
-        <div className="px-3 py-1.5 text-[10px] uppercase font-semibold text-anotata-muted">Prioridade</div>
+        <div className="px-3 py-1.5 text-2xs uppercase font-semibold text-anotata-muted">Prioridade</div>
         {Object.entries(NOTE_PRIORITY).map(([key, meta]) => (
           <button
             key={key}
@@ -149,7 +150,7 @@ export default function NoteMetaBar({ note, store, suggestions }) {
               note.priority === key ? 'bg-anotata-lavanda-clara text-anotata-roxo font-medium' : 'text-anotata-text'
             }`}
           >
-            <Flag size={11} style={{ color: meta.color }} />
+            <Flag size={12} style={{ color: meta.color }} />
             <span>{meta.label}</span>
             {suggestions?.suggestedPriority === key && (
               <Sparkles size={10} className="ml-auto text-anotata-goiaba" />
@@ -162,39 +163,29 @@ export default function NoteMetaBar({ note, store, suggestions }) {
       <div className="w-px h-4 bg-anotata-border"></div>
 
       {/* PIN */}
-      <button
+      <IconButton
+        icon={Pin}
+        label={note.isPinned ? 'Desafixar nota' : 'Fixar no topo'}
         onClick={() => store.togglePin(note.id)}
-        className={`p-1.5 rounded-md text-xs transition-all ${
-          note.isPinned
-            ? 'bg-anotata-roxo text-white'
-            : 'text-anotata-text-suave hover:bg-anotata-hover hover:text-anotata-roxo'
-        }`}
-        title={note.isPinned ? 'Desafixar nota' : 'Fixar no topo'}
-      >
-        <Pin size={12} className={note.isPinned ? 'fill-white' : ''} />
-      </button>
+        isActive={note.isPinned}
+        iconClassName={note.isPinned ? 'fill-white' : ''}
+      />
 
       {/* MARCAR REVISADA */}
-      <button
+      <IconButton
+        icon={Eye}
+        label="Marcar como revisada agora"
         onClick={() => store.markAsReviewed(note.id)}
-        className="p-1.5 rounded-md text-xs text-anotata-text-suave hover:bg-anotata-hover hover:text-anotata-roxo transition-all"
-        title="Marcar como revisada agora"
-      >
-        <Eye size={12} />
-      </button>
+      />
 
       {/* ARQUIVAR */}
-      <button
+      <IconButton
+        icon={Archive}
+        label={note.isArchived ? 'Desarquivar' : 'Arquivar'}
         onClick={() => note.isArchived ? store.unarchiveNote(note.id) : store.archiveNote(note.id)}
-        className={`p-1.5 rounded-md text-xs transition-all ${
-          note.isArchived
-            ? 'bg-anotata-text-suave text-white'
-            : 'text-anotata-text-suave hover:bg-anotata-hover hover:text-anotata-roxo'
-        }`}
-        title={note.isArchived ? 'Desarquivar' : 'Arquivar'}
-      >
-        <Archive size={12} />
-      </button>
+        isActive={note.isArchived}
+        className={note.isArchived ? 'bg-anotata-text-suave text-white hover:bg-anotata-text-suave' : ''}
+      />
     </div>
   );
 }

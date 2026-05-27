@@ -162,7 +162,7 @@ export default function Dashboard({ store }) {
                 return (
                   <div key={idx} className="flex-1 flex flex-col items-center gap-2">
                     <div className="w-full flex flex-col items-center justify-end" style={{ height: '100px' }}>
-                      <div className="text-[10px] text-anotata-muted mb-1">
+                      <div className="text-2xs text-anotata-muted mb-1">
                         {day.count > 0 ? day.count : ''}
                       </div>
                       <div
@@ -172,7 +172,7 @@ export default function Dashboard({ store }) {
                         style={{ height: `${heightPct}%`, minHeight: '4px' }}
                       ></div>
                     </div>
-                    <div className={`text-[11px] uppercase ${day.isToday ? 'text-anotata-goiaba font-bold' : 'text-anotata-text-suave'}`}>
+                    <div className={`text-xs uppercase ${day.isToday ? 'text-anotata-goiaba font-bold' : 'text-anotata-text-suave'}`}>
                       {day.label}
                     </div>
                   </div>
@@ -220,12 +220,12 @@ export default function Dashboard({ store }) {
                               <h4 className="text-sm font-medium text-anotata-text truncate">
                                 {note.title || 'Sem título'}
                               </h4>
-                              {note.isFavorite && <Star size={10} className="text-yellow-500 fill-yellow-500" />}
+                              {note.isFavorite && <Star size={10} className="text-anotata-favorite fill-anotata-favorite" />}
                             </div>
                             <p className="text-xs text-anotata-muted truncate mt-0.5">
                               {stripHtml(note.content).slice(0, 80) || 'Vazia...'}
                             </p>
-                            <p className="text-[10px] text-anotata-muted mt-1">
+                            <p className="text-2xs text-anotata-muted mt-1">
                               {formatDate(note.updatedAt)}
                             </p>
                           </div>
@@ -283,7 +283,7 @@ export default function Dashboard({ store }) {
                       className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-anotata-lavanda-clara text-anotata-roxo rounded-full text-xs font-medium hover:bg-anotata-lavanda transition-colors"
                     >
                       <span>#{tag}</span>
-                      <span className="text-[10px] bg-anotata-roxo text-white rounded-full px-1.5 py-0.5">
+                      <span className="text-2xs bg-anotata-roxo text-white rounded-full px-1.5 py-0.5">
                         {count}
                       </span>
                     </button>
@@ -305,15 +305,15 @@ export default function Dashboard({ store }) {
                 <div className="grid grid-cols-3 gap-2 text-center mt-2">
                   <div>
                     <div className="text-base font-bold text-anotata-roxo">{stats.predictiveStats.vocabulario}</div>
-                    <div className="text-[10px] text-anotata-muted">palavras</div>
+                    <div className="text-2xs text-anotata-muted">palavras</div>
                   </div>
                   <div>
                     <div className="text-base font-bold text-anotata-roxo">{stats.predictiveStats.pares}</div>
-                    <div className="text-[10px] text-anotata-muted">pares</div>
+                    <div className="text-2xs text-anotata-muted">pares</div>
                   </div>
                   <div>
                     <div className="text-base font-bold text-anotata-roxo">{stats.predictiveStats.trios}</div>
-                    <div className="text-[10px] text-anotata-muted">trios</div>
+                    <div className="text-2xs text-anotata-muted">trios</div>
                   </div>
                 </div>
               </div>
@@ -327,15 +327,15 @@ export default function Dashboard({ store }) {
                 <div className="grid grid-cols-3 gap-2 text-center mt-2">
                   <div>
                     <div className="text-base font-bold text-anotata-roxo">{stats.grammarStats.totalChecks}</div>
-                    <div className="text-[10px] text-anotata-muted">análises</div>
+                    <div className="text-2xs text-anotata-muted">análises</div>
                   </div>
                   <div>
                     <div className="text-base font-bold text-anotata-goiaba">{stats.grammarStats.sessionErrors}</div>
-                    <div className="text-[10px] text-anotata-muted">correções</div>
+                    <div className="text-2xs text-anotata-muted">correções</div>
                   </div>
                   <div>
                     <div className="text-base font-bold text-anotata-roxo">{stats.grammarStats.cacheSize}</div>
-                    <div className="text-[10px] text-anotata-muted">em cache</div>
+                    <div className="text-2xs text-anotata-muted">em cache</div>
                   </div>
                 </div>
               </div>
@@ -375,7 +375,7 @@ function StatCard({ icon, label, value, color, subtitle, onClick }) {
       <div className="text-2xl font-bold text-anotata-text">{value}</div>
       <div className="text-xs text-anotata-muted">
         {label}
-        {subtitle && <span className="block text-[10px]">{subtitle}</span>}
+        {subtitle && <span className="block text-2xs">{subtitle}</span>}
       </div>
     </Comp>
   );
