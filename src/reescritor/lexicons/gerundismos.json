@@ -1,0 +1,24 @@
+{
+  "_meta": {
+    "version": 1,
+    "language": "pt-BR",
+    "description": "Padroes de gerundismo do portugues brasileiro. O gerundismo e a construcao 'verbo auxiliar + estar + gerundio' tipica de atendimento ao cliente: 'vou estar enviando' (em vez de 'vou enviar'). Esta estrutura serve como dado para o transformer rules/gerundism.js, que combina os padroes regex aqui definidos com a regra de conversao gerundio -> infinitivo (-ando -> -ar, -endo -> -er, -indo -> -ir, com tratamento de excecoes).",
+    "source": "Curado a partir de manuais de redacao corporativa e estudos sobre o vicio de linguagem brasileiro.",
+    "count": 18
+  },
+  "patterns": [
+    { "id": "vou-estar", "auxRegex": "(?:vou|vai|vamos|vao|vão)", "match": "(vou|vai|vamos|vao|vão)\\s+estar\\s+(\\w+(?:ando|endo|indo))", "exampleFrom": "vou estar enviando o relatorio", "exampleTo": "vou enviar o relatorio" },
+    { "id": "ir-estar-base", "auxRegex": "(?:irei|ira|irá|iremos|irao|irão)", "match": "(irei|ira|irá|iremos|irao|irão)\\s+estar\\s+(\\w+(?:ando|endo|indo))", "exampleFrom": "irei estar verificando os dados", "exampleTo": "irei verificar os dados" },
+    { "id": "estarei", "auxRegex": "(?:estarei|estara|estará|estaremos|estarao|estarão)", "match": "(estarei|estara|estará|estaremos|estarao|estarão)\\s+(\\w+(?:ando|endo|indo))", "exampleFrom": "estarei verificando o pedido", "exampleTo": "verificarei o pedido" },
+    { "id": "tenho-estado", "auxRegex": "(?:tenho|tem|temos|tinha|tivemos|terei|tera|terá)", "match": "(tenho|tem|temos|tinha|tivemos|terei|tera|terá)\\s+estado\\s+(\\w+(?:ando|endo|indo))", "exampleFrom": "tenho estado revisando o projeto", "exampleTo": "tenho revisado o projeto" },
+    { "id": "preciso-estar", "auxRegex": "(?:preciso|precisa|precisamos|precisava)", "match": "(preciso|precisa|precisamos|precisava)\\s+estar\\s+(\\w+(?:ando|endo|indo))", "exampleFrom": "preciso estar enviando o documento", "exampleTo": "preciso enviar o documento" },
+    { "id": "deveria-estar", "auxRegex": "(?:deveria|deveriamos|deveriam|devo|deve)", "match": "(deveria|deveriamos|deveriam|devo|deve)\\s+estar\\s+(\\w+(?:ando|endo|indo))", "exampleFrom": "deveria estar terminando o trabalho", "exampleTo": "deveria terminar o trabalho" }
+  ],
+  "exceptions": [
+    "estar disponivel",
+    "estar disponível",
+    "estar atento",
+    "estar presente",
+    "estar pronto"
+  ]
+}

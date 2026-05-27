@@ -1,0 +1,74 @@
+{
+  "_meta": {
+    "version": 1,
+    "language": "pt-BR",
+    "description": "Conectores (conjuncoes, locucoes adverbiais e conectivos textuais) do portugues brasileiro organizados por funcao logica e por registro (informal | padrao | formal | academico). O transformer rules/connectors.js usa esta estrutura para promover, rebaixar ou reescrever conectores conforme o modo escolhido. Cada grupo lista equivalentes — todos podem substituir uns aos outros mantendo o sentido logico, mudando apenas o tom.",
+    "source": "Curado a partir de gramaticas normativas (Bechara, Cunha & Cintra) e manuais de redacao academica brasileiros.",
+    "count": 9
+  },
+  "groups": {
+    "adversativo": {
+      "description": "Indica oposicao, contraste",
+      "informal": ["mas", "so que", "só que"],
+      "padrao": ["porem", "porém", "no entanto", "entretanto"],
+      "formal": ["contudo", "todavia"],
+      "academico": ["nao obstante", "não obstante", "em contrapartida"]
+    },
+    "conclusivo": {
+      "description": "Indica conclusao, consequencia",
+      "informal": ["entao", "então", "ai", "aí", "daí"],
+      "padrao": ["por isso", "logo", "assim"],
+      "formal": ["portanto", "desse modo", "dessa forma"],
+      "academico": ["por conseguinte", "destarte", "consequentemente"]
+    },
+    "explicativo": {
+      "description": "Indica causa, justificativa",
+      "informal": ["porque", "pois", "ja que", "já que"],
+      "padrao": ["pois", "uma vez que", "visto que"],
+      "formal": ["dado que", "tendo em vista que"],
+      "academico": ["em virtude de", "em razao de", "em razão de"]
+    },
+    "aditivo": {
+      "description": "Indica adicao, soma",
+      "informal": ["e", "tambem", "também", "ainda"],
+      "padrao": ["alem disso", "além disso", "tambem", "também"],
+      "formal": ["ademais", "outrossim"],
+      "academico": ["nao apenas", "não apenas", "bem como"]
+    },
+    "comparativo": {
+      "description": "Indica comparacao, semelhanca",
+      "informal": ["como", "que nem", "tipo"],
+      "padrao": ["assim como", "tal como"],
+      "formal": ["da mesma forma que", "do mesmo modo que"],
+      "academico": ["analogamente", "de modo similar"]
+    },
+    "exemplificativo": {
+      "description": "Apresenta exemplo",
+      "informal": ["tipo", "como por exemplo"],
+      "padrao": ["por exemplo", "como"],
+      "formal": ["a saber", "tais como"],
+      "academico": ["nomeadamente", "a titulo de exemplo", "a título de exemplo"]
+    },
+    "temporal": {
+      "description": "Indica tempo, sequencia",
+      "informal": ["ai", "aí", "daí", "depois", "antes"],
+      "padrao": ["em seguida", "depois", "antes", "quando"],
+      "formal": ["posteriormente", "anteriormente", "concomitantemente"],
+      "academico": ["ulteriormente", "ulteriormente"]
+    },
+    "condicional": {
+      "description": "Indica condicao, hipotese",
+      "informal": ["se", "caso"],
+      "padrao": ["caso", "se"],
+      "formal": ["desde que", "contanto que"],
+      "academico": ["a menos que", "salvo se"]
+    },
+    "conformativo": {
+      "description": "Indica conformidade",
+      "informal": ["como", "do jeito que"],
+      "padrao": ["conforme", "segundo", "de acordo com"],
+      "formal": ["em conformidade com"],
+      "academico": ["consoante", "em consonancia com", "em consonância com"]
+    }
+  }
+}
