@@ -202,4 +202,188 @@ Seguimos:
 - Site público em GitHub Pages, repositório precisa ficar **público** pra Pages funcionar
 - Usuário escolheu liberdade técnica total e me chamou de "mestre" do projeto
 
-— última atualização: Reescritor Fase 3 (polimento + expansão de léxicos para ~1100 entradas + cacofonia + nominalização, 27/05/2026)
+### Reescritor — Fase 4 (Bubble menu flutuante + popover compacto)
+- Ao selecionar texto no editor, aparece botão flutuante "🔄 Reescrever" colado à seleção
+- Botão abre um **popover compacto de 520px** (não o modal grande) com:
+  - 5 chips de modo (atalho 1-5)
+  - Original empilhado em cima / Reescrito embaixo (com seta ↓)
+  - Lista de mudanças recolhível
+  - Cancelar / Aplicar (atalho ⏎)
+- Posicionamento inteligente (auto-flip se não couber em baixo)
+- Memória do último modo escolhido (sessão)
+- Atalhos: 1-5 troca modo, Esc fecha, Enter aplica
+- Botão antigo (🔄 na toolbar) continua pra reescrever a nota inteira
+
+### Reescritor — Fase 5 (Ligar texto a nota/caderno via bubble menu)
+- Bubble menu expandido pra 2 ações: [ 🔄 Reescrever │ 🔗 Ligar a... ]
+- "Ligar a..." abre **LinkPickerPopover** colado à seleção:
+  - Lista unificada de cadernos + notas com busca
+  - Atalhos: ↑↓ navegar, ↵ confirmar, Esc fechar
+  - Ao confirmar: texto vira link interno (roxo com fundo lavanda)
+- Clicar num link interno **navega direto** pra nota/caderno destino
+- Se ligar pra outra nota: **registra conexão** automática no store (aparece no painel de conexões e mapa visual)
+- Extension Tiptap `InternalLink` (Mark com targetType, targetId, targetTitle)
+- Comportamento defensivo: se destino excluído, mostra aviso amigável
+
+### UI — Coluna NoteList recolhível
+- Segundo painel (lista de notas) agora recolhe/expande com botão [←]/[→]
+- Quando recolhida: faixa de 48px com ícone + contador + botão "+"
+- Padrão idêntico à Sidebar (transição 300ms, estado em App.jsx)
+- Ganho: mais espaço pro editor quando o foco é na escrita
+
+### Design Mestre — Agente de auditoria de UI (criado)
+- Agente customizado reutilizável salvo em `.kiro/agents/design-mestre.md`
+- Analisa 8 dimensões: paleta, iconografia, tipografia, espaçamento, border radius, sombras, estados interativos, acessibilidade
+- Gera relatório profissional em `docs/UI-AUDIT.md`
+- Primeira auditoria rodada: **Nota B**
+- Top 3 pontos críticos identificados:
+  1. Cinza `#6B5E80` fora da paleta oficial (conflito com `text-suave`)
+  2. Tamanhos de ícone caóticos (8 tamanhos pra `X`, 7 pra `Sparkles`)
+  3. Foco do teclado invisível em ~40 botões só com ícone
+
+---
+
+## 🧪 Testes automatizados
+
+- `src/reescritor/__tests__/phase3.test.js` — 20 testes (gerundismo futuro, voz passiva, cacofonia, nominalização, modos compostos)
+- `src/reescritor/__tests__/smoke.test.js` — 5 smoke tests (texto realista todos os modos)
+- `src/components/__tests__/RephrasePopover.test.jsx` — 3 testes (importação + integração engine)
+- `src/components/__tests__/LinkPicker.test.jsx` — 4 testes (InternalLink extension + LinkPickerPopover)
+- **Total: 32 testes vitest passando** (`npm test`)
+
+---
+
+## 📄 Documentação gerada
+
+- `HISTORICO_PROJETO.md` — este arquivo (ponto de retomada)
+- `COMO-USAR.md` — instruções simples pro usuário
+- `docs/reescritor/ESPEC.md` — especificação técnica completa do Reescritor (v1.2.0-fase3)
+- `docs/UI-AUDIT.md` — relatório de auditoria visual (Design Mestre, nota B)
+- `src/reescritor/README.md` — referência técnica da engine
+
+---
+
+## 📱 Mobile — Planejamento em 4 fases
+
+O layout responsivo ainda NÃO foi implementado. Está planejado em 4 fases:
+
+| Fase | O que | Status |
+|---|---|---|
+| Mobile 1 | Layout responsivo (gavetas em < 768px) | ⏳ Não feito |
+| Mobile 2 | Touch + teclado virtual (áreas 44px, toolbar rolável) | ⏳ Não feito |
+| Mobile 3 | PWA (instalável, offline, manifest + SW) | ⏳ Não feito |
+| Mobile 4 | Gestos (swipe, pull-to-refresh, transições) | ⏳ Não feito |
+
+---
+
+## 🎨 Design System — Estado atual (da auditoria)
+
+- **Paleta oficial:** roxo (#5B2D8E), roxo-escuro (#3D1B66), goiaba (#E8637C), lavanda (tons), bg (#F2F1F4)
+- **Cores semânticas a formalizar:** success (#0F7A3F), warn (#9B6F00), goiaba-bg (#FCE7EB), favorite (#F0B400)
+- **Iconografia:** lucide-react, ~62 ícones, **precisa padronizar em 3 tamanhos (12/14/16)**
+- **Tipografia:** escala de text-[9px] a text-3xl — **consolidar em xs/sm/base/lg/xl/2xl**
+- **Border radius:** 6 níveis → **reduzir pra 4** (rounded/lg/xl/2xl/full)
+- **Sombras:** padrão implícito bom (sm → botão, md → hover card, xl → dropdown, 2xl → modal)
+- **Prioridade 1:** criar componente `<IconButton>` com aria-label + focus-visible
+
+---
+
+## 🗂️ Estrutura de arquivos (atualizada)
+
+```
+src/
+├── App.jsx
+├── main.jsx
+├── index.css
+├── store/useStore.js
+├── engine/
+│   ├── RulesEngine.js, PredictiveEngine.js, GrammarEngine.js
+│   ├── SearchEngine.js, CollectionsEngine.js, DateEngine.js
+│   ├── ChecklistEngine.js, Templates.js
+├── reescritor/                    # Engine de reescrita PT-BR (sem IA)
+│   ├── index.js                   # API pública: rephrase(text, mode)
+│   ├── tokenizer.js, posLite.js
+│   ├── modes/                     # geral, formal, conciso, fluente, simples
+│   ├── rules/                     # synonyms, connectors, gerundism, redundancy,
+│   │                              # voice, clauseSplit, cacofonia, nominalizacao
+│   ├── lexicons/                  # ~1100 entradas em 9 JSONs
+│   └── __tests__/                 # 25 testes vitest
+├── components/
+│   ├── AuthGate, Sidebar, Home, NoteList, Editor, Toolbar
+│   ├── NoteMetaBar, TagBar, PredictiveBar
+│   ├── GrammarPanel, GrammarPopover, Corretor
+│   ├── InsightPanel, ConnectionModal, ConnectionMap
+│   ├── RephrasePanel, RephrasePopover        # Reescritor UI
+│   ├── SelectionBubbleMenu                   # Bubble menu (reescrever + ligar)
+│   ├── LinkPickerPopover                     # Busca de nota/caderno pra link
+│   ├── CommandPalette, TemplatePicker
+│   ├── DueDateBadge, ChecklistProgress
+│   ├── NotebookCover, Dashboard, EmptyState
+│   ├── VersionHistory, NotebookDeleteModal, Timeline
+│   └── __tests__/                            # 7 testes vitest
+├── extensions/
+│   ├── ResizableImage.jsx
+│   ├── InlinePredictive.js
+│   ├── InlineGrammar.js
+│   └── InternalLink.js                      # Mark de link interno
+└── hooks/useKeyboardShortcuts.js
+```
+
+---
+
+## 🔑 Decisões técnicas importantes
+
+1. **localStorage** como banco — chave `anotata-data`, schema versionado
+2. **Migração suave** — campos novos são adicionados a notas antigas no carregamento
+3. **Conexões** são objetos `{noteId, reason, createdAt}`, **não** mais strings (migrado)
+4. **Versões** são salvas a cada 10 edições, máx 10 versões por nota
+5. **Único motor que usa internet:** GrammarEngine (LanguageTool). Todo o resto é 100% local.
+6. **Login** com hash SHA-256 + salt no client-side (proteção visual, não criptográfica)
+7. **Deploy:** `main` = código-fonte; `gh-pages` = build publicado. Fluxo: `npm run build` → copiar `dist/` pra gh-pages → push.
+8. **Rules of Hooks são sagradas** — todo hook ANTES de qualquer early return.
+9. **Reescritor** é 100% local, sem IA, determinístico: mesmo input → mesmo output.
+10. **Bubble menu** usa `createPortal` + `position: fixed` ancorado por `coordsAtPos` do Tiptap.
+11. **Links internos** usam Mark customizado do Tiptap (`InternalLink`) com data-attributes + click handler via event delegation.
+12. **Agente Design Mestre** salvo em `.kiro/agents/design-mestre.md` — invocável a qualquer momento com "roda o Design Mestre".
+
+---
+
+## 🚀 Como retomar em outro chat
+
+### Comece com este prompt:
+
+```
+Estou retomando o projeto ANOTATA. Por favor lê o arquivo HISTORICO_PROJETO.md
+no repositório linqueroteam-creator/radio_programador para entender o estado atual.
+
+CONTEXTO IMEDIATO desta sessão:
+- Última entrega: Reescritor F5 (bubble menu com "Ligar a..." pra notas/cadernos) + NoteList recolhível + auditoria de UI pelo Design Mestre
+- O Design Mestre (agente de auditoria de UI) já foi criado e rodou a primeira vez — relatório em docs/UI-AUDIT.md com nota B
+- O próximo passo lógico é: [DESCREVA O QUE QUER FAZER]
+  Opções óbvias:
+  a) Polimento visual seguindo as recomendações da auditoria (docs/UI-AUDIT.md)
+  b) Mobile 1 — layout responsivo (gavetas em < 768px)
+  c) PWA — tornar instalável
+  d) Outra coisa que você decidir
+
+Regras do projeto:
+- Sem IA (corretor LanguageTool é a única exceção, já implementada)
+- Visual lavanda/roxo/goiaba sobre fundo claro (#F2F1F4)
+- Preservar tudo que está aprovado
+- Eu sou designer gráfico com TDAH, leigo em programação
+- Você tem liberdade técnica total
+- Linguagem neutra em português
+- Fase por fase com checkpoint, build, smoke test e deploy entre cada
+```
+
+---
+
+## 💜 Notas pessoais do usuário
+
+- Designer gráfico com TDAH, leigo em programação e GitHub
+- Sempre entregar: link ZIP do GitHub + 3 passos no máximo + sem jargão técnico
+- Site público em GitHub Pages, repositório precisa ficar **público** pra Pages funcionar
+- Usuário escolheu liberdade técnica total e me chamou de "mestre" do projeto
+- O projeto se chama **ANOTATA** (não confundir com NotePulse que é outro projeto)
+
+— última atualização: Reescritor F5 + NoteList recolhível + Design Mestre (auditoria UI nota B), 27/05/2026
