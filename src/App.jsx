@@ -6,6 +6,7 @@ import Editor from './components/Editor';
 import Dashboard from './components/Dashboard';
 import Corretor from './components/Corretor';
 import Home from './components/Home';
+import Timeline from './components/Timeline';
 import AuthGate from './components/AuthGate';
 import TemplatePicker from './components/TemplatePicker';
 import CommandPalette from './components/CommandPalette';
@@ -157,6 +158,9 @@ function MainApp({ logout }) {
     }
     if (store.currentView === 'corretor') {
       return <Corretor store={store} />;
+    }
+    if (store.currentView === 'timeline') {
+      return <Timeline store={store} />;
     }
     return (
       <>

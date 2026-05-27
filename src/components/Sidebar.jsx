@@ -3,7 +3,8 @@ import {
   FileText, Star, Trash2, BookOpen, Tag, Plus,
   ChevronDown, ChevronRight, Search, Sparkles, X,
   ChevronLeft, Menu, SpellCheck,
-  Home as HomeIcon, TrendingUp, Layers, Pin, Archive
+  Home as HomeIcon, TrendingUp, Layers, Pin, Archive,
+  Clock
 } from 'lucide-react';
 import { COLLECTION_LIST, countCollections } from '../engine/CollectionsEngine';
 
@@ -96,6 +97,12 @@ export default function Sidebar({ store, isCollapsed, onToggle }) {
             active={store.currentView === 'corretor'}
             onClick={() => { store.setCurrentView('corretor'); store.setSelectedNoteId(null); }}
             title="Corretor Ortográfico"
+          />
+          <SidebarIconBtn
+            icon={<Clock size={18} />}
+            active={store.currentView === 'timeline'}
+            onClick={() => { store.setCurrentView('timeline'); store.setSelectedNoteId(null); }}
+            title="Linha do tempo"
           />
           <SidebarIconBtn
             icon={<TrendingUp size={18} />}
@@ -197,6 +204,13 @@ export default function Sidebar({ store, isCollapsed, onToggle }) {
           active={store.currentView === 'corretor'}
           onClick={() => { store.setCurrentView('corretor'); store.setSelectedNoteId(null); }}
           highlight
+        />
+
+        <NavBtn
+          icon={<Clock size={16} />}
+          label="Linha do tempo"
+          active={store.currentView === 'timeline'}
+          onClick={() => { store.setCurrentView('timeline'); store.setSelectedNoteId(null); }}
         />
 
         {archivedCount > 0 && (
