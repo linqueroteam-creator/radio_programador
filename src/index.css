@@ -161,6 +161,33 @@ body {
   text-decoration: underline;
 }
 
+/* === Link interno (Reescritor F5) ===
+   Trecho de texto que aponta pra outra nota ou caderno do próprio app.
+   Visualmente diferente do <a> normal (que vai pra URL externa goiaba):
+   roxo do projeto, com fundo lavanda muito claro pra parecer um "selo"
+   sutil. Aumenta o contraste no hover. */
+.ProseMirror a.anotata-internal-link {
+  color: #5B2D8E;
+  text-decoration: none;
+  background: rgba(232, 224, 246, 0.45);
+  border-bottom: 1px solid rgba(91, 45, 142, 0.35);
+  padding: 0 3px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 150ms ease, border-bottom-color 150ms ease;
+}
+
+.ProseMirror a.anotata-internal-link:hover {
+  background: rgba(232, 224, 246, 0.95);
+  border-bottom-color: rgba(91, 45, 142, 0.85);
+}
+
+.ProseMirror a.anotata-internal-link:focus-visible {
+  outline: 2px solid #5B2D8E;
+  outline-offset: 1px;
+}
+
 /* Task List (Checklist) */
 .ProseMirror ul[data-type="taskList"] {
   list-style: none;

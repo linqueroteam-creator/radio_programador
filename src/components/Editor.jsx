@@ -12,6 +12,7 @@ import Color from '@tiptap/extension-color';
 import ResizableImage from '../extensions/ResizableImage';
 import InlinePredictive from '../extensions/InlinePredictive';
 import InlineGrammar, { buildPlainTextMap } from '../extensions/InlineGrammar';
+import InternalLink from '../extensions/InternalLink';
 import Toolbar from './Toolbar';
 import TagBar from './TagBar';
 import PredictiveBar from './PredictiveBar';
@@ -74,6 +75,10 @@ export default function Editor({ store }) {
       // Pinta os erros direto no texto. O hover (renderizado fora) abre
       // um balão com sugestões clicáveis.
       InlineGrammar,
+      // === Link interno (Reescritor F5) ===
+      // Mark que transforma um trecho de texto em link clicável pra outra
+      // nota ou caderno. Usado pelo bubble menu de seleção (botão "Ligar a...").
+      InternalLink,
       Placeholder.configure({ placeholder: 'Comece a escrever... (a sugestão cinza aparece à direita — aperte → para aceitar)' }),
       TaskList,
       TaskItem.configure({ nested: true }),
@@ -261,7 +266,64 @@ export default function Editor({ store }) {
     };
   }, [editor]);
 
-  // === ANÁLISE LOCAL EM TEMPO REAL ===
+  // === LINKS INTERNOS: navegação ao clicar (Reescritor F5) ===
+  // Event delegation no DOM do editor: ao clicar num <a data-internal-link>,
+  // ler os data-attributes e navegar pra nota ou caderno destino via store.
+  // Se o destino não existir mais (excluído ou na lixeira), avisar o usuário
+  // sem quebrar o fluxo.
+  useEffect(() => {
+    if (!editor) return undefined;
+    const dom = editor.view && editor.view.dom;
+    if (!dom) return undefined;
+
+    const onClick = (e) => {
+      const target = e.target;
+      if (!target || target.nodeType !== 1) return;
+      const linkEl = target.closest && target.closest('a[data-internal-link]');
+      if (!linkEl) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      const targetId = linkEl.getAttribute('data-target-id');
+      const targetType = linkEl.getAttribute('data-target-type') || 'note';
+      const targetTitle = linkEl.getAttribute('data-target-title') || '';
+
+      if (!targetId) return;
+
+      try {
+        if (targetType === 'note') {
+          const note = (store.notes || []).find((n) => n.id === targetId);
+          if (note && !note.isTrash) {
+            // Garante que a view mostre a nota (mesmo se estiver em outro caderno)
+            store.setCurrentView('all');
+            store.setSelectedNoteId(targetId);
+          } else {
+            alert(
+              `A nota "${targetTitle || 'destino'}" não está mais disponível (foi excluída ou movida pra lixeira).`
+            );
+          }
+        } else if (targetType === 'notebook') {
+          const nb = (store.notebooks || []).find((n) => n.id === targetId);
+          if (nb) {
+            store.setCurrentNotebookId(targetId);
+            store.setCurrentView('notebook');
+            store.setSelectedNoteId(null);
+          } else {
+            alert(
+              `O caderno "${targetTitle || 'destino'}" não está mais disponível.`
+            );
+          }
+        }
+      } catch (_) {
+        // não quebra o app por erro de navegação
+      }
+    };
+
+    dom.addEventListener('click', onClick);
+    return () => dom.removeEventListener('click', onClick);
+  }, [editor, store]);
+
   const suggestions = useMemo(() => {
     if (!selectedNote) return null;
     return rulesEngine.analyze(selectedNote, store.notes);
@@ -635,10 +697,14 @@ export default function Editor({ store }) {
         />
       )}
 
-      {/* === BUBBLE MENU DE SELEÇÃO (Reescritor F4) === */}
-      {/* Mostra um botão flutuante "Reescrever" sempre que o usuário seleciona
-          texto no editor. Ao clicar, abre um popover compacto colado à seleção. */}
-      <SelectionBubbleMenu editor={editor} />
+      {/* === BUBBLE MENU DE SELEÇÃO (Reescritor F4 + F5) === */}
+      {/* Mostra um pill flutuante com 2 ações sempre que o usuário seleciona
+          texto no editor: Reescrever e Ligar a outra nota/caderno. */}
+      <SelectionBubbleMenu
+        editor={editor}
+        store={store}
+        currentNoteId={selectedNote?.id}
+      />
 
       {/* Popover de correção inline (spell-check / gramática) */}
       {hoveredIssue && hoveredRect && (
