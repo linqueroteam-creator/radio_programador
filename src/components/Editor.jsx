@@ -21,13 +21,14 @@ import NoteMetaBar from './NoteMetaBar';
 import InsightPanel from './InsightPanel';
 import ConnectionModal from './ConnectionModal';
 import ConnectionMap from './ConnectionMap';
+import RephrasePanel from './RephrasePanel';
 import predictiveEngine from '../engine/PredictiveEngine';
 import grammarEngine from '../engine/GrammarEngine';
 import rulesEngine from '../engine/RulesEngine';
 import {
   Star, Trash2, BookOpen, Clock, Sparkles, SpellCheck,
   Image as ImageIcon, CheckCircle, AlertCircle, Cloud, CloudOff,
-  PanelRight, Link2, Map as MapIcon
+  PanelRight, Link2, Map as MapIcon, RotateCw
 } from 'lucide-react';
 
 export default function Editor({ store }) {
@@ -50,6 +51,13 @@ export default function Editor({ store }) {
   const grammarLeaveTimerRef = React.useRef(null);
   const grammarCheckTimerRef = React.useRef(null);
   const lastCheckedTextRef = React.useRef('');
+
+  // === Reescritor (P5 — Engine de reescrita PT-BR) ===
+  // Estado do painel de reescrita.
+  // ATENÇÃO: estes useStates ficam aqui em cima, ANTES de qualquer return condicional,
+  // pra preservar Rules of Hooks (evita tela branca).
+  const [rephraseState, setRephraseState] = useState(null);
+  // rephraseState quando aberto: { open: true, originalText: string, scope: 'selection'|'full', range: {from,to}|null }
 
   const editor = useEditor({
     extensions: [
@@ -322,6 +330,70 @@ export default function Editor({ store }) {
     alert('🤖 Porta de IA aberta!\n\nQuando sua IA estiver pronta, ela será conectada aqui.');
   };
 
+  // === HANDLERS DO REESCRITOR ===
+  // Abre o panel: se houver seleção, reescreve só ela; senão, reescreve a nota toda.
+  const openRephrase = useCallback(() => {
+    if (!editor) return;
+    try {
+      const { from, to, empty } = editor.state.selection;
+      if (!empty && from < to) {
+        // Seleção ativa: pega só esse trecho
+        const selectedText = editor.state.doc.textBetween(from, to, ' ');
+        if (selectedText && selectedText.trim().length >= 3) {
+          setRephraseState({
+            open: true,
+            originalText: selectedText,
+            scope: 'selection',
+            range: { from, to },
+          });
+          return;
+        }
+      }
+      // Sem seleção (ou seleção curta demais): pega a nota inteira
+      const fullText = editor.getText();
+      if (!fullText || fullText.trim().length < 3) {
+        alert('Não há texto suficiente para reescrever. Escreva algo primeiro.');
+        return;
+      }
+      setRephraseState({
+        open: true,
+        originalText: fullText,
+        scope: 'full',
+        range: null,
+      });
+    } catch (_) {
+      // qualquer erro, não abre
+    }
+  }, [editor]);
+
+  const closeRephrase = useCallback(() => {
+    setRephraseState(null);
+  }, []);
+
+  const applyRephrase = useCallback((newText) => {
+    if (!editor || !rephraseState) {
+      setRephraseState(null);
+      return;
+    }
+    try {
+      if (rephraseState.scope === 'selection' && rephraseState.range) {
+        // Substitui apenas o trecho selecionado
+        const { from, to } = rephraseState.range;
+        editor.chain().focus().insertContentAt({ from, to }, newText).run();
+      } else {
+        // Substitui o conteúdo todo, preservando estrutura simples (parágrafos)
+        const paragraphs = String(newText).split(/\n\n+/).filter(p => p.trim());
+        const html = paragraphs.length > 0
+          ? paragraphs.map(p => `<p>${escapeHtml(p)}</p>`).join('')
+          : `<p>${escapeHtml(newText)}</p>`;
+        editor.chain().focus().setContent(html).run();
+      }
+    } catch (_) {
+      // se algo der errado, deixa o texto original
+    }
+    setRephraseState(null);
+  }, [editor, rephraseState]);
+
   // === HANDLERS DO POPOVER DE GRAMÁTICA INLINE ===
   const closeGrammarPopover = useCallback(() => {
     setHoveredIssue(null);
@@ -420,6 +492,13 @@ export default function Editor({ store }) {
               title="Mapa visual de conexões"
             >
               <MapIcon size={16} />
+            </button>
+            <button
+              onClick={openRephrase}
+              className="p-1.5 rounded text-anotata-text-suave hover:bg-anotata-hover hover:text-anotata-roxo transition-colors"
+              title="Reescrever (seleção ou nota inteira)"
+            >
+              <RotateCw size={16} />
             </button>
             <button
               onClick={checkGrammar}
@@ -545,6 +624,16 @@ export default function Editor({ store }) {
         />
       )}
 
+      {/* Painel do Reescritor (P5) */}
+      {rephraseState && rephraseState.open && (
+        <RephrasePanel
+          originalText={rephraseState.originalText}
+          scope={rephraseState.scope}
+          onApply={applyRephrase}
+          onClose={closeRephrase}
+        />
+      )}
+
       {/* Popover de correção inline (spell-check / gramática) */}
       {hoveredIssue && hoveredRect && (
         <GrammarPopover
@@ -658,4 +747,14 @@ function handleNextAction(suggestion, note, store) {
     default:
       break;
   }
+}
+
+function escapeHtml(s) {
+  if (!s) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
