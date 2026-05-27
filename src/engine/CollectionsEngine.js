@@ -1,4 +1,6 @@
 import rulesEngine from './RulesEngine';
+import { getDueDateStatus } from './DateEngine';
+import { countChecklistItems } from './ChecklistEngine';
 
 /**
  * ANOTATA — Motor de Coleções Automáticas
@@ -293,6 +295,88 @@ export const COLLECTIONS = {
     test: (n) => {
       if (n.isTrash) return { match: false };
       if (n.status === 'concluido') return { match: true, reason: 'concluída' };
+      return { match: false };
+    },
+  },
+
+  // === PRAZOS (Pacote 4 Pro) ===
+  comPrazo: {
+    id: 'comPrazo',
+    name: 'Com prazo',
+    icon: '📅',
+    description: 'Notas que têm prazo definido',
+    color: '#5B2D8E',
+    test: (n) => {
+      if (n.isTrash || n.isArchived) return { match: false };
+      if (n.dueDate) return { match: true, reason: 'tem prazo' };
+      return { match: false };
+    },
+  },
+
+  vencidas: {
+    id: 'vencidas',
+    name: 'Vencidas',
+    icon: '⏰',
+    description: 'Notas com prazo já passado',
+    color: '#C44862',
+    test: (n) => {
+      if (n.isTrash || n.isArchived) return { match: false };
+      if (n.status === 'concluido') return { match: false };
+      if (!n.dueDate) return { match: false };
+      if (getDueDateStatus(n.dueDate) === 'vencido') {
+        return { match: true, reason: 'prazo vencido' };
+      }
+      return { match: false };
+    },
+  },
+
+  prazoHoje: {
+    id: 'prazoHoje',
+    name: 'Prazo hoje',
+    icon: '🔥',
+    description: 'Notas com prazo para hoje',
+    color: '#E8637C',
+    test: (n) => {
+      if (n.isTrash || n.isArchived) return { match: false };
+      if (n.status === 'concluido') return { match: false };
+      if (!n.dueDate) return { match: false };
+      if (getDueDateStatus(n.dueDate) === 'hoje') {
+        return { match: true, reason: 'vence hoje' };
+      }
+      return { match: false };
+    },
+  },
+
+  proximosPrazos: {
+    id: 'proximosPrazos',
+    name: 'Próximos prazos',
+    icon: '⏳',
+    description: 'Prazos nos próximos 7 dias',
+    color: '#7C4DC9',
+    test: (n) => {
+      if (n.isTrash || n.isArchived) return { match: false };
+      if (n.status === 'concluido') return { match: false };
+      if (!n.dueDate) return { match: false };
+      const status = getDueDateStatus(n.dueDate);
+      if (status === 'hoje' || status === 'amanha' || status === 'em-breve' || status === 'esta-semana') {
+        return { match: true, reason: status === 'hoje' ? 'vence hoje' : status === 'amanha' ? 'vence amanhã' : 'em breve' };
+      }
+      return { match: false };
+    },
+  },
+
+  comProgresso: {
+    id: 'comProgresso',
+    name: 'Em progresso',
+    icon: '📊',
+    description: 'Notas com checklist parcialmente concluído',
+    color: '#7C4DC9',
+    test: (n) => {
+      if (n.isTrash || n.isArchived) return { match: false };
+      const stats = countChecklistItems(n.content);
+      if (stats.total > 0 && stats.done > 0 && stats.done < stats.total) {
+        return { match: true, reason: `${stats.done}/${stats.total} feito` };
+      }
       return { match: false };
     },
   },

@@ -2,14 +2,17 @@ import React, { useState, useMemo } from 'react';
 import {
   X, ChevronDown, ChevronRight, AlertCircle, Info, CheckCircle,
   Tag, Calendar, Link as LinkIcon, CheckSquare, Link2, Plus,
-  Sparkles, Clock, Edit3, FileText, History, Trash2, RefreshCw,
-  TrendingUp, Eye
+  Sparkles, Clock, Edit3, FileText, History, Eye, Star, Pin,
+  Archive, Copy, Download, Zap, RefreshCw, ListChecks
 } from 'lucide-react';
 import { NOTE_TYPES, NOTE_PRIORITY, NOTE_STATUS } from '../engine/RulesEngine';
+import { countChecklistItems, appendChecklistItem, markAllDone, extractChecklistText } from '../engine/ChecklistEngine';
+import DueDateBadge, { DueDatePicker } from './DueDateBadge';
+import ChecklistProgress from './ChecklistProgress';
 
 /**
- * Painel lateral inteligente — central de contexto da nota.
- * Mostra metadados, diagnóstico, conexões, links, datas, tarefas.
+ * Painel lateral inteligente — Pacote 4 Pro.
+ * Agora não é só informativo: é painel de AÇÃO.
  */
 
 function Section({ title, count, icon: Icon, children, defaultOpen = true }) {
@@ -65,6 +68,23 @@ function AlertItem({ level, icon: Icon, message, action, onActionClick }) {
   );
 }
 
+function QuickAction({ icon: Icon, label, onClick, variant = 'default' }) {
+  const styles = {
+    default: 'bg-white border-anotata-border text-anotata-text hover:border-anotata-roxo hover:bg-anotata-lavanda-clara',
+    primary: 'bg-anotata-roxo border-anotata-roxo text-white hover:bg-anotata-roxo-escuro',
+    danger: 'bg-white border-anotata-goiaba text-anotata-goiaba hover:bg-anotata-goiaba hover:text-white',
+  };
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center gap-2 px-2.5 py-1.5 text-xs font-medium rounded-md border transition-all ${styles[variant]}`}
+    >
+      <Icon size={12} />
+      {label}
+    </button>
+  );
+}
+
 function formatRelativeDate(iso) {
   if (!iso) return 'nunca';
   const d = new Date(iso);
@@ -91,10 +111,9 @@ export default function InsightPanel({
   const statusMeta = NOTE_STATUS[note.status] || NOTE_STATUS.ativo;
 
   const { links, dates, tasks, diagnostics, connections, duplicates } = suggestions;
-  const openTasks = tasks.filter(t => !t.done);
+  const checklistStats = useMemo(() => countChecklistItems(note.content), [note.content]);
   const manualConnections = note.manualConnections || [];
 
-  // Notas conectadas manualmente (com objeto completo)
   const connectedNotes = useMemo(() => {
     return manualConnections
       .map(c => {
@@ -108,12 +127,11 @@ export default function InsightPanel({
       .filter(Boolean);
   }, [manualConnections, store.notes]);
 
-  // Diagnóstico extra: nota importante sem conexão
+  // Diagnóstico extra
   const extraDiagnostics = [];
   if ((note.priority === 'alta' || note.priority === 'urgente') && manualConnections.length === 0) {
     extraDiagnostics.push({
-      level: 'warn',
-      icon: AlertCircle,
+      level: 'warn', icon: AlertCircle,
       message: 'Importante mas sem conexão',
       action: 'Adicionar conexão',
       onActionClick: onAddConnection,
@@ -121,37 +139,80 @@ export default function InsightPanel({
   }
   if (duplicates.length > 0) {
     extraDiagnostics.push({
-      level: 'warn',
-      icon: AlertCircle,
+      level: 'warn', icon: AlertCircle,
       message: `Possível duplicidade (${duplicates.length} nota${duplicates.length > 1 ? 's' : ''} com título igual)`,
     });
   }
-  if (diagnostics.some(d => d.message.includes('Sem tags'))) {
-    extraDiagnostics.push({
-      level: 'info',
-      icon: Tag,
-      message: 'Sem tags',
-      action: 'Adicionar tag',
-      onActionClick: onFocusTags,
-    });
-  }
 
-  // Próxima ação personalizada
   const [editingNextAction, setEditingNextAction] = useState(false);
   const [customAction, setCustomAction] = useState(note.customNextAction || '');
+  const [editingDueDate, setEditingDueDate] = useState(false);
+  const [newTaskText, setNewTaskText] = useState('');
+  const [showAddTask, setShowAddTask] = useState(false);
 
   const saveCustomNextAction = () => {
     store.setCustomNextAction(note.id, customAction.trim());
     setEditingNextAction(false);
   };
 
+  const handleAddTask = () => {
+    if (!newTaskText.trim()) return;
+    const newContent = appendChecklistItem(note.content, newTaskText.trim());
+    store.updateNote(note.id, { content: newContent });
+    setNewTaskText('');
+    setShowAddTask(false);
+  };
+
+  const handleMarkAllDone = () => {
+    const newContent = markAllDone(note.content);
+    store.updateNote(note.id, { content: newContent });
+  };
+
+  const handleCopyContent = () => {
+    const text = store.exportNoteAsText(note.id);
+    if (text && navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+    }
+  };
+
+  const handleCopyChecklist = () => {
+    const items = extractChecklistText(note.content);
+    if (items.length === 0) return;
+    const text = items.map(i => `${i.done ? '[x]' : '[ ]'} ${i.text}`).join('\n');
+    if (navigator.clipboard) navigator.clipboard.writeText(text);
+  };
+
+  const handleExport = (format) => {
+    let content;
+    let filename;
+    let mime;
+
+    if (format === 'md') {
+      content = store.exportNoteAsMarkdown(note.id);
+      filename = `${(note.title || 'nota').replace(/[^a-z0-9]/gi, '-').toLowerCase()}.md`;
+      mime = 'text/markdown';
+    } else {
+      content = store.exportNoteAsText(note.id);
+      filename = `${(note.title || 'nota').replace(/[^a-z0-9]/gi, '-').toLowerCase()}.txt`;
+      mime = 'text/plain';
+    }
+
+    if (!content) return;
+    const blob = new Blob([content], { type: `${mime};charset=utf-8` });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <aside className="w-[340px] border-l border-anotata-border bg-anotata-sidebar flex flex-col h-full overflow-hidden">
-      {/* Header */}
       <div className="px-3 py-3 border-b border-anotata-border bg-white flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Sparkles size={14} className="text-anotata-roxo" />
-          <h3 className="text-sm font-semibold text-anotata-text">Diagnóstico</h3>
+          <h3 className="text-sm font-semibold text-anotata-text">Painel de ação</h3>
         </div>
         <button
           onClick={onClose}
@@ -163,6 +224,54 @@ export default function InsightPanel({
       </div>
 
       <div className="flex-1 overflow-y-auto bg-white">
+        {/* === AÇÕES RÁPIDAS (NOVO) === */}
+        <Section title="Ações rápidas" icon={Zap} defaultOpen={true}>
+          <div className="grid grid-cols-2 gap-1.5">
+            <QuickAction
+              icon={Star}
+              label={note.isFavorite ? 'Desfavoritar' : 'Favoritar'}
+              onClick={() => store.toggleFavorite(note.id)}
+            />
+            <QuickAction
+              icon={Pin}
+              label={note.isPinned ? 'Desafixar' : 'Fixar'}
+              onClick={() => store.togglePin(note.id)}
+            />
+            <QuickAction
+              icon={Eye}
+              label="Revisada"
+              onClick={() => store.markAsReviewed(note.id)}
+            />
+            <QuickAction
+              icon={Archive}
+              label={note.isArchived ? 'Desarquivar' : 'Arquivar'}
+              onClick={() => note.isArchived ? store.unarchiveNote(note.id) : store.archiveNote(note.id)}
+            />
+            <QuickAction
+              icon={Link2}
+              label="Conectar"
+              onClick={onAddConnection}
+            />
+            <QuickAction
+              icon={Copy}
+              label="Copiar"
+              onClick={handleCopyContent}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-1.5 mt-1.5">
+            <QuickAction
+              icon={Download}
+              label=".md"
+              onClick={() => handleExport('md')}
+            />
+            <QuickAction
+              icon={Download}
+              label=".txt"
+              onClick={() => handleExport('txt')}
+            />
+          </div>
+        </Section>
+
         {/* === RESUMO === */}
         <Section title="Resumo" icon={FileText} defaultOpen={true}>
           <div className="space-y-2 text-xs">
@@ -206,12 +315,49 @@ export default function InsightPanel({
           </div>
         </Section>
 
-        {/* === DIAGNÓSTICO DA ANOTAÇÃO === */}
+        {/* === PRAZO (NOVO no Pacote 4) === */}
+        <Section title="Prazo" icon={Calendar} defaultOpen={!!note.dueDate || editingDueDate}>
+          {note.dueDate && !editingDueDate ? (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <DueDateBadge dueDate={note.dueDate} size="md" />
+                <button
+                  onClick={() => setEditingDueDate(true)}
+                  className="text-[10px] text-anotata-roxo hover:underline"
+                >
+                  Editar
+                </button>
+              </div>
+              <button
+                onClick={() => store.setDueDate(note.id, null)}
+                className="text-[10px] text-anotata-goiaba hover:underline"
+              >
+                Remover prazo
+              </button>
+            </div>
+          ) : editingDueDate ? (
+            <DueDatePicker
+              value={note.dueDate}
+              onChange={(iso) => { store.setDueDate(note.id, iso); setEditingDueDate(false); }}
+              onClear={() => { store.setDueDate(note.id, null); setEditingDueDate(false); }}
+            />
+          ) : (
+            <button
+              onClick={() => setEditingDueDate(true)}
+              className="w-full p-2 text-xs text-anotata-muted hover:text-anotata-roxo border border-dashed border-anotata-border rounded-lg hover:border-anotata-roxo transition-colors flex items-center justify-center gap-1.5"
+            >
+              <Calendar size={12} />
+              Definir prazo
+            </button>
+          )}
+        </Section>
+
+        {/* === DIAGNÓSTICO === */}
         <Section
           title="Saúde da anotação"
           icon={AlertCircle}
           count={diagnostics.length + extraDiagnostics.length}
-          defaultOpen={true}
+          defaultOpen={diagnostics.some(d => d.level === 'warn') || extraDiagnostics.length > 0}
         >
           {(diagnostics.length === 0 && extraDiagnostics.length === 0) ? (
             <p className="text-xs text-anotata-muted italic">Tudo certo com esta nota ✓</p>
@@ -230,8 +376,8 @@ export default function InsightPanel({
           )}
         </Section>
 
-        {/* === PRÓXIMA AÇÃO PERSONALIZADA === */}
-        <Section title="Próxima ação" icon={TrendingUp} defaultOpen={true}>
+        {/* === PRÓXIMA AÇÃO === */}
+        <Section title="Próxima ação" icon={Sparkles} defaultOpen={true}>
           {editingNextAction ? (
             <div className="space-y-2">
               <textarea
@@ -250,15 +396,11 @@ export default function InsightPanel({
                 <button
                   onClick={() => setEditingNextAction(false)}
                   className="px-2 py-1 text-[11px] text-anotata-muted hover:text-anotata-text"
-                >
-                  Cancelar
-                </button>
+                >Cancelar</button>
                 <button
                   onClick={saveCustomNextAction}
                   className="px-2 py-1 text-[11px] bg-anotata-roxo text-white rounded hover:bg-anotata-roxo-escuro"
-                >
-                  Salvar
-                </button>
+                >Salvar</button>
               </div>
             </div>
           ) : note.customNextAction ? (
@@ -268,15 +410,11 @@ export default function InsightPanel({
                 <button
                   onClick={() => { setCustomAction(note.customNextAction); setEditingNextAction(true); }}
                   className="text-[10px] text-anotata-roxo hover:underline"
-                >
-                  Editar
-                </button>
+                >Editar</button>
                 <button
                   onClick={() => store.setCustomNextAction(note.id, '')}
                   className="text-[10px] text-anotata-muted hover:text-anotata-goiaba"
-                >
-                  Remover
-                </button>
+                >Remover</button>
               </div>
             </div>
           ) : suggestions.nextAction ? (
@@ -287,46 +425,102 @@ export default function InsightPanel({
               <button
                 onClick={() => setEditingNextAction(true)}
                 className="text-[10px] text-anotata-roxo hover:underline"
-              >
-                + Definir minha própria
-              </button>
+              >+ Definir minha própria</button>
             </div>
           ) : (
             <button
               onClick={() => setEditingNextAction(true)}
               className="w-full p-2 text-xs text-anotata-muted hover:text-anotata-roxo border border-dashed border-anotata-border rounded-lg hover:border-anotata-roxo transition-colors"
-            >
-              + Definir próxima ação
-            </button>
+            >+ Definir próxima ação</button>
           )}
         </Section>
 
-        {/* === TAREFAS DETECTADAS === */}
-        {tasks.length > 0 && (
-          <Section title="Tarefas detectadas" icon={CheckSquare} count={openTasks.length}>
-            <div className="space-y-1">
-              {tasks.slice(0, 8).map((t, i) => (
-                <div key={i} className="flex items-start gap-2 text-xs">
-                  <span className={`mt-0.5 w-3 h-3 rounded border shrink-0 ${
-                    t.done ? 'bg-anotata-roxo border-anotata-roxo' : 'border-anotata-border'
-                  }`}>
-                    {t.done && <CheckCircle size={10} className="text-white -mt-px -ml-px" />}
-                  </span>
-                  <span className={`flex-1 ${t.done ? 'line-through text-anotata-muted' : 'text-anotata-text'}`}>
-                    {t.text}
-                  </span>
-                </div>
-              ))}
-              {tasks.length > 8 && (
-                <div className="text-[10px] text-anotata-muted italic">+ {tasks.length - 8} mais</div>
-              )}
-            </div>
+        {/* === CHECKLIST INTERATIVO (MELHORADO Pacote 4) === */}
+        {(checklistStats.total > 0 || tasks.length > 0) && (
+          <Section
+            title="Checklist"
+            icon={ListChecks}
+            count={checklistStats.open || tasks.filter(t => !t.done).length}
+            defaultOpen={true}
+          >
+            {checklistStats.total > 0 && (
+              <div className="mb-3">
+                <ChecklistProgress stats={checklistStats} size="md" />
+              </div>
+            )}
+
+            {/* Tarefas detectadas */}
+            {tasks.length > 0 && (
+              <div className="space-y-1 mb-2 max-h-40 overflow-y-auto">
+                {tasks.slice(0, 8).map((t, i) => (
+                  <div key={i} className="flex items-start gap-2 text-xs">
+                    <span className={`mt-0.5 w-3 h-3 rounded border shrink-0 flex items-center justify-center ${
+                      t.done ? 'bg-anotata-roxo border-anotata-roxo' : 'border-anotata-border'
+                    }`}>
+                      {t.done && <span className="text-white text-[8px] leading-none">✓</span>}
+                    </span>
+                    <span className={`flex-1 ${t.done ? 'line-through text-anotata-muted' : 'text-anotata-text'}`}>
+                      {t.text}
+                    </span>
+                  </div>
+                ))}
+                {tasks.length > 8 && (
+                  <div className="text-[10px] text-anotata-muted italic">+ {tasks.length - 8} mais</div>
+                )}
+              </div>
+            )}
+
+            {/* Adicionar nova tarefa */}
+            {showAddTask ? (
+              <div className="flex items-center gap-1.5 mt-2">
+                <input
+                  type="text"
+                  autoFocus
+                  value={newTaskText}
+                  onChange={(e) => setNewTaskText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleAddTask();
+                    if (e.key === 'Escape') { setShowAddTask(false); setNewTaskText(''); }
+                  }}
+                  placeholder="Nova tarefa..."
+                  className="flex-1 text-xs bg-anotata-lavanda-clara border border-anotata-border rounded px-2 py-1 focus:outline-none focus:border-anotata-roxo"
+                />
+                <button
+                  onClick={handleAddTask}
+                  className="text-[10px] bg-anotata-roxo text-white rounded px-2 py-1 hover:bg-anotata-roxo-escuro"
+                >Add</button>
+              </div>
+            ) : (
+              <div className="flex gap-1.5 mt-1">
+                <button
+                  onClick={() => setShowAddTask(true)}
+                  className="text-[10px] text-anotata-roxo border border-dashed border-anotata-border rounded px-2 py-1 hover:border-anotata-roxo flex items-center gap-1"
+                >
+                  <Plus size={10} /> Tarefa
+                </button>
+                {checklistStats.open > 0 && (
+                  <button
+                    onClick={handleMarkAllDone}
+                    className="text-[10px] text-anotata-text-suave border border-anotata-border rounded px-2 py-1 hover:border-anotata-roxo hover:text-anotata-roxo flex items-center gap-1"
+                  >
+                    <CheckCircle size={10} /> Marcar todas
+                  </button>
+                )}
+                <button
+                  onClick={handleCopyChecklist}
+                  className="text-[10px] text-anotata-text-suave border border-anotata-border rounded px-2 py-1 hover:border-anotata-roxo hover:text-anotata-roxo flex items-center gap-1"
+                  title="Copiar checklist como texto"
+                >
+                  <Copy size={10} /> Copiar
+                </button>
+              </div>
+            )}
           </Section>
         )}
 
         {/* === DATAS DETECTADAS === */}
         {dates.length > 0 && (
-          <Section title="Datas detectadas" icon={Calendar} count={dates.length}>
+          <Section title="Datas detectadas" icon={Calendar} count={dates.length} defaultOpen={false}>
             <div className="flex flex-wrap gap-1.5">
               {dates.map((d, i) => (
                 <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 bg-anotata-lavanda-clara text-anotata-roxo rounded text-[11px] font-medium">
@@ -340,7 +534,7 @@ export default function InsightPanel({
 
         {/* === LINKS DETECTADOS === */}
         {links.length > 0 && (
-          <Section title="Links detectados" icon={LinkIcon} count={links.length}>
+          <Section title="Links detectados" icon={LinkIcon} count={links.length} defaultOpen={false}>
             <div className="space-y-1">
               {links.slice(0, 5).map((l, i) => (
                 <a
@@ -361,7 +555,7 @@ export default function InsightPanel({
         )}
 
         {/* === CONEXÕES MANUAIS === */}
-        <Section title="Conexões manuais" icon={Link2} count={connectedNotes.length}>
+        <Section title="Conexões manuais" icon={Link2} count={connectedNotes.length} defaultOpen={connectedNotes.length > 0}>
           {connectedNotes.length === 0 ? (
             <p className="text-xs text-anotata-muted italic mb-2">Nenhuma conexão ainda</p>
           ) : (
@@ -392,9 +586,7 @@ export default function InsightPanel({
                     <button
                       onClick={() => store.disconnectNotes(note.id, noteId)}
                       className="text-[10px] text-anotata-goiaba hover:underline mt-1"
-                    >
-                      Remover conexão
-                    </button>
+                    >Remover conexão</button>
                   </div>
                 );
               })}
@@ -411,7 +603,7 @@ export default function InsightPanel({
 
         {/* === CONEXÕES SUGERIDAS === */}
         {connections.length > 0 && (
-          <Section title="Conexões sugeridas" icon={Sparkles} count={connections.length}>
+          <Section title="Conexões sugeridas" icon={Sparkles} count={connections.length} defaultOpen={false}>
             <div className="space-y-2">
               {connections.map(c => {
                 const target = store.getNoteById(c.noteId);
@@ -457,15 +649,11 @@ export default function InsightPanel({
                       <button
                         onClick={() => store.connectNotes(note.id, c.noteId, c.reasons[0] || 'Sugerida pelo sistema')}
                         className="text-[10px] px-2 py-1 bg-anotata-roxo text-white rounded hover:bg-anotata-roxo-escuro font-medium"
-                      >
-                        Aceitar
-                      </button>
+                      >Aceitar</button>
                       <button
                         onClick={() => store.ignoreSuggestion(note.id, c.noteId)}
                         className="text-[10px] px-2 py-1 text-anotata-muted hover:text-anotata-goiaba"
-                      >
-                        Ignorar
-                      </button>
+                      >Ignorar</button>
                     </div>
                   </div>
                 );
@@ -477,26 +665,11 @@ export default function InsightPanel({
         {/* === HISTÓRICO === */}
         <Section title="Histórico" icon={History} defaultOpen={false}>
           <div className="space-y-1.5 text-xs">
-            <Row
-              label="Criada"
-              value={<span className="text-anotata-text-suave">{formatRelativeDate(note.createdAt)}</span>}
-            />
-            <Row
-              label="Última edição"
-              value={<span className="text-anotata-text-suave">{formatRelativeDate(note.updatedAt)}</span>}
-            />
-            <Row
-              label="Última revisão"
-              value={<span className="text-anotata-text-suave">{formatRelativeDate(note.reviewedAt)}</span>}
-            />
-            <Row
-              label="Edições"
-              value={<span className="text-anotata-text-suave">{note.editCount || 0}</span>}
-            />
-            <Row
-              label="Versões salvas"
-              value={<span className="text-anotata-text-suave">{(note.versions || []).length}</span>}
-            />
+            <Row label="Criada" value={<span className="text-anotata-text-suave">{formatRelativeDate(note.createdAt)}</span>} />
+            <Row label="Última edição" value={<span className="text-anotata-text-suave">{formatRelativeDate(note.updatedAt)}</span>} />
+            <Row label="Última revisão" value={<span className="text-anotata-text-suave">{formatRelativeDate(note.reviewedAt)}</span>} />
+            <Row label="Edições" value={<span className="text-anotata-text-suave">{note.editCount || 0}</span>} />
+            <Row label="Versões salvas" value={<span className="text-anotata-text-suave">{(note.versions || []).length}</span>} />
             <button
               onClick={() => store.markAsReviewed(note.id)}
               className="w-full mt-2 p-1.5 text-[11px] text-anotata-roxo border border-anotata-border hover:border-anotata-roxo rounded-lg hover:bg-anotata-hover transition-colors flex items-center justify-center gap-1"

@@ -1,9 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Star, Trash2, RotateCcw, Copy, MoreVertical, Sparkles } from 'lucide-react';
+import { Plus, Star, Trash2, RotateCcw, Copy, MoreVertical, Sparkles, Pin } from 'lucide-react';
 import searchEngine from '../engine/SearchEngine';
 import { runCollection, COLLECTIONS } from '../engine/CollectionsEngine';
 import { NOTE_TYPES } from '../engine/RulesEngine';
+import { countChecklistItems } from '../engine/ChecklistEngine';
 import EmptyState from './EmptyState';
+import DueDateBadge from './DueDateBadge';
+import ChecklistProgress from './ChecklistProgress';
 
 function stripHtml(html) {
   if (!html) return '';
@@ -29,6 +32,9 @@ function NoteCard({ note, isSelected, store, reason }) {
   const [showMenu, setShowMenu] = useState(false);
   const typeMeta = NOTE_TYPES[note.type] || NOTE_TYPES.rascunho;
 
+  // Pacote 4 Pro: progresso de checklist e prazo nos cards
+  const checklistStats = useMemo(() => countChecklistItems(note.content), [note.content]);
+
   return (
     <div
       onClick={() => store.setSelectedNoteId(note.id)}
@@ -48,7 +54,7 @@ function NoteCard({ note, isSelected, store, reason }) {
       </button>
 
       {showMenu && (
-        <div className="absolute top-6 right-2 bg-white border border-anotata-border rounded-lg shadow-xl z-50 py-1 min-w-[160px]">
+        <div className="absolute top-6 right-2 bg-white border border-anotata-border rounded-lg shadow-xl z-50 py-1 min-w-[180px]">
           {!note.isTrash && (
             <>
               <button
@@ -57,6 +63,13 @@ function NoteCard({ note, isSelected, store, reason }) {
               >
                 <Star size={12} className={note.isFavorite ? 'text-yellow-500 fill-yellow-500' : ''} />
                 {note.isFavorite ? 'Desfavoritar' : 'Favoritar'}
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); store.togglePin(note.id); setShowMenu(false); }}
+                className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-anotata-text hover:bg-anotata-hover"
+              >
+                <Pin size={12} className={note.isPinned ? 'text-anotata-roxo fill-anotata-roxo' : ''} />
+                {note.isPinned ? 'Desafixar' : 'Fixar no topo'}
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); store.duplicateNote(note.id); setShowMenu(false); }}
@@ -100,7 +113,7 @@ function NoteCard({ note, isSelected, store, reason }) {
         <h3 className="text-sm font-medium text-anotata-text truncate flex-1">
           {note.title || 'Nota sem título'}
           {note.isFavorite && <Star size={10} className="inline ml-1 text-yellow-500 fill-yellow-500" />}
-          {note.isPinned && <span className="ml-1 text-anotata-roxo">📌</span>}
+          {note.isPinned && <Pin size={10} className="inline ml-1 text-anotata-roxo fill-anotata-roxo" />}
         </h3>
       </div>
 
@@ -108,7 +121,15 @@ function NoteCard({ note, isSelected, store, reason }) {
         {stripHtml(note.content) || 'Nota vazia...'}
       </p>
 
-      {/* Motivo da coleção, quando aplicável */}
+      {/* Badges Pacote 4 Pro: prazo + progresso */}
+      {(note.dueDate || checklistStats.total > 0) && (
+        <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+          {note.dueDate && <DueDateBadge dueDate={note.dueDate} size="sm" />}
+          {checklistStats.total > 0 && <ChecklistProgress stats={checklistStats} size="sm" />}
+        </div>
+      )}
+
+      {/* Motivo da coleção */}
       {reason && (
         <div className="mt-1.5 inline-flex items-center gap-1 text-[10px] text-anotata-roxo bg-anotata-lavanda-clara px-1.5 py-0.5 rounded">
           <Sparkles size={9} />
@@ -138,28 +159,16 @@ function NoteCard({ note, isSelected, store, reason }) {
 export default function NoteList({ store, onCreateNote }) {
   const { searchQuery } = store;
 
-  // === LISTA DE NOTAS (com busca aproximada quando há query) ===
   const notes = useMemo(() => {
-    // Se está numa coleção, mostrar essa coleção
     if (store.currentView === 'collection' && store.currentCollectionId) {
-      const allActive = store.notes;
-      return runCollection(store.currentCollectionId, allActive);
+      return runCollection(store.currentCollectionId, store.notes);
     }
-
-    // Se tem busca, usar busca aproximada
     if (searchQuery && searchQuery.trim().length >= 2) {
-      const allNotes = store.notes;
       const includeArchived = store.currentView === 'archived';
       const includeTrash = store.currentView === 'trash';
-      const results = searchEngine.search(allNotes, searchQuery, {
-        limit: 100,
-        includeArchived,
-        includeTrash,
-      });
+      const results = searchEngine.search(store.notes, searchQuery, { limit: 100, includeArchived, includeTrash });
       return results.map(r => r.note);
     }
-
-    // Caso contrário, usa o filtro padrão
     return store.filteredNotes;
   }, [
     store.currentView,
@@ -194,9 +203,7 @@ export default function NoteList({ store, onCreateNote }) {
 
   const getViewSubtitle = () => {
     if (isSearch) {
-      return notes.length === 0
-        ? 'Nenhum resultado'
-        : `${notes.length} resultado${notes.length !== 1 ? 's' : ''}`;
+      return notes.length === 0 ? 'Nenhum resultado' : `${notes.length} resultado${notes.length !== 1 ? 's' : ''}`;
     }
     if (isCollection) {
       const c = COLLECTIONS[store.currentCollectionId];
@@ -218,7 +225,7 @@ export default function NoteList({ store, onCreateNote }) {
           <button
             onClick={() => onCreateNote ? onCreateNote() : store.createNote(store.currentView === 'notebook' ? store.currentNotebookId : 'default')}
             className="p-2 bg-anotata-roxo rounded-lg hover:bg-anotata-roxo-escuro transition-colors shadow-sm shrink-0 ml-2"
-            title="Nova nota (escolha modelo)"
+            title="Nova nota (Ctrl+N)"
           >
             <Plus size={16} className="text-white" />
           </button>

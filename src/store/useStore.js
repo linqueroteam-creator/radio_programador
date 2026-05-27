@@ -330,6 +330,98 @@ export function useStore() {
     }));
   }, []);
 
+  // === PRAZO ===
+  const setDueDate = useCallback((noteId, dueDateIso) => {
+    setData(prev => ({
+      ...prev,
+      notes: prev.notes.map(n =>
+        n.id === noteId ? { ...n, dueDate: dueDateIso || null } : n
+      )
+    }));
+  }, []);
+
+  // === EXPORTAÇÃO ===
+  const exportNoteAsText = useCallback((noteId) => {
+    const note = data.notes.find(n => n.id === noteId);
+    if (!note) return null;
+    // Strip HTML
+    const content = (note.content || '')
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/p>/gi, '\n\n')
+      .replace(/<\/li>/gi, '\n')
+      .replace(/<li[^>]*data-checked="true"[^>]*>/gi, '[x] ')
+      .replace(/<li[^>]*data-checked="false"[^>]*>/gi, '[ ] ')
+      .replace(/<li[^>]*>/gi, '- ')
+      .replace(/<\/h[1-6]>/gi, '\n')
+      .replace(/<[^>]*>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&[a-z]+;/gi, '')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+
+    return `${note.title || 'Sem título'}\n${'='.repeat((note.title || 'Sem título').length)}\n\n${content}\n`;
+  }, [data.notes]);
+
+  const exportNoteAsMarkdown = useCallback((noteId) => {
+    const note = data.notes.find(n => n.id === noteId);
+    if (!note) return null;
+
+    let md = (note.content || '')
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<h1[^>]*>([\s\S]*?)<\/h1>/gi, '# $1\n\n')
+      .replace(/<h2[^>]*>([\s\S]*?)<\/h2>/gi, '## $1\n\n')
+      .replace(/<h3[^>]*>([\s\S]*?)<\/h3>/gi, '### $1\n\n')
+      .replace(/<strong>([\s\S]*?)<\/strong>/gi, '**$1**')
+      .replace(/<b>([\s\S]*?)<\/b>/gi, '**$1**')
+      .replace(/<em>([\s\S]*?)<\/em>/gi, '*$1*')
+      .replace(/<i>([\s\S]*?)<\/i>/gi, '*$1*')
+      .replace(/<code>([\s\S]*?)<\/code>/gi, '`$1`')
+      .replace(/<blockquote[^>]*>([\s\S]*?)<\/blockquote>/gi, '> $1\n')
+      .replace(/<a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi, '[$2]($1)')
+      .replace(/<img[^>]*src="([^"]+)"[^>]*\/?>/gi, '![imagem]($1)')
+      .replace(/<li[^>]*data-checked="true"[^>]*><div><p>([\s\S]*?)<\/p><\/div><\/li>/gi, '- [x] $1\n')
+      .replace(/<li[^>]*data-checked="false"[^>]*><div><p>([\s\S]*?)<\/p><\/div><\/li>/gi, '- [ ] $1\n')
+      .replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, '- $1\n')
+      .replace(/<\/?ul[^>]*>/gi, '\n')
+      .replace(/<\/?ol[^>]*>/gi, '\n')
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/p>/gi, '\n\n')
+      .replace(/<p[^>]*>/gi, '')
+      .replace(/<hr\s*\/?>/gi, '\n---\n')
+      .replace(/<[^>]*>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&[a-z]+;/gi, '')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+
+    const tags = (note.tags || []).map(t => `#${t}`).join(' ');
+    const meta = [
+      `# ${note.title || 'Sem título'}`,
+      '',
+      `**Tipo:** ${note.type || 'rascunho'}`,
+      `**Status:** ${note.status || 'ativo'}`,
+      `**Prioridade:** ${note.priority || 'normal'}`,
+      tags ? `**Tags:** ${tags}` : '',
+      note.dueDate ? `**Prazo:** ${new Date(note.dueDate).toLocaleDateString('pt-BR')}` : '',
+      `**Criada em:** ${new Date(note.createdAt).toLocaleDateString('pt-BR')}`,
+      `**Última edição:** ${new Date(note.updatedAt).toLocaleDateString('pt-BR')}`,
+      '',
+      '---',
+      '',
+    ].filter(Boolean).join('\n');
+
+    return `${meta}\n${md}\n`;
+  }, [data.notes]);
+
   // === CADERNOS ===
   const createNotebook = useCallback((name, color = '#5B2D8E') => {
     const newNotebook = { id: uuidv4(), name, color, createdAt: new Date().toISOString() };
@@ -498,6 +590,9 @@ export function useStore() {
     disconnectNotes,
     ignoreSuggestion,
     setCustomNextAction,
+    setDueDate,
+    exportNoteAsText,
+    exportNoteAsMarkdown,
     getNoteById,
 
     createNotebook,
