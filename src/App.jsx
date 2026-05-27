@@ -59,6 +59,10 @@ class ErrorBoundary extends React.Component {
 function MainApp({ logout }) {
   const store = useStore();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  // === Recolher a coluna "Todas as Notas" (NoteList) ===
+  // Mesmo padrão da Sidebar: estado em App.jsx, com transição de 300ms.
+  // Persiste entre trocas de view enquanto a sessão durar.
+  const [noteListCollapsed, setNoteListCollapsed] = useState(false);
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
 
@@ -164,7 +168,12 @@ function MainApp({ logout }) {
     }
     return (
       <>
-        <NoteList store={store} onCreateNote={handleNewNote} />
+        <NoteList
+          store={store}
+          onCreateNote={handleNewNote}
+          isCollapsed={noteListCollapsed}
+          onToggle={() => setNoteListCollapsed(v => !v)}
+        />
         <Editor store={store} />
       </>
     );
