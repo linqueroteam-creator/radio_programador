@@ -6,8 +6,10 @@ import Editor from './components/Editor';
 import Dashboard from './components/Dashboard';
 import Corretor from './components/Corretor';
 import Home from './components/Home';
+import AuthGate from './components/AuthGate';
+import { LogOut } from 'lucide-react';
 
-export default function App() {
+function MainApp({ logout }) {
   const store = useStore();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -21,6 +23,12 @@ export default function App() {
       </div>
     );
   }
+
+  const handleLogout = () => {
+    if (confirm('Sair do ANOTATA? Você precisará digitar a senha para entrar de novo.')) {
+      logout();
+    }
+  };
 
   // Renderiza a área principal baseado na view
   const renderMainArea = () => {
@@ -47,7 +55,7 @@ export default function App() {
   };
 
   return (
-    <div className="h-screen flex overflow-hidden bg-anotata-bg">
+    <div className="h-screen flex overflow-hidden bg-anotata-bg relative">
       <Sidebar
         store={store}
         isCollapsed={sidebarCollapsed}
@@ -56,6 +64,26 @@ export default function App() {
       <div className="flex-1 flex overflow-hidden">
         {renderMainArea()}
       </div>
+
+      {/* Botão de sair (canto inferior esquerdo) */}
+      <button
+        onClick={handleLogout}
+        className="fixed bottom-3 left-3 z-50 p-2 bg-white border border-anotata-border rounded-lg text-anotata-muted hover:text-anotata-goiaba hover:border-anotata-goiaba transition-all shadow-sm hover:shadow-md"
+        title="Sair do ANOTATA"
+        style={{
+          left: sidebarCollapsed ? '14px' : '14px',
+        }}
+      >
+        <LogOut size={14} />
+      </button>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthGate>
+      {({ logout }) => <MainApp logout={logout} />}
+    </AuthGate>
   );
 }
