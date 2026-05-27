@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="ANOTATA">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#5B2D8E"/>
+      <stop offset="100%" stop-color="#3D1B66"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F08AA0"/>
+      <stop offset="100%" stop-color="#E8637C"/>
+    </linearGradient>
+  </defs>
+  <!-- Fundo arredondado -->
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <!-- "Caderno" — duas faces empilhadas -->
+  <g transform="translate(96 110)">
+    <rect x="0" y="0" width="320" height="280" rx="22" fill="#F0E9F8" opacity="0.18"/>
+    <rect x="20" y="14" width="280" height="252" rx="20" fill="#FFFFFF"/>
+    <!-- Lombada lateral -->
+    <rect x="20" y="14" width="14" height="252" fill="url(#accent)"/>
+    <!-- Linhas de texto -->
+    <rect x="64" y="60" width="200" height="14" rx="7" fill="#5B2D8E"/>
+    <rect x="64" y="92" width="170" height="10" rx="5" fill="#9888B5"/>
+    <rect x="64" y="118" width="200" height="10" rx="5" fill="#9888B5"/>
+    <rect x="64" y="142" width="140" height="10" rx="5" fill="#9888B5"/>
+    <!-- Estrela goiaba (favorito) -->
+    <g transform="translate(214 178) scale(0.55)">
+      <path d="M50 10 L62 38 L92 42 L70 62 L76 92 L50 76 L24 92 L30 62 L8 42 L38 38 Z"
+            fill="url(#accent)"/>
+    </g>
+  </g>
+</svg>

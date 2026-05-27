@@ -28,7 +28,10 @@ export default function Toolbar({ editor }) {
   };
 
   return (
-    <div className="border-b border-anotata-border px-4 py-2 flex flex-wrap items-center gap-0.5 bg-white">
+    <div
+      data-toolbar="true"
+      className="border-b border-anotata-border px-4 py-2 flex flex-wrap items-center gap-0.5 bg-white"
+    >
       <IconButton
         icon={Undo2}
         label="Desfazer"

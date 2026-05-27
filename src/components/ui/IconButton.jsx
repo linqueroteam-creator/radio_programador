@@ -123,6 +123,9 @@ const IconButton = forwardRef(function IconButton(
       aria-label={label}
       aria-pressed={isActive ? true : undefined}
       title={title || label}
+      // data-touch ativa min 44x44 em mobile via CSS global (index.css).
+      // Em desktop continua compacto (size sm/md/lg via padding).
+      data-touch="true"
       className={[
         'inline-flex items-center justify-center rounded-md transition-colors',
         padding,

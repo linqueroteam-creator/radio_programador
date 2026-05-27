@@ -81,7 +81,7 @@ export default function RephrasePanel({ originalText, scope = 'full', onApply, o
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[88vh] flex flex-col overflow-hidden border border-anotata-border"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[88vh] max-h-[88vh] flex flex-col overflow-hidden border border-anotata-border"
         onClick={(e) => e.stopPropagation()}
       >
         {/* HEADER */}
@@ -134,9 +134,9 @@ export default function RephrasePanel({ originalText, scope = 'full', onApply, o
         </div>
 
         {/* COMPARACAO LADO A LADO */}
-        <div className="flex-1 overflow-hidden flex">
+        <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
           {/* ORIGINAL */}
-          <div className="flex-1 flex flex-col border-r border-anotata-border min-w-0">
+          <div className="flex-1 flex flex-col border-b md:border-b-0 md:border-r border-anotata-border min-w-0 min-h-0">
             <div className="px-4 py-2 bg-anotata-bg border-b border-anotata-border">
               <span className="text-2xs uppercase font-bold tracking-wider text-anotata-muted">Original</span>
               <span className="ml-2 text-xs text-anotata-text-suave">
@@ -149,7 +149,7 @@ export default function RephrasePanel({ originalText, scope = 'full', onApply, o
           </div>
 
           {/* REESCRITO */}
-          <div className="flex-1 flex flex-col min-w-0">
+          <div className="flex-1 flex flex-col min-w-0 min-h-0">
             <div className="px-4 py-2 bg-gradient-to-r from-anotata-lavanda-clara to-white border-b border-anotata-border flex items-center gap-2">
               <span className="text-2xs uppercase font-bold tracking-wider" style={{ color: MODE_META[mode].color }}>
                 Reescrito · {MODE_META[mode].label}
