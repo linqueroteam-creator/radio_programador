@@ -179,9 +179,6 @@ function downloadFile(content, filename, mime) {
 }
 
 export default function App() {
-  return (
-    <AuthGate>
-      {({ logout }) => <MainApp logout={logout} />}
-    </AuthGate>
-  );
+  // TEMPORÁRIO: login desativado pra debug
+  return <MainApp logout={() => {}} />;
 }
