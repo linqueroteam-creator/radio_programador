@@ -444,6 +444,26 @@ export function useStore() {
     }));
   }, []);
 
+  // === EXCLUIR CADERNO COM SEGURANÇA (Pacote 5) ===
+  // Ao excluir, as notas vão para 'arquivadas' (não para lixeira), o que protege contra perda acidental.
+  // O caderno default ('default') não pode ser excluído.
+  const deleteNotebookSafely = useCallback((notebookId) => {
+    if (notebookId === 'default') return { ok: false, error: 'O caderno principal não pode ser excluído.' };
+    let archivedCount = 0;
+    setData(prev => ({
+      ...prev,
+      notebooks: prev.notebooks.filter(nb => nb.id !== notebookId),
+      notes: prev.notes.map(n => {
+        if (n.notebookId === notebookId && !n.isTrash) {
+          archivedCount++;
+          return { ...n, notebookId: 'default', isArchived: true };
+        }
+        return n;
+      })
+    }));
+    return { ok: true, archivedCount };
+  }, []);
+
   // === CATEGORIAS ===
   const addCategory = useCallback((name) => {
     const cat = name.trim();
@@ -598,6 +618,7 @@ export function useStore() {
     createNotebook,
     renameNotebook,
     deleteNotebook,
+    deleteNotebookSafely,
     getNotebookById,
     getNoteCount,
 

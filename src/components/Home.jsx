@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import {
   Plus, BookOpen, Star, Clock, TrendingUp, Sparkles,
-  Search, ChevronRight, Edit3, X
+  Search, ChevronRight, Edit3, X, Trash2, MoreVertical
 } from 'lucide-react';
 import NotebookCover from './NotebookCover';
+import NotebookDeleteModal from './NotebookDeleteModal';
 
 const NOTEBOOK_COLORS = [
   '#5B2D8E', // roxo profundo
@@ -41,6 +42,20 @@ export default function Home({ store, onOpenInsights, onCreateNote }) {
   const [showNewNotebook, setShowNewNotebook] = useState(false);
   const [newNotebookName, setNewNotebookName] = useState('');
   const [newNotebookColor, setNewNotebookColor] = useState(NOTEBOOK_COLORS[0]);
+  const [notebookToDelete, setNotebookToDelete] = useState(null);
+
+  const handleDeleteNotebook = (nb) => {
+    setNotebookToDelete(nb);
+  };
+  const handleConfirmDelete = () => {
+    if (!notebookToDelete) return;
+    const result = store.deleteNotebookSafely(notebookToDelete.id);
+    if (result?.ok) {
+      // feedback simples — pode evoluir para toast no futuro
+      console.log(`Caderno excluído. ${result.archivedCount} notas movidas para arquivadas.`);
+    }
+    setNotebookToDelete(null);
+  };
 
   // Saudação baseada na hora
   const greeting = useMemo(() => {
@@ -206,6 +221,7 @@ export default function Home({ store, onOpenInsights, onCreateNote }) {
               key={nb.id}
               notebook={nb}
               onClick={() => openNotebook(nb)}
+              onDelete={() => handleDeleteNotebook(nb)}
             />
           ))}
 
@@ -321,22 +337,69 @@ export default function Home({ store, onOpenInsights, onCreateNote }) {
           onCancel={() => { setShowNewNotebook(false); setNewNotebookName(''); }}
         />
       )}
+
+      {/* Modal: excluir caderno (com proteção) */}
+      {notebookToDelete && (
+        <NotebookDeleteModal
+          notebook={notebookToDelete}
+          noteCount={store.notes.filter(n => n.notebookId === notebookToDelete.id && !n.isTrash).length}
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setNotebookToDelete(null)}
+        />
+      )}
     </div>
   );
 }
 
-function NotebookCard({ notebook, onClick }) {
+function NotebookCard({ notebook, onClick, onDelete }) {
+  const [showMenu, setShowMenu] = useState(false);
+  const isDefault = notebook.id === 'default';
+
   return (
-    <button
-      onClick={onClick}
-      className="group transition-all duration-300 hover:-translate-y-1.5 focus:outline-none"
-    >
-      <NotebookCover
-        notebook={notebook}
-        size="md"
-        className="transition-shadow duration-300 group-hover:shadow-2xl"
-      />
-    </button>
+    <div className="relative group">
+      <button
+        onClick={onClick}
+        className="block transition-all duration-300 hover:-translate-y-1.5 focus:outline-none"
+      >
+        <NotebookCover
+          notebook={notebook}
+          size="md"
+          className="transition-shadow duration-300 group-hover:shadow-2xl"
+        />
+      </button>
+
+      {/* Botão "..." que aparece no hover */}
+      <button
+        onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
+        className={`absolute top-2 right-2 z-20 w-7 h-7 rounded-full bg-white/95 backdrop-blur-sm border border-anotata-border shadow-md flex items-center justify-center text-anotata-text-suave hover:text-anotata-roxo transition-all ${
+          showMenu ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+        }`}
+        title="Opções do caderno"
+      >
+        <MoreVertical size={14} />
+      </button>
+
+      {showMenu && (
+        <>
+          <div className="fixed inset-0 z-30" onClick={() => setShowMenu(false)} />
+          <div className="absolute top-10 right-2 z-40 bg-white border border-anotata-border rounded-lg shadow-xl py-1 min-w-[180px]">
+            {isDefault ? (
+              <div className="px-3 py-2 text-[11px] text-anotata-muted italic">
+                Caderno principal — não pode ser excluído
+              </div>
+            ) : (
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowMenu(false); onDelete && onDelete(); }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-anotata-goiaba hover:bg-anotata-hover"
+              >
+                <Trash2 size={13} />
+                Excluir caderno
+              </button>
+            )}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
