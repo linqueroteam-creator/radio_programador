@@ -22,6 +22,7 @@ import InsightPanel from './InsightPanel';
 import ConnectionModal from './ConnectionModal';
 import ConnectionMap from './ConnectionMap';
 import RephrasePanel from './RephrasePanel';
+import SelectionBubbleMenu from './SelectionBubbleMenu';
 import predictiveEngine from '../engine/PredictiveEngine';
 import grammarEngine from '../engine/GrammarEngine';
 import rulesEngine from '../engine/RulesEngine';
@@ -633,6 +634,11 @@ export default function Editor({ store }) {
           onClose={closeRephrase}
         />
       )}
+
+      {/* === BUBBLE MENU DE SELEÇÃO (Reescritor F4) === */}
+      {/* Mostra um botão flutuante "Reescrever" sempre que o usuário seleciona
+          texto no editor. Ao clicar, abre um popover compacto colado à seleção. */}
+      <SelectionBubbleMenu editor={editor} />
 
       {/* Popover de correção inline (spell-check / gramática) */}
       {hoveredIssue && hoveredRect && (
