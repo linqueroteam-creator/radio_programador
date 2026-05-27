@@ -2,9 +2,11 @@
  * MODO CONCISO — corta gordura
  *
  * Aplica:
+ *  - Locucoes longas -> equivalentes curtos ("a fim de que" -> "para")
+ *  - Verbalizacao (denominaliza: "fez a analise" -> "analisou")
  *  - Pleonasmos (remocoes mais agressivas)
  *  - Anti-gerundismo (encurta sempre)
- *  - Locucoes longas -> equivalentes curtos ("a fim de que" -> "para")
+ *  - Cacofonia (limpeza geral)
  *  - Conectores: rebaixa para informal/padrao (curtos)
  *
  * Meta: reduzir 15-30% do tamanho sem perder o sentido.
@@ -14,6 +16,8 @@
 
 import { fixGerundism } from '../rules/gerundism.js';
 import { removeRedundancies } from '../rules/redundancy.js';
+import { fixCacofonia } from '../rules/cacofonia.js';
+import { verbalize } from '../rules/nominalizacao.js';
 import { applySubstitutions } from '../tokenizer.js';
 
 // Locucoes longas -> formas curtas
@@ -61,15 +65,23 @@ export function conciso(text) {
   working = step.result;
   changes.push(...step.changes.map(c => ({ ...c, rule: 'concise:shortform' })));
 
-  // 2) Pleonasmos
+  // 2) Verbalizacao (denominaliza: "fez a analise" -> "analisou")
+  step = verbalize(working);
+  working = step.result; changes.push(...step.changes);
+
+  // 3) Pleonasmos
   step = removeRedundancies(working);
   working = step.result; changes.push(...step.changes);
 
-  // 3) Anti-gerundismo (sempre encurta)
+  // 4) Anti-gerundismo (sempre encurta)
   step = fixGerundism(working);
   working = step.result; changes.push(...step.changes);
 
-  // 4) Espacos duplicados gerados por substituicoes vazias
+  // 5) Cacofonia (a versao curta "vi-a" e mais enxuta que "vi ela")
+  step = fixCacofonia(working);
+  working = step.result; changes.push(...step.changes);
+
+  // 6) Espacos duplicados gerados por substituicoes vazias
   working = working.replace(/\s{2,}/g, ' ').replace(/\s+([.,;:!?])/g, '$1');
 
   return { result: working, changes };

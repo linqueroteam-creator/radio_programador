@@ -1,10 +1,11 @@
 {
   "_meta": {
-    "version": 1,
+    "version": 2,
     "language": "pt-BR",
     "description": "Sinonimos curados do portugues brasileiro, organizados por sentido principal. Cada chave e a 'palavra base'. O array 'opcoes' contem alternativas com indicacao de registro: 'neutro' (uso geral), 'formal' (mais elevado), 'informal' (mais coloquial), 'simples' (vocabulario basico). O transformer rules/synonyms.js seleciona conforme o modo escolhido.",
-    "source": "Curado manualmente a partir de OpenWordnet-PT, Aurelio Online e manuais de estilo. Apenas sinonimos verdadeiramente intercambiaveis em contextos comuns. Evita falsos cognatos e mudancas de sentido.",
-    "count": 60
+    "source": "Curado manualmente a partir de OpenWordnet-PT, Aurelio Online, Houaiss e manuais de estilo (Cegalla, Pasquale, Sacconi). Apenas sinonimos verdadeiramente intercambiaveis em contextos comuns. Evita falsos cognatos e mudancas de sentido.",
+    "count": 213,
+    "expanded_in": "fase-3"
   },
   "entries": {
     "rapido": [
@@ -297,6 +298,665 @@
     ],
     "se": [
       { "to": "caso", "registro": "neutro" }
+    ],
+
+    "bonito": [
+      { "to": "belo", "registro": "neutro" },
+      { "to": "formoso", "registro": "formal" },
+      { "to": "lindo", "registro": "informal" }
+    ],
+    "feio": [
+      { "to": "horrivel", "registro": "informal" },
+      { "to": "deselegante", "registro": "formal" },
+      { "to": "desagradavel", "registro": "neutro" }
+    ],
+    "alegre": [
+      { "to": "feliz", "registro": "neutro" },
+      { "to": "jovial", "registro": "formal" },
+      { "to": "animado", "registro": "neutro" }
+    ],
+    "calmo": [
+      { "to": "tranquilo", "registro": "neutro" },
+      { "to": "sereno", "registro": "formal" },
+      { "to": "placido", "registro": "formal" }
+    ],
+    "nervoso": [
+      { "to": "ansioso", "registro": "neutro" },
+      { "to": "tenso", "registro": "neutro" },
+      { "to": "agitado", "registro": "neutro" }
+    ],
+    "forte": [
+      { "to": "robusto", "registro": "formal" },
+      { "to": "vigoroso", "registro": "formal" },
+      { "to": "potente", "registro": "neutro" }
+    ],
+    "fraco": [
+      { "to": "debil", "registro": "formal" },
+      { "to": "delicado", "registro": "neutro" },
+      { "to": "fragil", "registro": "neutro" }
+    ],
+    "rico": [
+      { "to": "abastado", "registro": "formal" },
+      { "to": "endinheirado", "registro": "informal" },
+      { "to": "prospero", "registro": "formal" }
+    ],
+    "pobre": [
+      { "to": "carente", "registro": "neutro" },
+      { "to": "necessitado", "registro": "formal" },
+      { "to": "humilde", "registro": "neutro" }
+    ],
+    "caro": [
+      { "to": "custoso", "registro": "neutro" },
+      { "to": "dispendioso", "registro": "formal" },
+      { "to": "salgado", "registro": "informal" }
+    ],
+    "barato": [
+      { "to": "acessivel", "registro": "neutro" },
+      { "to": "modico", "registro": "formal" },
+      { "to": "economico", "registro": "neutro" }
+    ],
+    "famoso": [
+      { "to": "conhecido", "registro": "neutro" },
+      { "to": "renomado", "registro": "formal" },
+      { "to": "celebre", "registro": "formal" }
+    ],
+    "desconhecido": [
+      { "to": "ignorado", "registro": "neutro" },
+      { "to": "anonimo", "registro": "neutro" },
+      { "to": "obscuro", "registro": "formal" }
+    ],
+    "verdadeiro": [
+      { "to": "autentico", "registro": "formal" },
+      { "to": "real", "registro": "neutro" },
+      { "to": "genuino", "registro": "formal" }
+    ],
+    "falso": [
+      { "to": "ineverdade", "registro": "informal" },
+      { "to": "ficticio", "registro": "formal" },
+      { "to": "enganoso", "registro": "neutro" }
+    ],
+    "limpo": [
+      { "to": "asseado", "registro": "formal" },
+      { "to": "higienico", "registro": "neutro" }
+    ],
+    "sujo": [
+      { "to": "imundo", "registro": "neutro" },
+      { "to": "sordido", "registro": "formal" }
+    ],
+    "velho": [
+      { "to": "antigo", "registro": "neutro" },
+      { "to": "anciao", "registro": "formal" },
+      { "to": "idoso", "registro": "neutro" }
+    ],
+    "perto": [
+      { "to": "proximo", "registro": "neutro" },
+      { "to": "adjacente", "registro": "formal" }
+    ],
+    "longe": [
+      { "to": "distante", "registro": "neutro" },
+      { "to": "remoto", "registro": "formal" },
+      { "to": "afastado", "registro": "neutro" }
+    ],
+    "estranho": [
+      { "to": "incomum", "registro": "neutro" },
+      { "to": "esquisito", "registro": "informal" },
+      { "to": "peculiar", "registro": "formal" }
+    ],
+    "comum": [
+      { "to": "habitual", "registro": "formal" },
+      { "to": "ordinario", "registro": "neutro" },
+      { "to": "usual", "registro": "neutro" }
+    ],
+    "perigoso": [
+      { "to": "arriscado", "registro": "neutro" },
+      { "to": "ameacador", "registro": "formal" },
+      { "to": "temivel", "registro": "formal" }
+    ],
+    "seguro": [
+      { "to": "garantido", "registro": "neutro" },
+      { "to": "protegido", "registro": "neutro" },
+      { "to": "confiavel", "registro": "formal" }
+    ],
+    "certo": [
+      { "to": "correto", "registro": "neutro" },
+      { "to": "exato", "registro": "formal" },
+      { "to": "preciso", "registro": "formal" }
+    ],
+    "errado": [
+      { "to": "incorreto", "registro": "neutro" },
+      { "to": "equivocado", "registro": "formal" }
+    ],
+
+    "criar": [
+      { "to": "produzir", "registro": "neutro" },
+      { "to": "elaborar", "registro": "formal" },
+      { "to": "construir", "registro": "neutro" }
+    ],
+    "enviar": [
+      { "to": "remeter", "registro": "formal" },
+      { "to": "mandar", "registro": "neutro" },
+      { "to": "expedir", "registro": "formal" }
+    ],
+    "receber": [
+      { "to": "obter", "registro": "neutro" },
+      { "to": "acolher", "registro": "formal" },
+      { "to": "auferir", "registro": "formal" }
+    ],
+    "comprar": [
+      { "to": "adquirir", "registro": "formal" },
+      { "to": "obter", "registro": "neutro" }
+    ],
+    "vender": [
+      { "to": "comercializar", "registro": "formal" },
+      { "to": "negociar", "registro": "neutro" }
+    ],
+    "pagar": [
+      { "to": "quitar", "registro": "formal" },
+      { "to": "saldar", "registro": "formal" },
+      { "to": "remunerar", "registro": "formal" }
+    ],
+    "ganhar": [
+      { "to": "receber", "registro": "neutro" },
+      { "to": "obter", "registro": "neutro" },
+      { "to": "auferir", "registro": "formal" }
+    ],
+    "perder": [
+      { "to": "extraviar", "registro": "formal" },
+      { "to": "desperdicar", "registro": "neutro" }
+    ],
+    "abrir": [
+      { "to": "destrancar", "registro": "neutro" },
+      { "to": "desvendar", "registro": "formal" }
+    ],
+    "fechar": [
+      { "to": "encerrar", "registro": "formal" },
+      { "to": "trancar", "registro": "neutro" }
+    ],
+    "subir": [
+      { "to": "ascender", "registro": "formal" },
+      { "to": "elevar-se", "registro": "formal" }
+    ],
+    "descer": [
+      { "to": "baixar", "registro": "neutro" },
+      { "to": "descender", "registro": "formal" }
+    ],
+    "entrar": [
+      { "to": "ingressar", "registro": "formal" },
+      { "to": "adentrar", "registro": "formal" }
+    ],
+    "sair": [
+      { "to": "partir", "registro": "neutro" },
+      { "to": "retirar-se", "registro": "formal" }
+    ],
+    "chegar": [
+      { "to": "atingir", "registro": "neutro" },
+      { "to": "arribar", "registro": "formal" }
+    ],
+    "voltar": [
+      { "to": "retornar", "registro": "formal" },
+      { "to": "regressar", "registro": "formal" }
+    ],
+    "andar": [
+      { "to": "caminhar", "registro": "neutro" },
+      { "to": "perambular", "registro": "formal" }
+    ],
+    "correr": [
+      { "to": "apressar-se", "registro": "neutro" },
+      { "to": "acelerar", "registro": "neutro" }
+    ],
+    "parar": [
+      { "to": "cessar", "registro": "formal" },
+      { "to": "interromper", "registro": "neutro" }
+    ],
+    "continuar": [
+      { "to": "prosseguir", "registro": "formal" },
+      { "to": "manter", "registro": "neutro" }
+    ],
+    "mudar": [
+      { "to": "alterar", "registro": "neutro" },
+      { "to": "modificar", "registro": "neutro" },
+      { "to": "transformar", "registro": "formal" }
+    ],
+    "manter": [
+      { "to": "preservar", "registro": "formal" },
+      { "to": "conservar", "registro": "neutro" },
+      { "to": "sustentar", "registro": "formal" }
+    ],
+    "esperar": [
+      { "to": "aguardar", "registro": "formal" },
+      { "to": "torcer", "registro": "informal" }
+    ],
+    "decidir": [
+      { "to": "deliberar", "registro": "formal" },
+      { "to": "resolver", "registro": "neutro" }
+    ],
+    "escolher": [
+      { "to": "selecionar", "registro": "neutro" },
+      { "to": "eleger", "registro": "formal" },
+      { "to": "optar", "registro": "neutro" }
+    ],
+    "estudar": [
+      { "to": "investigar", "registro": "formal" },
+      { "to": "examinar", "registro": "formal" },
+      { "to": "analisar", "registro": "neutro" }
+    ],
+    "trabalhar": [
+      { "to": "atuar", "registro": "neutro" },
+      { "to": "laborar", "registro": "formal" },
+      { "to": "operar", "registro": "neutro" }
+    ],
+    "descansar": [
+      { "to": "repousar", "registro": "formal" },
+      { "to": "relaxar", "registro": "neutro" }
+    ],
+    "dormir": [
+      { "to": "repousar", "registro": "formal" },
+      { "to": "adormecer", "registro": "neutro" }
+    ],
+    "comer": [
+      { "to": "alimentar-se", "registro": "neutro" },
+      { "to": "saborear", "registro": "formal" }
+    ],
+    "beber": [
+      { "to": "ingerir", "registro": "formal" },
+      { "to": "tomar", "registro": "neutro" }
+    ],
+    "amar": [
+      { "to": "adorar", "registro": "neutro" },
+      { "to": "estimar", "registro": "formal" }
+    ],
+    "odiar": [
+      { "to": "detestar", "registro": "neutro" },
+      { "to": "abominar", "registro": "formal" }
+    ],
+    "rir": [
+      { "to": "gargalhar", "registro": "neutro" },
+      { "to": "sorrir", "registro": "neutro" }
+    ],
+    "chorar": [
+      { "to": "lamentar", "registro": "formal" },
+      { "to": "soluçar", "registro": "neutro" }
+    ],
+    "brigar": [
+      { "to": "discutir", "registro": "neutro" },
+      { "to": "altercar", "registro": "formal" }
+    ],
+    "criticar": [
+      { "to": "censurar", "registro": "formal" },
+      { "to": "reprovar", "registro": "neutro" }
+    ],
+    "elogiar": [
+      { "to": "louvar", "registro": "formal" },
+      { "to": "exaltar", "registro": "formal" }
+    ],
+    "concordar": [
+      { "to": "aprovar", "registro": "neutro" },
+      { "to": "anuir", "registro": "formal" }
+    ],
+    "discordar": [
+      { "to": "divergir", "registro": "formal" },
+      { "to": "objetar", "registro": "formal" }
+    ],
+    "ensinar": [
+      { "to": "instruir", "registro": "formal" },
+      { "to": "lecionar", "registro": "formal" },
+      { "to": "orientar", "registro": "neutro" }
+    ],
+    "aprender": [
+      { "to": "assimilar", "registro": "formal" },
+      { "to": "memorizar", "registro": "neutro" }
+    ],
+    "construir": [
+      { "to": "edificar", "registro": "formal" },
+      { "to": "erguer", "registro": "formal" }
+    ],
+    "destruir": [
+      { "to": "demolir", "registro": "neutro" },
+      { "to": "arrasar", "registro": "neutro" }
+    ],
+    "reformar": [
+      { "to": "renovar", "registro": "neutro" },
+      { "to": "restaurar", "registro": "formal" }
+    ],
+    "limpar": [
+      { "to": "higienizar", "registro": "formal" },
+      { "to": "lavar", "registro": "neutro" }
+    ],
+    "guardar": [
+      { "to": "armazenar", "registro": "neutro" },
+      { "to": "conservar", "registro": "formal" }
+    ],
+    "esconder": [
+      { "to": "ocultar", "registro": "formal" },
+      { "to": "encobrir", "registro": "formal" }
+    ],
+    "revelar": [
+      { "to": "divulgar", "registro": "neutro" },
+      { "to": "expor", "registro": "formal" }
+    ],
+    "permitir": [
+      { "to": "autorizar", "registro": "formal" },
+      { "to": "consentir", "registro": "formal" }
+    ],
+    "proibir": [
+      { "to": "vetar", "registro": "formal" },
+      { "to": "impedir", "registro": "neutro" }
+    ],
+    "aceitar": [
+      { "to": "acolher", "registro": "formal" },
+      { "to": "consentir", "registro": "formal" }
+    ],
+    "rejeitar": [
+      { "to": "recusar", "registro": "neutro" },
+      { "to": "repudiar", "registro": "formal" }
+    ],
+
+    "casa": [
+      { "to": "residencia", "registro": "formal" },
+      { "to": "lar", "registro": "neutro" },
+      { "to": "moradia", "registro": "neutro" }
+    ],
+    "carro": [
+      { "to": "automovel", "registro": "formal" },
+      { "to": "veiculo", "registro": "neutro" }
+    ],
+    "rua": [
+      { "to": "via", "registro": "formal" },
+      { "to": "logradouro", "registro": "formal" }
+    ],
+    "cidade": [
+      { "to": "municipio", "registro": "formal" },
+      { "to": "metropole", "registro": "formal" }
+    ],
+    "amigo": [
+      { "to": "companheiro", "registro": "neutro" },
+      { "to": "colega", "registro": "neutro" },
+      { "to": "camarada", "registro": "informal" }
+    ],
+    "inimigo": [
+      { "to": "adversario", "registro": "neutro" },
+      { "to": "rival", "registro": "neutro" },
+      { "to": "antagonista", "registro": "formal" }
+    ],
+    "criança": [
+      { "to": "infante", "registro": "formal" },
+      { "to": "menor", "registro": "formal" }
+    ],
+    "professor": [
+      { "to": "docente", "registro": "formal" },
+      { "to": "educador", "registro": "neutro" },
+      { "to": "mestre", "registro": "formal" }
+    ],
+    "aluno": [
+      { "to": "estudante", "registro": "neutro" },
+      { "to": "discente", "registro": "formal" }
+    ],
+    "medico": [
+      { "to": "doutor", "registro": "neutro" },
+      { "to": "clinico", "registro": "formal" }
+    ],
+    "doenca": [
+      { "to": "enfermidade", "registro": "formal" },
+      { "to": "molestia", "registro": "formal" },
+      { "to": "patologia", "registro": "formal" }
+    ],
+    "remedio": [
+      { "to": "medicamento", "registro": "formal" },
+      { "to": "farmaco", "registro": "formal" }
+    ],
+    "comida": [
+      { "to": "alimento", "registro": "neutro" },
+      { "to": "refeicao", "registro": "neutro" }
+    ],
+    "bebida": [
+      { "to": "liquido", "registro": "neutro" }
+    ],
+    "agua": [
+      { "to": "h2o", "registro": "formal" }
+    ],
+    "dinheiro": [
+      { "to": "recurso", "registro": "formal" },
+      { "to": "verba", "registro": "formal" },
+      { "to": "grana", "registro": "informal" }
+    ],
+    "preco": [
+      { "to": "valor", "registro": "neutro" },
+      { "to": "custo", "registro": "neutro" }
+    ],
+    "compra": [
+      { "to": "aquisicao", "registro": "formal" }
+    ],
+    "venda": [
+      { "to": "comercializacao", "registro": "formal" }
+    ],
+    "loja": [
+      { "to": "estabelecimento", "registro": "formal" },
+      { "to": "comercio", "registro": "neutro" }
+    ],
+    "empresa": [
+      { "to": "companhia", "registro": "neutro" },
+      { "to": "organizacao", "registro": "formal" },
+      { "to": "corporacao", "registro": "formal" }
+    ],
+    "cliente": [
+      { "to": "consumidor", "registro": "neutro" },
+      { "to": "comprador", "registro": "neutro" }
+    ],
+    "produto": [
+      { "to": "mercadoria", "registro": "neutro" },
+      { "to": "artigo", "registro": "neutro" }
+    ],
+    "servico": [
+      { "to": "atendimento", "registro": "neutro" },
+      { "to": "prestacao", "registro": "formal" }
+    ],
+    "reuniao": [
+      { "to": "encontro", "registro": "neutro" },
+      { "to": "assembleia", "registro": "formal" }
+    ],
+    "decisao": [
+      { "to": "deliberacao", "registro": "formal" },
+      { "to": "escolha", "registro": "neutro" },
+      { "to": "resolucao", "registro": "formal" }
+    ],
+    "regra": [
+      { "to": "norma", "registro": "neutro" },
+      { "to": "preceito", "registro": "formal" },
+      { "to": "diretriz", "registro": "formal" }
+    ],
+    "lei": [
+      { "to": "legislacao", "registro": "formal" },
+      { "to": "estatuto", "registro": "formal" }
+    ],
+    "direito": [
+      { "to": "prerrogativa", "registro": "formal" },
+      { "to": "garantia", "registro": "neutro" }
+    ],
+    "dever": [
+      { "to": "obrigacao", "registro": "formal" },
+      { "to": "responsabilidade", "registro": "neutro" }
+    ],
+    "razao": [
+      { "to": "motivo", "registro": "neutro" },
+      { "to": "causa", "registro": "neutro" },
+      { "to": "fundamento", "registro": "formal" }
+    ],
+    "verdade": [
+      { "to": "veracidade", "registro": "formal" },
+      { "to": "realidade", "registro": "neutro" }
+    ],
+    "mentira": [
+      { "to": "inverdade", "registro": "formal" },
+      { "to": "falsidade", "registro": "formal" }
+    ],
+    "esperanca": [
+      { "to": "expectativa", "registro": "neutro" },
+      { "to": "fe", "registro": "neutro" }
+    ],
+    "medo": [
+      { "to": "receio", "registro": "formal" },
+      { "to": "temor", "registro": "formal" },
+      { "to": "pavor", "registro": "neutro" }
+    ],
+    "raiva": [
+      { "to": "irritacao", "registro": "neutro" },
+      { "to": "fúria", "registro": "neutro" },
+      { "to": "colera", "registro": "formal" }
+    ],
+    "amor": [
+      { "to": "afeto", "registro": "neutro" },
+      { "to": "carinho", "registro": "neutro" },
+      { "to": "dileto", "registro": "formal" }
+    ],
+    "odio": [
+      { "to": "rancor", "registro": "neutro" },
+      { "to": "aversao", "registro": "formal" }
+    ],
+    "saudade": [
+      { "to": "nostalgia", "registro": "formal" }
+    ],
+    "festa": [
+      { "to": "comemoracao", "registro": "neutro" },
+      { "to": "celebracao", "registro": "formal" }
+    ],
+    "viagem": [
+      { "to": "jornada", "registro": "formal" },
+      { "to": "deslocamento", "registro": "formal" },
+      { "to": "passeio", "registro": "neutro" }
+    ],
+    "aniversario": [
+      { "to": "natalicio", "registro": "formal" }
+    ],
+
+    "muito grande": [
+      { "to": "enorme", "registro": "neutro" },
+      { "to": "gigantesco", "registro": "neutro" },
+      { "to": "colossal", "registro": "formal" }
+    ],
+    "muito pequeno": [
+      { "to": "minusculo", "registro": "neutro" },
+      { "to": "diminuto", "registro": "formal" }
+    ],
+    "muito bom": [
+      { "to": "excelente", "registro": "formal" },
+      { "to": "otimo", "registro": "neutro" }
+    ],
+    "muito ruim": [
+      { "to": "pessimo", "registro": "neutro" },
+      { "to": "horrivel", "registro": "informal" }
+    ],
+    "ao mesmo tempo": [
+      { "to": "simultaneamente", "registro": "formal" },
+      { "to": "concomitantemente", "registro": "formal" }
+    ],
+    "no fim": [
+      { "to": "finalmente", "registro": "neutro" },
+      { "to": "enfim", "registro": "neutro" }
+    ],
+    "aos poucos": [
+      { "to": "gradualmente", "registro": "formal" },
+      { "to": "paulatinamente", "registro": "formal" }
+    ],
+    "de novo": [
+      { "to": "novamente", "registro": "neutro" },
+      { "to": "outra vez", "registro": "informal" }
+    ],
+    "por isso": [
+      { "to": "portanto", "registro": "formal" },
+      { "to": "logo", "registro": "neutro" }
+    ],
+    "para sempre": [
+      { "to": "eternamente", "registro": "formal" },
+      { "to": "perpetuamente", "registro": "formal" }
+    ],
+    "em geral": [
+      { "to": "geralmente", "registro": "neutro" },
+      { "to": "via de regra", "registro": "formal" }
+    ],
+    "mais uma vez": [
+      { "to": "novamente", "registro": "neutro" }
+    ],
+    "de vez em quando": [
+      { "to": "ocasionalmente", "registro": "formal" },
+      { "to": "as vezes", "registro": "neutro" }
+    ],
+    "sem duvida": [
+      { "to": "certamente", "registro": "neutro" },
+      { "to": "indubitavelmente", "registro": "formal" }
+    ],
+    "talvez": [
+      { "to": "possivelmente", "registro": "neutro" },
+      { "to": "porventura", "registro": "formal" },
+      { "to": "quica", "registro": "formal" }
+    ],
+    "as vezes": [
+      { "to": "ocasionalmente", "registro": "formal" },
+      { "to": "esporadicamente", "registro": "formal" }
+    ],
+    "logo": [
+      { "to": "em breve", "registro": "neutro" },
+      { "to": "imediatamente", "registro": "neutro" },
+      { "to": "brevemente", "registro": "formal" }
+    ],
+    "ja": [
+      { "to": "imediatamente", "registro": "neutro" },
+      { "to": "agora", "registro": "neutro" }
+    ],
+    "ainda": [
+      { "to": "tambem", "registro": "neutro" },
+      { "to": "alem disso", "registro": "neutro" }
+    ],
+    "so": [
+      { "to": "apenas", "registro": "neutro" },
+      { "to": "somente", "registro": "neutro" },
+      { "to": "unicamente", "registro": "formal" }
+    ],
+    "tudo": [
+      { "to": "todas as coisas", "registro": "neutro" },
+      { "to": "a totalidade", "registro": "formal" }
+    ],
+    "nada": [
+      { "to": "coisa alguma", "registro": "formal" }
+    ],
+    "alguem": [
+      { "to": "alguma pessoa", "registro": "neutro" },
+      { "to": "individuo", "registro": "formal" }
+    ],
+    "ninguem": [
+      { "to": "pessoa alguma", "registro": "formal" },
+      { "to": "nenhum", "registro": "neutro" }
+    ],
+    "qualquer": [
+      { "to": "todo", "registro": "neutro" },
+      { "to": "qualquer um", "registro": "informal" }
+    ],
+    "varios": [
+      { "to": "diversos", "registro": "formal" },
+      { "to": "muitos", "registro": "neutro" }
+    ],
+    "diversos": [
+      { "to": "varios", "registro": "neutro" },
+      { "to": "diferentes", "registro": "neutro" }
+    ],
+    "alguns": [
+      { "to": "certos", "registro": "neutro" },
+      { "to": "uns poucos", "registro": "informal" }
+    ],
+    "todos os dias": [
+      { "to": "diariamente", "registro": "neutro" },
+      { "to": "cotidianamente", "registro": "formal" }
+    ],
+    "todas as semanas": [
+      { "to": "semanalmente", "registro": "neutro" }
+    ],
+    "todos os meses": [
+      { "to": "mensalmente", "registro": "neutro" }
+    ],
+    "todos os anos": [
+      { "to": "anualmente", "registro": "neutro" }
+    ],
+    "todos os dias da semana": [
+      { "to": "diuturnamente", "registro": "formal" }
     ]
   }
 }

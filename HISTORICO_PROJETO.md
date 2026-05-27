@@ -62,6 +62,48 @@ ANOTATA é um **app web pessoal de anotações inteligentes sem IA**, hospedado 
 
 ---
 
+### Reescritor — Fase 1 (Fundação)
+Engine local `src/reescritor/` com 6 léxicos curados, 4 transformers (sinônimos, conectores, gerundismo, redundância), 5 modos compostos e API pública `rephrase(text, mode)`. Sem IA. Sem rede. ~400 entradas iniciais.
+
+### Reescritor — Fase 2 (UI + voz ativa + quebra de cláusulas)
+- Modal `RephrasePanel` integrado à toolbar do editor (botão 🔄)
+- 5 chips de modo lado a lado, preview em tempo real
+- Transformer `voice.js`: voz passiva → voz ativa
+- Transformer `clauseSplit.js`: quebra de orações longas (>25 palavras)
+- "Aplicar reescrita" funciona
+
+### Reescritor — Fase 3 (polimento + expansão)
+**Bug fixes:**
+- `estarei verificando` → `verificarei` (futuro do verbo, não infinitivo)
+- `tenho estado revisando` → `tenho revisado` (particípio, não infinitivo)
+- `O bolo foi comido pela criança` → `A criança comeu o bolo` (artigo preservado em substantivo comum)
+- `O relatório foi enviado pelo João` → `João enviou o relatório` (artigo descartado em nome próprio)
+- `applySubstitutions` deixava de respeitar palavras hifenizadas: o conector `e` estava sendo substituído dentro de `e-mail` no modo formal. Corrigido — hífen e apóstrofo agora fazem parte da fronteira de palavra.
+
+**Léxicos expandidos (~400 → ~1100 entradas):**
+- `sinonimos.json`: 60 → 213
+- `simplificacoes.json`: 70 → 217
+- `pleonasmos.json`: 96 → 189
+- `coloquialismos.json`: 57 → 111
+- `participios.json`: 110 → 212
+
+**Transformers novos:**
+- `cacofonia.js` + `cacofonia.json` (50 entradas) — categorias `pronome-objeto` (`vi ela` → `vi-a`), `som-feio` (`boca dela` → `a boca dela`, `alma minha` → `minha alma`), `redundancia-sonora` (`já já` → `logo`, `que que` → `que`)
+- `nominalizacao.js` + `nominalizacao.json` (84 entradas) — bidirecional. `verbalize`: `fez a análise` → `analisou` (modos conciso/fluente/simples). `nominalize`: `decidiu` → `tomou a decisão` (modo formal).
+
+**Helpers novos em `posLite.js`:**
+- `gerundToFuture(gerund, person)` — converte gerúndio para futuro do presente conjugado em pessoa específica (1s, 3s, 1p, 3p), com lista de irregulares (fazer→farei, dizer→direi, trazer→trarei, pôr→porei, etc.)
+- `gerundToParticiple(gerund)` — converte gerúndio para particípio passado, com irregulares (fazendo→feito, dizendo→dito, abrindo→aberto, etc.)
+
+**Testes:**
+- `src/reescritor/__tests__/phase3.test.js` — 20 testes vitest cobrindo bugs e novos transformers
+- `src/reescritor/__tests__/smoke.test.js` — 5 smoke tests cobrindo todos os modos com texto realista
+- `npm test` agora roda os 25 testes
+
+**ENGINE_VERSION** bumped: `1.0.0-fase1` → `1.2.0-fase3`
+
+---
+
 ## 🗂️ Estrutura de arquivos
 
 ```
@@ -160,4 +202,4 @@ Seguimos:
 - Site público em GitHub Pages, repositório precisa ficar **público** pra Pages funcionar
 - Usuário escolheu liberdade técnica total e me chamou de "mestre" do projeto
 
-— última atualização: Pacote 5 Final + Patch 5.1 (correção de tela branca, 27/05/2026)
+— última atualização: Reescritor Fase 3 (polimento + expansão de léxicos para ~1100 entradas + cacofonia + nominalização, 27/05/2026)

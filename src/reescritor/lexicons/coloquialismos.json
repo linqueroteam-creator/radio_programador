@@ -1,10 +1,11 @@
 {
   "_meta": {
-    "version": 1,
+    "version": 2,
     "language": "pt-BR",
     "description": "Pares 'forma coloquial -> forma padrao'. Usado pelo modo Formal para subir o registro, e pelo modo Simples (na direcao oposta — forma curta e direta).",
     "source": "Curado manualmente a partir de manuais de redacao e padroes de comunicacao escrita formal em portugues brasileiro.",
-    "count": 56
+    "count": 111,
+    "expanded_in": "fase-3"
   },
   "entries": [
     { "from": "tô", "to": "estou" },
@@ -64,6 +65,63 @@
     { "from": "véio", "to": "" },
     { "from": "ai", "to": "então", "case_sensitive": true, "only_if_word": true },
     { "from": "aí", "to": "então" },
-    { "from": "daí", "to": "então" }
+    { "from": "daí", "to": "então" },
+
+    { "from": "pq", "to": "porque" },
+    { "from": "pqq", "to": "por que" },
+    { "from": "tdb", "to": "tudo bem" },
+    { "from": "qq", "to": "qualquer" },
+    { "from": "qlqr", "to": "qualquer" },
+    { "from": "obg", "to": "obrigado" },
+    { "from": "obgd", "to": "obrigado" },
+    { "from": "abs", "to": "abraço" },
+    { "from": "bjs", "to": "beijos" },
+    { "from": "bj", "to": "beijo" },
+    { "from": "fds", "to": "fim de semana" },
+    { "from": "hj", "to": "hoje" },
+    { "from": "amh", "to": "amanhã" },
+    { "from": "tdy", "to": "hoje" },
+    { "from": "agr", "to": "agora" },
+    { "from": "dpois", "to": "depois" },
+    { "from": "dps", "to": "depois" },
+    { "from": "antss", "to": "antes" },
+    { "from": "antss de", "to": "antes de" },
+    { "from": "ksk", "to": "como" },
+    { "from": "kct", "to": "que isso" },
+
+    { "from": "nois", "to": "nós" },
+    { "from": "memo", "to": "mesmo" },
+    { "from": "memu", "to": "mesmo" },
+    { "from": "kara", "to": "amigo" },
+    { "from": "tava la", "to": "estava lá" },
+    { "from": "tava lá", "to": "estava lá" },
+    { "from": "vamo", "to": "vamos" },
+    { "from": "bora", "to": "vamos" },
+    { "from": "ce", "to": "você", "case_sensitive": true, "only_if_word": true },
+    { "from": "cê", "to": "você" },
+    { "from": "ces", "to": "vocês", "case_sensitive": true, "only_if_word": true },
+    { "from": "cês", "to": "vocês" },
+
+    { "from": "muié", "to": "mulher" },
+    { "from": "mulher dele", "to": "esposa" },
+    { "from": "marido dela", "to": "esposo" },
+    { "from": "filho da mae", "to": "indivíduo" },
+    { "from": "filho da mãe", "to": "indivíduo" },
+    { "from": "tipo um", "to": "uma espécie de" },
+    { "from": "meio que", "to": "" },
+    { "from": "tipo de", "to": "" },
+    { "from": "saca", "to": "entende" },
+    { "from": "sacou", "to": "entendeu" },
+    { "from": "manda ver", "to": "prossiga" },
+    { "from": "dar uma olhada", "to": "verificar" },
+    { "from": "dar um pulo", "to": "passar" },
+    { "from": "tomar conta", "to": "cuidar" },
+
+    { "from": "deu certo", "to": "funcionou" },
+    { "from": "deu ruim", "to": "deu errado" },
+    { "from": "show de bola", "to": "excelente" },
+    { "from": "é nóis", "to": "estamos juntos" },
+    { "from": "valeu", "to": "obrigado" },
+    { "from": "falou", "to": "até logo" }
   ]
 }

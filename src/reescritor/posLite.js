@@ -109,6 +109,96 @@ export function gerundToInfinitive(gerund) {
 }
 
 /**
+ * Transforma um verbo do gerundio (-ando/-endo/-indo) para o futuro do
+ * presente do indicativo, conjugado conforme a pessoa indicada.
+ *
+ * Pessoas suportadas:
+ *  - '1s'  1a pessoa singular: -ei  ("verificarei")
+ *  - '3s'  3a pessoa singular: -a   ("verificara")
+ *  - '1p'  1a pessoa plural:   -emos ("verificaremos")
+ *  - '3p'  3a pessoa plural:   -ao  ("verificarao")
+ *
+ * Cobre verbos irregulares classicos: fazer, dizer, trazer, por (-pondo).
+ *
+ * @param {string} gerund palavra em gerundio
+ * @param {'1s'|'3s'|'1p'|'3p'} [person='3s'] pessoa/numero do verbo conjugado
+ * @returns {string|null} forma conjugada no futuro, ou null se nao puder converter
+ */
+export function gerundToFuture(gerund, person = '3s') {
+  if (!gerund || typeof gerund !== 'string') return null;
+  const g = gerund.toLowerCase();
+
+  const FUTURE_IRREGULARES = {
+    'fazendo':  { '1s': 'farei',   '3s': 'fará',   '1p': 'faremos',   '3p': 'farão' },
+    'dizendo':  { '1s': 'direi',   '3s': 'dirá',   '1p': 'diremos',   '3p': 'dirão' },
+    'trazendo': { '1s': 'trarei',  '3s': 'trará',  '1p': 'traremos',  '3p': 'trarão' },
+    'pondo':    { '1s': 'porei',   '3s': 'porá',   '1p': 'poremos',   '3p': 'porão' },
+    'tendo':    { '1s': 'terei',   '3s': 'terá',   '1p': 'teremos',   '3p': 'terão' },
+    'vindo':    { '1s': 'virei',   '3s': 'virá',   '1p': 'viremos',   '3p': 'virão' },
+    'sendo':    { '1s': 'serei',   '3s': 'será',   '1p': 'seremos',   '3p': 'serão' },
+    'indo':     { '1s': 'irei',    '3s': 'irá',    '1p': 'iremos',    '3p': 'irão' },
+    'vendo':    { '1s': 'verei',   '3s': 'verá',   '1p': 'veremos',   '3p': 'verão' },
+    'lendo':    { '1s': 'lerei',   '3s': 'lerá',   '1p': 'leremos',   '3p': 'lerão' },
+    'mantendo': { '1s': 'manterei', '3s': 'manterá', '1p': 'manteremos', '3p': 'manterão' },
+    'detendo':  { '1s': 'deterei', '3s': 'deterá', '1p': 'deteremos', '3p': 'deterão' },
+    'obtendo':  { '1s': 'obterei', '3s': 'obterá', '1p': 'obteremos', '3p': 'obterão' },
+  };
+
+  if (FUTURE_IRREGULARES[g] && FUTURE_IRREGULARES[g][person]) {
+    return preserveCase(gerund, FUTURE_IRREGULARES[g][person]);
+  }
+
+  const infinitive = gerundToInfinitive(g);
+  if (!infinitive) return null;
+
+  const FUTURE_ENDINGS = { '1s': 'ei', '3s': 'á', '1p': 'emos', '3p': 'ão' };
+  const ending = FUTURE_ENDINGS[person] || FUTURE_ENDINGS['3s'];
+
+  // Remove circunflexo do "pôr" (caso raro que ja foi tratado acima, mas defensivo)
+  const stem = infinitive.toLowerCase().replace(/^pôr$/, 'por');
+  return preserveCase(gerund, stem + ending);
+}
+
+/**
+ * Transforma um verbo do gerundio para o particípio passado.
+ *
+ *  "revisando" -> "revisado"
+ *  "vendendo"  -> "vendido"
+ *  "abrindo"   -> "aberto" (irregular)
+ *
+ * Usado pelos padroes de gerundismo composto ("tenho estado X-ndo" -> "tenho X-do").
+ *
+ * @param {string} gerund palavra em gerundio
+ * @returns {string|null} particípio masculino singular, ou null se nao puder converter
+ */
+export function gerundToParticiple(gerund) {
+  if (!gerund || typeof gerund !== 'string') return null;
+  const g = gerund.toLowerCase();
+
+  const IRREGULARES = {
+    'fazendo': 'feito',
+    'dizendo': 'dito',
+    'pondo':   'posto',
+    'vendo':   'visto',
+    'escrevendo': 'escrito',
+    'abrindo':  'aberto',
+    'cobrindo': 'coberto',
+    'descobrindo': 'descoberto',
+    'pagando':  'pago',
+    'pegando':  'pego',
+    'ganhando': 'ganho',
+    'gastando': 'gasto',
+    'trazendo': 'trazido',
+  };
+  if (IRREGULARES[g]) return preserveCase(gerund, IRREGULARES[g]);
+
+  if (g.endsWith('ando') && g.length >= 5) return preserveCase(gerund, g.slice(0, -4) + 'ado');
+  if (g.endsWith('endo') && g.length >= 5) return preserveCase(gerund, g.slice(0, -4) + 'ido');
+  if (g.endsWith('indo') && g.length >= 5) return preserveCase(gerund, g.slice(0, -4) + 'ido');
+  return null;
+}
+
+/**
  * Detecta se um token e provavelmente verbo na 3a pessoa do singular,
  * indicador classico de voz passiva ("foi feito por X", "e analisado por Y").
  *

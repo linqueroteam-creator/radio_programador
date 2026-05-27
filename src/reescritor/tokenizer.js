@@ -107,10 +107,14 @@ export function applySubstitutions(text, entries) {
     const slice = sorted.slice(i, i + BATCH);
     const indexed = slice.map((e, idx) => ({ ...e, _idx: idx }));
     const escaped = indexed.map(e => escapeRegex(e.from)).join('|');
+    // Boundary respeita palavras hifenizadas (e-mail, guarda-chuva): se o
+    // candidato esta colado num hifen com letra do outro lado, NAO e fim de
+    // palavra. Por isso o hifen entra na classe de "char nao-fronteira" junto
+    // com as letras. Ex: para "e" antes de "-mail", o lookahead "[^WORD\-]"
+    // falha (porque "-" ESTA na classe excluida), logo nao casa o "e" interno.
+    const NON_BOUNDARY = `[${WORD_CHARS}\\-']`;
     const regex = new RegExp(
-      // Word boundary opcional dependendo das opcoes individuais — fazemos por entrada
-      // mas a primeira passagem usa boundary geral
-      `(^|[^${WORD_CHARS}])(${escaped})(?=$|[^${WORD_CHARS}])`,
+      `(^|[^${WORD_CHARS}\\-'])(${escaped})(?=$|[^${WORD_CHARS}\\-'])`,
       'gi'
     );
 

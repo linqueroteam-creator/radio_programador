@@ -42,7 +42,7 @@ const HANDLERS = {
   simples,
 };
 
-export const ENGINE_VERSION = '1.0.0-fase1';
+export const ENGINE_VERSION = '1.2.0-fase3';
 
 /**
  * Reescreve um texto em PT-BR.

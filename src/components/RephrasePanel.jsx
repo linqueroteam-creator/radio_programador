@@ -272,4 +272,6 @@ const ruleLabels = {
   'voice':           { label: 'voz ativa',   bg: '#D4F4DD', color: '#0F7A3F' },
   'clause':          { label: 'quebra',      bg: '#D4F4DD', color: '#0F7A3F' },
   'concise':         { label: 'enxugar',     bg: '#D4F4DD', color: '#0F7A3F' },
+  'cacofonia':       { label: 'som ruim',    bg: '#FFE7D9', color: '#9B4E00' },
+  'nominalizacao':   { label: 'verbo direto', bg: '#E0F2FA', color: '#1A5C99' },
 };
