@@ -56,34 +56,35 @@ export default function Sidebar({ store, isCollapsed, onToggle }) {
         <div className="p-3 border-b border-anotata-border flex justify-center">
           <button
             onClick={onToggle}
-            className="p-1.5 rounded-lg hover:bg-anotata-hover text-anotata-roxo transition-colors"
+            className="p-1.5 rounded-lg hover:bg-anotata-hover text-anotata-roxo transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-anotata-roxo/50"
+            aria-label="Expandir menu lateral"
             title="Expandir menu"
           >
-            <Menu size={18} />
+            <Menu size={16} aria-hidden="true" />
           </button>
         </div>
 
         <nav className="flex-1 py-3 flex flex-col items-center gap-1 overflow-y-auto">
           <SidebarIconBtn
-            icon={<HomeIcon size={18} />}
+            icon={<HomeIcon size={16} />}
             active={store.currentView === 'home'}
             onClick={() => { store.setCurrentView('home'); store.setSelectedNoteId(null); }}
             title="Início"
           />
           <SidebarIconBtn
-            icon={<FileText size={18} />}
+            icon={<FileText size={16} />}
             active={store.currentView === 'all'}
             onClick={() => { store.setCurrentView('all'); store.setSelectedNoteId(null); }}
             title={`Todas as notas (${totalNotes})`}
           />
           <SidebarIconBtn
-            icon={<Star size={18} />}
+            icon={<Star size={16} />}
             active={store.currentView === 'favorites'}
             onClick={() => { store.setCurrentView('favorites'); store.setSelectedNoteId(null); }}
             title={`Favoritos (${favCount})`}
           />
           <SidebarIconBtn
-            icon={<Layers size={18} />}
+            icon={<Layers size={16} />}
             active={store.currentView === 'collection'}
             onClick={() => {
               store.setCurrentView('collection');
@@ -93,25 +94,25 @@ export default function Sidebar({ store, isCollapsed, onToggle }) {
             title="Coleções automáticas"
           />
           <SidebarIconBtn
-            icon={<SpellCheck size={18} />}
+            icon={<SpellCheck size={16} />}
             active={store.currentView === 'corretor'}
             onClick={() => { store.setCurrentView('corretor'); store.setSelectedNoteId(null); }}
             title="Corretor Ortográfico"
           />
           <SidebarIconBtn
-            icon={<Clock size={18} />}
+            icon={<Clock size={16} />}
             active={store.currentView === 'timeline'}
             onClick={() => { store.setCurrentView('timeline'); store.setSelectedNoteId(null); }}
             title="Linha do tempo"
           />
           <SidebarIconBtn
-            icon={<TrendingUp size={18} />}
+            icon={<TrendingUp size={16} />}
             active={store.currentView === 'insights'}
             onClick={() => { store.setCurrentView('insights'); store.setSelectedNoteId(null); }}
             title="Insights / Estatísticas"
           />
           <SidebarIconBtn
-            icon={<Trash2 size={18} />}
+            icon={<Trash2 size={16} />}
             active={store.currentView === 'trash'}
             onClick={() => { store.setCurrentView('trash'); store.setSelectedNoteId(null); }}
             title={`Lixeira (${trashCount})`}
@@ -237,7 +238,7 @@ export default function Sidebar({ store, isCollapsed, onToggle }) {
         >
           <Sparkles size={16} />
           <span>Assistente IA</span>
-          <span className="ml-auto text-[9px] bg-anotata-roxo px-1.5 py-0.5 rounded text-white">Em breve</span>
+          <span className="ml-auto text-2xs bg-anotata-roxo px-1.5 py-0.5 rounded text-white">Em breve</span>
         </button>
 
         <div className="border-t border-anotata-border my-3"></div>
@@ -402,7 +403,7 @@ export default function Sidebar({ store, isCollapsed, onToggle }) {
       </nav>
 
       <div className="p-3 border-t border-anotata-border">
-        <p className="text-[10px] text-anotata-muted text-center">ANOTATA v3.0 • Uso pessoal</p>
+        <p className="text-2xs text-anotata-muted text-center">ANOTATA v3.0 • Uso pessoal</p>
       </div>
     </aside>
   );

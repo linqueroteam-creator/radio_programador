@@ -31,15 +31,15 @@ class ErrorBoundary extends React.Component {
     if (this.state.error) {
       return (
         <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, background: '#F2F1F4', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-          <div style={{ maxWidth: 560, background: 'white', border: '1px solid #E8E4F0', borderRadius: 16, padding: 28, boxShadow: '0 8px 24px rgba(45,27,78,.1)' }}>
+          <div style={{ maxWidth: 560, background: 'white', border: '1px solid #DCD2E8', borderRadius: 16, padding: 28, boxShadow: '0 8px 24px rgba(45,27,78,.1)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
               <AlertTriangle size={20} color="#E8637C" />
               <h2 style={{ margin: 0, color: '#3D1B66', fontSize: 18 }}>ANOTATA encontrou um problema</h2>
             </div>
-            <p style={{ color: '#6B5E80', fontSize: 13, lineHeight: 1.5 }}>
+            <p style={{ color: '#5B4A7A', fontSize: 13, lineHeight: 1.5 }}>
               Suas notas estão salvas com segurança no navegador. Recarregue a página para tentar de novo. Se o problema persistir, copie o detalhe abaixo e mande para o desenvolvedor.
             </p>
-            <pre style={{ background: '#F6F4F9', border: '1px solid #E8E4F0', borderRadius: 8, padding: 12, fontSize: 11, color: '#3D1B66', overflow: 'auto', maxHeight: 220, whiteSpace: 'pre-wrap' }}>
+            <pre style={{ background: '#F2F1F4', border: '1px solid #DCD2E8', borderRadius: 8, padding: 12, fontSize: 11, color: '#3D1B66', overflow: 'auto', maxHeight: 220, whiteSpace: 'pre-wrap' }}>
               {String(this.state.error && this.state.error.stack || this.state.error)}
             </pre>
             <button
@@ -210,19 +210,21 @@ function MainApp({ logout }) {
       {/* Botão Ctrl+K (sempre visível) */}
       <button
         onClick={() => setShowCommandPalette(true)}
-        className="fixed bottom-3 left-12 z-50 px-2.5 py-1.5 bg-white border border-anotata-border rounded-lg text-anotata-text-suave hover:text-anotata-roxo hover:border-anotata-roxo transition-all shadow-sm hover:shadow-md flex items-center gap-1.5 text-xs"
+        className="fixed bottom-3 left-12 z-50 px-2.5 py-1.5 bg-white border border-anotata-border rounded-lg text-anotata-text-suave hover:text-anotata-roxo hover:border-anotata-roxo transition-all shadow-sm hover:shadow-md flex items-center gap-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-anotata-roxo/50 focus-visible:ring-offset-1"
+        aria-label="Abrir central de comandos (Ctrl+K)"
         title="Central de comandos (Ctrl+K)"
       >
-        <Command size={12} />
-        <kbd className="text-[10px] bg-anotata-lavanda-clara px-1 rounded">K</kbd>
+        <Command size={12} aria-hidden="true" />
+        <kbd className="text-2xs bg-anotata-lavanda-clara px-1 rounded">K</kbd>
       </button>
 
       <button
         onClick={handleLogout}
-        className="fixed bottom-3 left-3 z-50 p-2 bg-white border border-anotata-border rounded-lg text-anotata-muted hover:text-anotata-goiaba hover:border-anotata-goiaba transition-all shadow-sm hover:shadow-md"
+        className="fixed bottom-3 left-3 z-50 p-2 bg-white border border-anotata-border rounded-lg text-anotata-muted hover:text-anotata-goiaba hover:border-anotata-goiaba transition-all shadow-sm hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-anotata-goiaba/50 focus-visible:ring-offset-1"
+        aria-label="Sair do ANOTATA"
         title="Sair do ANOTATA"
       >
-        <LogOut size={14} />
+        <LogOut size={14} aria-hidden="true" />
       </button>
     </div>
   );

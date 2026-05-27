@@ -171,7 +171,7 @@ export default function AuthGate({ children }) {
                 Email
               </label>
               <div className="relative">
-                <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-anotata-muted" />
+                <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-anotata-muted" />
                 <input
                   type="email"
                   value={email}
@@ -191,7 +191,7 @@ export default function AuthGate({ children }) {
                 Senha
               </label>
               <div className="relative">
-                <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-anotata-muted" />
+                <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-anotata-muted" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
@@ -207,7 +207,7 @@ export default function AuthGate({ children }) {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-anotata-muted hover:text-anotata-roxo transition-colors"
                 >
-                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                  {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
               </div>
             </div>
@@ -227,10 +227,10 @@ export default function AuthGate({ children }) {
 
             {/* Mensagem de erro */}
             {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-xs text-red-700">{error}</p>
+              <div className="mb-4 p-3 bg-anotata-goiaba-bg border border-anotata-goiaba/30 rounded-lg">
+                <p className="text-xs text-anotata-goiaba-escuro">{error}</p>
                 {attempts >= 3 && !tooManyAttempts && (
-                  <p className="text-[10px] text-red-600 mt-1">
+                  <p className="text-2xs text-anotata-goiaba mt-1">
                     Tentativas: {attempts}/5
                   </p>
                 )}
@@ -239,10 +239,10 @@ export default function AuthGate({ children }) {
 
             {/* Bloqueio por muitas tentativas */}
             {tooManyAttempts && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-center">
-                <Shield size={20} className="mx-auto text-red-600 mb-1" />
-                <p className="text-xs text-red-700 font-medium">Muitas tentativas incorretas</p>
-                <p className="text-[10px] text-red-600 mt-1">
+              <div className="mb-4 p-3 bg-anotata-goiaba-bg border border-anotata-goiaba/30 rounded-lg text-center">
+                <Shield size={20} className="mx-auto text-anotata-goiaba mb-1" />
+                <p className="text-xs text-anotata-goiaba-escuro font-medium">Muitas tentativas incorretas</p>
+                <p className="text-2xs text-anotata-goiaba mt-1">
                   Recarregue a página para tentar de novo
                 </p>
               </div>
@@ -261,14 +261,14 @@ export default function AuthGate({ children }) {
                 </>
               ) : (
                 <>
-                  <LogIn size={15} />
+                  <LogIn size={14} />
                   Entrar no ANOTATA
                 </>
               )}
             </button>
 
             {/* Rodapé */}
-            <p className="text-[10px] text-anotata-muted text-center mt-6">
+            <p className="text-2xs text-anotata-muted text-center mt-6">
               Acesso pessoal • Suas notas ficam só no seu navegador
             </p>
           </form>

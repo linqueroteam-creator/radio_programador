@@ -327,9 +327,9 @@ function BubbleButton({ rect, onRephrase, onLink }) {
         onMouseDown={onRephrase}
         aria-label="Reescrever trecho selecionado"
         title="Reescrever em modos diferentes"
-        className="px-2.5 py-1.5 text-[11px] font-medium flex items-center gap-1.5 hover:bg-anotata-roxo-escuro transition-colors"
+        className="px-2.5 py-1.5 text-xs font-medium flex items-center gap-1.5 hover:bg-anotata-roxo-escuro transition-colors"
       >
-        <RotateCw size={11} />
+        <RotateCw size={12} />
         Reescrever
       </button>
 
@@ -340,9 +340,9 @@ function BubbleButton({ rect, onRephrase, onLink }) {
         onMouseDown={onLink}
         aria-label="Ligar trecho a uma nota ou caderno"
         title="Ligar trecho a uma nota ou caderno"
-        className="px-2.5 py-1.5 text-[11px] font-medium flex items-center gap-1.5 hover:bg-anotata-roxo-escuro transition-colors"
+        className="px-2.5 py-1.5 text-xs font-medium flex items-center gap-1.5 hover:bg-anotata-roxo-escuro transition-colors"
       >
-        <Link2 size={11} />
+        <Link2 size={12} />
         Ligar a...
       </button>
 

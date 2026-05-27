@@ -87,11 +87,11 @@ export default function RephrasePanel({ originalText, scope = 'full', onApply, o
         {/* HEADER */}
         <div className="px-5 py-3 border-b border-anotata-border bg-anotata-sidebar flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-anotata-roxo to-anotata-roxo-escuro flex items-center justify-center text-white shadow-sm">
-            <RotateCw size={17} />
+            <RotateCw size={16} />
           </div>
           <div className="flex-1 min-w-0">
             <h2 className="text-sm font-semibold text-anotata-text">Reescritor</h2>
-            <p className="text-[11px] text-anotata-muted">
+            <p className="text-xs text-anotata-muted">
               Reescreve seu texto seguindo regras linguísticas do português brasileiro
               {' · '}{scope === 'selection' ? 'apenas a seleção' : 'a nota inteira'}
               {' · '}<span className="text-anotata-text-suave">v{ENGINE_VERSION}</span>
@@ -123,8 +123,8 @@ export default function RephrasePanel({ originalText, scope = 'full', onApply, o
                   }`}
                   style={active ? { backgroundColor: meta.color } : {}}
                 >
-                  <span className="text-[12px] font-semibold uppercase tracking-wider">{meta.label}</span>
-                  <span className={`text-[10px] ${active ? 'text-white/80' : 'text-anotata-muted'}`}>
+                  <span className="text-xs font-semibold uppercase tracking-wider">{meta.label}</span>
+                  <span className={`text-2xs ${active ? 'text-white/80' : 'text-anotata-muted'}`}>
                     {meta.tagline}
                   </span>
                 </button>
@@ -138,8 +138,8 @@ export default function RephrasePanel({ originalText, scope = 'full', onApply, o
           {/* ORIGINAL */}
           <div className="flex-1 flex flex-col border-r border-anotata-border min-w-0">
             <div className="px-4 py-2 bg-anotata-bg border-b border-anotata-border">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-anotata-muted">Original</span>
-              <span className="ml-2 text-[11px] text-anotata-text-suave">
+              <span className="text-2xs uppercase font-bold tracking-wider text-anotata-muted">Original</span>
+              <span className="ml-2 text-xs text-anotata-text-suave">
                 {result.stats?.wordsBefore || 0} palavras · {result.stats?.charsBefore || 0} caracteres
               </span>
             </div>
@@ -151,18 +151,18 @@ export default function RephrasePanel({ originalText, scope = 'full', onApply, o
           {/* REESCRITO */}
           <div className="flex-1 flex flex-col min-w-0">
             <div className="px-4 py-2 bg-gradient-to-r from-anotata-lavanda-clara to-white border-b border-anotata-border flex items-center gap-2">
-              <span className="text-[10px] uppercase font-bold tracking-wider" style={{ color: MODE_META[mode].color }}>
+              <span className="text-2xs uppercase font-bold tracking-wider" style={{ color: MODE_META[mode].color }}>
                 Reescrito · {MODE_META[mode].label}
               </span>
-              <span className="ml-auto text-[11px] text-anotata-text-suave">
+              <span className="ml-auto text-xs text-anotata-text-suave">
                 {result.stats?.wordsAfter || 0} palavras · {result.stats?.charsAfter || 0} caracteres
                 {reduction > 0 && (
-                  <span className="ml-2 px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-[10px] font-semibold">
+                  <span className="ml-2 px-1.5 py-0.5 bg-anotata-success-bg text-anotata-success rounded text-2xs font-semibold">
                     −{reduction}%
                   </span>
                 )}
                 {reduction < 0 && (
-                  <span className="ml-2 px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-[10px] font-semibold">
+                  <span className="ml-2 px-1.5 py-0.5 bg-anotata-warn-bg text-anotata-warn rounded text-2xs font-semibold">
                     +{Math.abs(reduction)}%
                   </span>
                 )}
@@ -185,7 +185,7 @@ export default function RephrasePanel({ originalText, scope = 'full', onApply, o
         {totalChanges > 0 && (
           <div className="border-t border-anotata-border bg-anotata-sidebar max-h-[140px] overflow-y-auto">
             <div className="px-4 py-1.5 sticky top-0 bg-anotata-sidebar border-b border-anotata-border">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-anotata-muted">
+              <span className="text-2xs uppercase font-bold tracking-wider text-anotata-muted">
                 Mudanças aplicadas · {totalChanges}
               </span>
             </div>
@@ -194,7 +194,7 @@ export default function RephrasePanel({ originalText, scope = 'full', onApply, o
                 <ChangeRow key={idx} change={c} />
               ))}
               {totalChanges > 12 && (
-                <div className="text-[11px] text-anotata-muted italic px-1">
+                <div className="text-xs text-anotata-muted italic px-1">
                   + {totalChanges - 12} mudança{totalChanges - 12 === 1 ? '' : 's'} adiciona{totalChanges - 12 === 1 ? 'l' : 'is'}
                 </div>
               )}
@@ -204,7 +204,7 @@ export default function RephrasePanel({ originalText, scope = 'full', onApply, o
 
         {/* FOOTER */}
         <div className="px-5 py-3 border-t border-anotata-border bg-white flex items-center gap-3">
-          <div className="text-[11px] text-anotata-text-suave flex items-center gap-1.5">
+          <div className="text-xs text-anotata-text-suave flex items-center gap-1.5">
             {totalChanges === 0 ? (
               <>
                 <AlertCircle size={12} className="text-anotata-muted" />
@@ -219,20 +219,20 @@ export default function RephrasePanel({ originalText, scope = 'full', onApply, o
           </div>
           <button
             onClick={onClose}
-            className="ml-auto px-4 py-2 text-[12px] text-anotata-text-suave hover:text-anotata-text transition-colors"
+            className="ml-auto px-4 py-2 text-xs text-anotata-text-suave hover:text-anotata-text transition-colors"
           >
             Cancelar
           </button>
           <button
             onClick={handleApply}
             disabled={applied || isIdentical}
-            className={`px-4 py-2 text-[12px] font-medium rounded-lg flex items-center gap-1.5 transition-all ${
+            className={`px-4 py-2 text-xs font-medium rounded-lg flex items-center gap-1.5 transition-all ${
               applied || isIdentical
                 ? 'bg-anotata-bg text-anotata-muted cursor-not-allowed'
                 : 'bg-anotata-roxo text-white hover:bg-anotata-roxo-escuro shadow-sm'
             }`}
           >
-            {applied ? <Check size={13} /> : <ArrowRight size={13} />}
+            {applied ? <Check size={14} /> : <ArrowRight size={14} />}
             {applied ? 'Aplicado' : 'Aplicar reescrita'}
           </button>
         </div>
@@ -246,9 +246,9 @@ function ChangeRow({ change }) {
   const truncate = (s, n) => (s && s.length > n) ? s.slice(0, n - 1) + '…' : s;
 
   return (
-    <div className="flex items-start gap-2 text-[11px] py-1 border-b border-anotata-border-suave last:border-b-0">
+    <div className="flex items-start gap-2 text-xs py-1 border-b border-anotata-border-suave last:border-b-0">
       <span
-        className="px-1.5 py-0.5 rounded text-[9px] uppercase font-bold tracking-wide shrink-0 mt-0.5"
+        className="px-1.5 py-0.5 rounded text-2xs uppercase font-bold tracking-wide shrink-0 mt-0.5"
         style={{ backgroundColor: ruleLabel.bg, color: ruleLabel.color }}
         title={change.rule}
       >
@@ -265,10 +265,10 @@ function ChangeRow({ change }) {
 
 const ruleLabels = {
   'gerundism':       { label: 'gerundismo',  bg: '#FFF4D9', color: '#9B6F00' },
-  'redundancy':      { label: 'pleonasmo',   bg: '#FCEEF1', color: '#C44862' },
+  'redundancy':      { label: 'pleonasmo',   bg: '#FCE7EB', color: '#C44862' },
   'colloquialism':   { label: 'coloquial',   bg: '#F0E9F8', color: '#5B2D8E' },
   'connectors':      { label: 'conector',    bg: '#EDE8F2', color: '#5B2D8E' },
-  'simplification':  { label: 'simples',     bg: '#FFE3E8', color: '#E8637C' },
+  'simplification':  { label: 'simples',     bg: '#FCE7EB', color: '#E8637C' },
   'voice':           { label: 'voz ativa',   bg: '#D4F4DD', color: '#0F7A3F' },
   'clause':          { label: 'quebra',      bg: '#D4F4DD', color: '#0F7A3F' },
   'concise':         { label: 'enxugar',     bg: '#D4F4DD', color: '#0F7A3F' },

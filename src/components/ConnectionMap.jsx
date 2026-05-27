@@ -176,11 +176,11 @@ export default function ConnectionMap({ note, store, onClose }) {
         {/* ===== HEADER ===== */}
         <div className="px-5 py-3 border-b border-anotata-border bg-anotata-sidebar flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-anotata-roxo to-anotata-roxo-escuro flex items-center justify-center text-white shadow-sm">
-            <MapIcon size={17} />
+            <MapIcon size={16} />
           </div>
           <div className="flex-1 min-w-0">
             <h2 className="text-sm font-semibold text-anotata-text">Mapa de conexões</h2>
-            <p className="text-[11px] text-anotata-muted truncate">
+            <p className="text-xs text-anotata-muted truncate">
               {note.title || 'Sem título'} · {manualCount} {manualCount === 1 ? 'manual' : 'manuais'} · {suggestedCount} {suggestedCount === 1 ? 'sugerida' : 'sugeridas'}
             </p>
           </div>
@@ -194,7 +194,7 @@ export default function ConnectionMap({ note, store, onClose }) {
         </div>
 
         {/* ===== LEGENDA ===== */}
-        <div className="px-5 py-2 bg-anotata-bg border-b border-anotata-border flex items-center gap-4 text-[11px] text-anotata-text-suave">
+        <div className="px-5 py-2 bg-anotata-bg border-b border-anotata-border flex items-center gap-4 text-xs text-anotata-text-suave">
           <LegendItem swatchColor="#5B2D8E" dashed={false} label="Conexão manual" />
           <LegendItem swatchColor="#0F7A3F" dashed={true} label="Sugerida forte" />
           <LegendItem swatchColor="#9B6F00" dashed={true} label="Sugerida média" />
@@ -423,7 +423,7 @@ function DetailPanel({ hoveredId, nodes, onOpen, onAccept, onIgnore, onRemove })
   const node = nodes.find(n => n.noteId === hoveredId);
   if (!node) {
     return (
-      <div className="px-5 py-3 border-t border-anotata-border bg-anotata-sidebar text-[11px] text-anotata-muted flex items-center gap-2">
+      <div className="px-5 py-3 border-t border-anotata-border bg-anotata-sidebar text-xs text-anotata-muted flex items-center gap-2">
         <Sparkles size={12} className="text-anotata-roxo" />
         Passe o mouse sobre uma nota para ver detalhes · Clique para abrir
       </div>
@@ -441,13 +441,13 @@ function DetailPanel({ hoveredId, nodes, onOpen, onAccept, onIgnore, onRemove })
           <span className="text-sm font-semibold text-anotata-text truncate">
             {node.target.title || 'Sem título'}
           </span>
-          <span className="text-[9px] uppercase font-bold tracking-wide px-1.5 py-0.5 rounded text-white"
+          <span className="text-2xs uppercase font-bold tracking-wide px-1.5 py-0.5 rounded text-white"
             style={{ backgroundColor: isManual ? MANUAL_PALETTE.stroke : (FORCE_PALETTE[node.strength] || FORCE_PALETTE.fraca).stroke }}
           >
             {isManual ? 'manual' : (node.strength || 'fraca')}
           </span>
         </div>
-        <div className="text-[11px] text-anotata-text-suave">
+        <div className="text-xs text-anotata-text-suave">
           {isManual
             ? (node.reason ? `"${node.reason}"` : 'conexão manual sem motivo registrado')
             : (node.reasons || []).map((r, i) => <span key={i} className="mr-2">• {r}</span>)
@@ -457,7 +457,7 @@ function DetailPanel({ hoveredId, nodes, onOpen, onAccept, onIgnore, onRemove })
       <div className="flex items-center gap-1.5 shrink-0">
         <button
           onClick={() => onOpen(node.noteId)}
-          className="px-2.5 py-1.5 text-[11px] font-medium bg-anotata-roxo text-white rounded-md hover:bg-anotata-roxo-escuro transition-colors"
+          className="px-2.5 py-1.5 text-xs font-medium bg-anotata-roxo text-white rounded-md hover:bg-anotata-roxo-escuro transition-colors"
         >
           Abrir nota
         </button>
@@ -465,14 +465,14 @@ function DetailPanel({ hoveredId, nodes, onOpen, onAccept, onIgnore, onRemove })
           <>
             <button
               onClick={() => onAccept(node)}
-              className="px-2.5 py-1.5 text-[11px] font-medium bg-white border border-anotata-roxo text-anotata-roxo rounded-md hover:bg-anotata-lavanda-clara transition-colors flex items-center gap-1"
+              className="px-2.5 py-1.5 text-xs font-medium bg-white border border-anotata-roxo text-anotata-roxo rounded-md hover:bg-anotata-lavanda-clara transition-colors flex items-center gap-1"
               title="Aceitar conexão sugerida"
             >
-              <Plus size={11} /> Aceitar
+              <Plus size={12} /> Aceitar
             </button>
             <button
               onClick={() => onIgnore(node)}
-              className="px-2.5 py-1.5 text-[11px] text-anotata-muted hover:text-anotata-goiaba transition-colors"
+              className="px-2.5 py-1.5 text-xs text-anotata-muted hover:text-anotata-goiaba transition-colors"
               title="Ignorar sugestão"
             >
               Ignorar
@@ -481,7 +481,7 @@ function DetailPanel({ hoveredId, nodes, onOpen, onAccept, onIgnore, onRemove })
         ) : (
           <button
             onClick={() => onRemove(node)}
-            className="px-2.5 py-1.5 text-[11px] text-anotata-goiaba hover:underline transition-colors"
+            className="px-2.5 py-1.5 text-xs text-anotata-goiaba hover:underline transition-colors"
             title="Remover conexão manual"
           >
             Remover

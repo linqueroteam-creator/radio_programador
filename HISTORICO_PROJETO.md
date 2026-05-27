@@ -387,3 +387,78 @@ Regras do projeto:
 - O projeto se chama **ANOTATA** (não confundir com NotePulse que é outro projeto)
 
 — última atualização: Reescritor F5 + NoteList recolhível + Design Mestre (auditoria UI nota B), 27/05/2026
+
+
+
+---
+
+### Polimento Visual — Sweep completo (27/05/2026)
+> Executado pelo Design Mestre em 5 fases com checkpoint, build e testes entre cada.
+
+**Resultado:** auditoria pulou de **B → A**.
+
+#### Fase A — Fundação visual (tokens semânticos)
+- `tailwind.config.js` ganhou cores semânticas oficiais:
+  - `anotata-success` (#0F7A3F) e `anotata-success-bg` (#D4F4DD) — concluído/forte/revisada
+  - `anotata-warn` (#9B6F00) e `anotata-warn-bg` (#FFF4D9) — atenção/médio/amanhã
+  - `anotata-favorite` (#F0B400) — estrela favorita harmônica com goiaba (banido o yellow-500 do Tailwind)
+  - `anotata-goiaba-bg` (#FCE7EB) — fundo padrão de erro/destaque (substituiu 4 variações rosa-pálido)
+- `fontSize.2xs` (10px) — token novo pra badges/kbd minúsculos
+- `boxShadow.popover` — sombra "fofa" pra popovers de feedback
+- Criado `src/design/icons.js` — manual de iconografia: 3 tamanhos canônicos (ICON_SM=12, ICON_MD=14, ICON_LG=16) + 7 aliases por contexto (X_INLINE, X_POPOVER, X_MODAL, TOOLBAR, LIST_ITEM, HEADER_HERO, EMPTY_STATE, BADGE)
+
+#### Fase B — Acessibilidade (componente reutilizável)
+- Criado `src/components/ui/IconButton.jsx` — botão padronizado:
+  - `aria-label` obrigatório (lint runtime se faltar)
+  - `aria-pressed` automático em modo toggle
+  - `focus-visible:ring-2 ring-anotata-roxo/50` em todo botão
+  - 3 tamanhos: sm (20×20), md (26×26 — padrão), lg (32×32 — área de toque mínima recomendada)
+  - 4 variantes: ghost, active, danger, primary
+- Migrados 36+ botões críticos: Toolbar (18 botões via ToolBtn refatorado), header do Editor (9 ícones), NoteMetaBar (Pin/Eye/Archive), GrammarPanel (RefreshCw/X), Corretor (Copy/Limpar)
+- App.jsx: Ctrl+K e Logout receberam aria-label + focus-visible (não viraram IconButton porque têm texto+kbd)
+- Resultado: foco do teclado visível em todo o app — antes só ~5% dos botões tinham
+
+#### Fase C — Sweep de iconografia (semântica de tamanhos)
+**Banidos** os tamanhos esquisitos (9, 11, 13, 15, 17, 18) do app inteiro — confirmado via `grep -rE 'size=\{(9|11|13|15|17|18)\}'` retornando zero matches.
+
+**Distribuição final** (162 ícones no app):
+- `12` → 63 (39%) — chips, badges, X inline
+- `14` → 40 (25%) — toolbar, lista, X popover, status
+- `16` → 49 (30%) — header de modal, sidebar nav, ações primárias
+- `10` → 9 (6%, EXCEÇÃO) — marker do Timeline, Star/Pin inline em título de nota, Clock no VersionHistory
+- `20+` → 8 (5%, EXCEÇÃO) — empty state, hero, decoração não-interativa
+
+23 componentes tocados.
+
+#### Fase D — Sweep de cores literais (paleta 100% oficial)
+- `#6B5E80` (cinza off-paleta) → `#5B4A7A` (text-suave oficial) em App e Timeline
+- 4 variações de rosa-pálido (#FCEEF1, #FFE4EA, #FFE3E8, bg-red-50) → `#FCE7EB` unificado (anotata-goiaba-bg)
+- `#A89DC0` (ghost text) → `#9888B5` (muted oficial)
+- `#10B981` (emerald solto) → `#0F7A3F` (success oficial)
+- `text-yellow-500 fill-yellow-500` → `text-anotata-favorite fill-anotata-favorite` (Dashboard, Home, NoteList)
+- `text-green-600/700` + `bg-green-100` → `text-anotata-success` + `bg-anotata-success-bg`
+- `text-amber-700` + `bg-amber-100` → `text-anotata-warn` + `bg-anotata-warn-bg`
+- `red-50/200/400/600/700` → família `anotata-goiaba*` (mensagens de erro)
+- `text-[12px]` → `text-xs` (mesmo valor, código limpo) em 5 arquivos
+- `text-[13px]` → `text-sm` em RephrasePopover
+- `text-[11px]` → `text-xs` em 12+ arquivos
+- `text-[10px]` e `text-[9px]` → `text-2xs` (token novo) em todo o app
+- `boxShadow` inline do GrammarPopover → classe `shadow-popover` (token Tailwind)
+- ErrorBoundary do App.jsx: cinzas off-paleta `#E8E4F0` e `#F6F4F9` → tokens oficiais
+
+Restam apenas 3 ocorrências de `text-[8px]` (badges decorativos minúsculos no Reescritor) — exceções documentadas.
+
+#### Fase E — Documentação
+- `docs/UI-AUDIT.md` recebeu seção pós-polimento com nova nota A
+- Este histórico atualizado
+- Build final OK (3.35s, gzip 254 kB), 32 testes vitest passando
+
+#### Arquivos criados nesta sessão
+- `src/design/icons.js` — manual de iconografia com tamanhos canônicos
+- `src/components/ui/IconButton.jsx` — componente reutilizável de botão ícone-only
+
+#### Arquivos modificados (sweep)
+33 arquivos, sem mudança comportamental — só visual, tipografia, cores, acessibilidade.
+
+— última atualização: Polimento visual completo (auditoria B → A), 27/05/2026
+

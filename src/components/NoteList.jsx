@@ -64,7 +64,7 @@ function NoteCard({ note, isSelected, store, reason }) {
                 onClick={(e) => { e.stopPropagation(); store.toggleFavorite(note.id); setShowMenu(false); }}
                 className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-anotata-text hover:bg-anotata-hover"
               >
-                <Star size={12} className={note.isFavorite ? 'text-yellow-500 fill-yellow-500' : ''} />
+                <Star size={12} className={note.isFavorite ? 'text-anotata-favorite fill-anotata-favorite' : ''} />
                 {note.isFavorite ? 'Desfavoritar' : 'Favoritar'}
               </button>
               <button
@@ -115,7 +115,7 @@ function NoteCard({ note, isSelected, store, reason }) {
         <span className="text-xs mt-0.5">{typeMeta.icon}</span>
         <h3 className="text-sm font-medium text-anotata-text truncate flex-1">
           {note.title || 'Nota sem título'}
-          {note.isFavorite && <Star size={10} className="inline ml-1 text-yellow-500 fill-yellow-500" />}
+          {note.isFavorite && <Star size={10} className="inline ml-1 text-anotata-favorite fill-anotata-favorite" />}
           {note.isPinned && <Pin size={10} className="inline ml-1 text-anotata-roxo fill-anotata-roxo" />}
         </h3>
       </div>
@@ -134,23 +134,23 @@ function NoteCard({ note, isSelected, store, reason }) {
 
       {/* Motivo da coleção */}
       {reason && (
-        <div className="mt-1.5 inline-flex items-center gap-1 text-[10px] text-anotata-roxo bg-anotata-lavanda-clara px-1.5 py-0.5 rounded">
-          <Sparkles size={9} />
+        <div className="mt-1.5 inline-flex items-center gap-1 text-2xs text-anotata-roxo bg-anotata-lavanda-clara px-1.5 py-0.5 rounded">
+          <Sparkles size={12} />
           <span>{reason}</span>
         </div>
       )}
 
       <div className="flex items-center gap-2 mt-2">
-        <span className="text-[10px] text-anotata-muted">{formatDate(note.updatedAt)}</span>
+        <span className="text-2xs text-anotata-muted">{formatDate(note.updatedAt)}</span>
         {note.tags.length > 0 && (
           <div className="flex gap-1 overflow-hidden">
             {note.tags.slice(0, 2).map(t => (
-              <span key={t} className="text-[9px] bg-anotata-lavanda text-anotata-roxo px-1.5 py-0.5 rounded">
+              <span key={t} className="text-2xs bg-anotata-lavanda text-anotata-roxo px-1.5 py-0.5 rounded">
                 #{t}
               </span>
             ))}
             {note.tags.length > 2 && (
-              <span className="text-[9px] text-anotata-muted">+{note.tags.length - 2}</span>
+              <span className="text-2xs text-anotata-muted">+{note.tags.length - 2}</span>
             )}
           </div>
         )}
@@ -245,7 +245,7 @@ export default function NoteList({ store, onCreateNote, isCollapsed = false, onT
             title={`${getViewTitle()} · ${notes.length} nota${notes.length !== 1 ? 's' : ''}`}
           >
             <FileText size={14} />
-            <span className="text-[10px] font-bold tabular-nums">{notes.length}</span>
+            <span className="text-2xs font-bold tabular-nums">{notes.length}</span>
           </div>
         </div>
 
@@ -282,7 +282,7 @@ export default function NoteList({ store, onCreateNote, isCollapsed = false, onT
               title="Recolher lista"
               aria-label="Recolher lista de notas"
             >
-              <PanelLeftClose size={15} />
+              <PanelLeftClose size={14} />
             </button>
           )}
           {showActionButton && (

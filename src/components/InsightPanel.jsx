@@ -24,12 +24,12 @@ function Section({ title, count, icon: Icon, children, defaultOpen = true }) {
         className="w-full flex items-center gap-2 px-3 py-2.5 hover:bg-anotata-hover transition-colors"
       >
         {open ? <ChevronDown size={12} className="text-anotata-muted" /> : <ChevronRight size={12} className="text-anotata-muted" />}
-        {Icon && <Icon size={13} className="text-anotata-roxo" />}
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-anotata-text">
+        {Icon && <Icon size={14} className="text-anotata-roxo" />}
+        <span className="text-xs font-semibold uppercase tracking-wide text-anotata-text">
           {title}
         </span>
         {count !== undefined && count > 0 && (
-          <span className="ml-auto text-[10px] bg-anotata-roxo text-white rounded-full px-1.5 py-0.5 font-medium">
+          <span className="ml-auto text-2xs bg-anotata-roxo text-white rounded-full px-1.5 py-0.5 font-medium">
             {count}
           </span>
         )}
@@ -43,7 +43,7 @@ function AlertItem({ level, icon: Icon, message, action, onActionClick }) {
   const colors = {
     warn: { bg: '#FCE7EB', text: '#C44862', border: '#F08AA0' },
     info: { bg: '#EDE8F2', text: '#5B2D8E', border: '#C9B8E8' },
-    good: { bg: '#D4F4DD', text: '#0F7A3F', border: '#10B981' },
+    good: { bg: '#D4F4DD', text: '#0F7A3F', border: '#0F7A3F' },
   };
   const c = colors[level] || colors.info;
 
@@ -58,7 +58,7 @@ function AlertItem({ level, icon: Icon, message, action, onActionClick }) {
         {action && (
           <button
             onClick={onActionClick}
-            className="text-[10px] underline mt-0.5 hover:opacity-80 font-medium"
+            className="text-2xs underline mt-0.5 hover:opacity-80 font-medium"
           >
             {action}
           </button>
@@ -278,7 +278,7 @@ export default function InsightPanel({
             <Row
               label="Tipo"
               value={
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium"
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium"
                   style={{ backgroundColor: typeMeta.color + '20', color: typeMeta.color }}>
                   {typeMeta.icon} {typeMeta.label}
                 </span>
@@ -287,7 +287,7 @@ export default function InsightPanel({
             <Row
               label="Status"
               value={
-                <span className="inline-flex items-center gap-1 text-[11px] font-medium" style={{ color: statusMeta.color }}>
+                <span className="inline-flex items-center gap-1 text-xs font-medium" style={{ color: statusMeta.color }}>
                   <span className="w-2 h-2 rounded-full" style={{ backgroundColor: statusMeta.color }}></span>
                   {statusMeta.label}
                 </span>
@@ -304,7 +304,7 @@ export default function InsightPanel({
                 value={
                   <div className="flex flex-wrap gap-1 justify-end">
                     {note.tags.map(t => (
-                      <span key={t} className="text-[10px] bg-anotata-lavanda text-anotata-roxo px-1.5 py-0.5 rounded">
+                      <span key={t} className="text-2xs bg-anotata-lavanda text-anotata-roxo px-1.5 py-0.5 rounded">
                         #{t}
                       </span>
                     ))}
@@ -323,14 +323,14 @@ export default function InsightPanel({
                 <DueDateBadge dueDate={note.dueDate} size="md" />
                 <button
                   onClick={() => setEditingDueDate(true)}
-                  className="text-[10px] text-anotata-roxo hover:underline"
+                  className="text-2xs text-anotata-roxo hover:underline"
                 >
                   Editar
                 </button>
               </div>
               <button
                 onClick={() => store.setDueDate(note.id, null)}
-                className="text-[10px] text-anotata-goiaba hover:underline"
+                className="text-2xs text-anotata-goiaba hover:underline"
               >
                 Remover prazo
               </button>
@@ -395,11 +395,11 @@ export default function InsightPanel({
               <div className="flex justify-end gap-2">
                 <button
                   onClick={() => setEditingNextAction(false)}
-                  className="px-2 py-1 text-[11px] text-anotata-muted hover:text-anotata-text"
+                  className="px-2 py-1 text-xs text-anotata-muted hover:text-anotata-text"
                 >Cancelar</button>
                 <button
                   onClick={saveCustomNextAction}
-                  className="px-2 py-1 text-[11px] bg-anotata-roxo text-white rounded hover:bg-anotata-roxo-escuro"
+                  className="px-2 py-1 text-xs bg-anotata-roxo text-white rounded hover:bg-anotata-roxo-escuro"
                 >Salvar</button>
               </div>
             </div>
@@ -409,22 +409,22 @@ export default function InsightPanel({
               <div className="flex gap-2 mt-2">
                 <button
                   onClick={() => { setCustomAction(note.customNextAction); setEditingNextAction(true); }}
-                  className="text-[10px] text-anotata-roxo hover:underline"
+                  className="text-2xs text-anotata-roxo hover:underline"
                 >Editar</button>
                 <button
                   onClick={() => store.setCustomNextAction(note.id, '')}
-                  className="text-[10px] text-anotata-muted hover:text-anotata-goiaba"
+                  className="text-2xs text-anotata-muted hover:text-anotata-goiaba"
                 >Remover</button>
               </div>
             </div>
           ) : suggestions.nextAction ? (
             <div className="p-2.5 bg-gradient-to-br from-anotata-lavanda-clara to-white border border-anotata-lavanda rounded-lg">
-              <div className="text-[10px] uppercase font-semibold text-anotata-roxo mb-1">Sugestão das regras</div>
+              <div className="text-2xs uppercase font-semibold text-anotata-roxo mb-1">Sugestão das regras</div>
               <div className="text-xs font-medium text-anotata-text">{suggestions.nextAction.label}</div>
-              <div className="text-[10px] text-anotata-muted mb-2">{suggestions.nextAction.reason}</div>
+              <div className="text-2xs text-anotata-muted mb-2">{suggestions.nextAction.reason}</div>
               <button
                 onClick={() => setEditingNextAction(true)}
-                className="text-[10px] text-anotata-roxo hover:underline"
+                className="text-2xs text-anotata-roxo hover:underline"
               >+ Definir minha própria</button>
             </div>
           ) : (
@@ -465,7 +465,7 @@ export default function InsightPanel({
                   </div>
                 ))}
                 {tasks.length > 8 && (
-                  <div className="text-[10px] text-anotata-muted italic">+ {tasks.length - 8} mais</div>
+                  <div className="text-2xs text-anotata-muted italic">+ {tasks.length - 8} mais</div>
                 )}
               </div>
             )}
@@ -487,31 +487,31 @@ export default function InsightPanel({
                 />
                 <button
                   onClick={handleAddTask}
-                  className="text-[10px] bg-anotata-roxo text-white rounded px-2 py-1 hover:bg-anotata-roxo-escuro"
+                  className="text-2xs bg-anotata-roxo text-white rounded px-2 py-1 hover:bg-anotata-roxo-escuro"
                 >Add</button>
               </div>
             ) : (
               <div className="flex gap-1.5 mt-1">
                 <button
                   onClick={() => setShowAddTask(true)}
-                  className="text-[10px] text-anotata-roxo border border-dashed border-anotata-border rounded px-2 py-1 hover:border-anotata-roxo flex items-center gap-1"
+                  className="text-2xs text-anotata-roxo border border-dashed border-anotata-border rounded px-2 py-1 hover:border-anotata-roxo flex items-center gap-1"
                 >
-                  <Plus size={10} /> Tarefa
+                  <Plus size={12} /> Tarefa
                 </button>
                 {checklistStats.open > 0 && (
                   <button
                     onClick={handleMarkAllDone}
-                    className="text-[10px] text-anotata-text-suave border border-anotata-border rounded px-2 py-1 hover:border-anotata-roxo hover:text-anotata-roxo flex items-center gap-1"
+                    className="text-2xs text-anotata-text-suave border border-anotata-border rounded px-2 py-1 hover:border-anotata-roxo hover:text-anotata-roxo flex items-center gap-1"
                   >
-                    <CheckCircle size={10} /> Marcar todas
+                    <CheckCircle size={12} /> Marcar todas
                   </button>
                 )}
                 <button
                   onClick={handleCopyChecklist}
-                  className="text-[10px] text-anotata-text-suave border border-anotata-border rounded px-2 py-1 hover:border-anotata-roxo hover:text-anotata-roxo flex items-center gap-1"
+                  className="text-2xs text-anotata-text-suave border border-anotata-border rounded px-2 py-1 hover:border-anotata-roxo hover:text-anotata-roxo flex items-center gap-1"
                   title="Copiar checklist como texto"
                 >
-                  <Copy size={10} /> Copiar
+                  <Copy size={12} /> Copiar
                 </button>
               </div>
             )}
@@ -523,8 +523,8 @@ export default function InsightPanel({
           <Section title="Datas detectadas" icon={Calendar} count={dates.length} defaultOpen={false}>
             <div className="flex flex-wrap gap-1.5">
               {dates.map((d, i) => (
-                <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 bg-anotata-lavanda-clara text-anotata-roxo rounded text-[11px] font-medium">
-                  <Calendar size={9} />
+                <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 bg-anotata-lavanda-clara text-anotata-roxo rounded text-xs font-medium">
+                  <Calendar size={12} />
                   {d}
                 </span>
               ))}
@@ -548,7 +548,7 @@ export default function InsightPanel({
                 </a>
               ))}
               {links.length > 5 && (
-                <div className="text-[10px] text-anotata-muted italic">+ {links.length - 5} mais</div>
+                <div className="text-2xs text-anotata-muted italic">+ {links.length - 5} mais</div>
               )}
             </div>
           </Section>
@@ -575,17 +575,17 @@ export default function InsightPanel({
                             {target.title || 'Sem título'}
                           </div>
                           {reason && (
-                            <div className="text-[10px] text-anotata-text-suave italic mt-0.5">"{reason}"</div>
+                            <div className="text-2xs text-anotata-text-suave italic mt-0.5">"{reason}"</div>
                           )}
                           {createdAt && (
-                            <div className="text-[9px] text-anotata-muted mt-0.5">conectado {formatRelativeDate(createdAt)}</div>
+                            <div className="text-2xs text-anotata-muted mt-0.5">conectado {formatRelativeDate(createdAt)}</div>
                           )}
                         </div>
                       </div>
                     </button>
                     <button
                       onClick={() => store.disconnectNotes(note.id, noteId)}
-                      className="text-[10px] text-anotata-goiaba hover:underline mt-1"
+                      className="text-2xs text-anotata-goiaba hover:underline mt-1"
                     >Remover conexão</button>
                   </div>
                 );
@@ -629,14 +629,14 @@ export default function InsightPanel({
                         </button>
                       </div>
                       <span
-                        className="text-[9px] px-1.5 py-0.5 rounded font-semibold uppercase"
+                        className="text-2xs px-1.5 py-0.5 rounded font-semibold uppercase"
                         style={{ backgroundColor: sCol.bg, color: sCol.text }}
                       >
                         {c.strength}
                       </span>
                     </div>
 
-                    <div className="text-[10px] text-anotata-text-suave mb-2">
+                    <div className="text-2xs text-anotata-text-suave mb-2">
                       {c.reasons.map((r, i) => (
                         <div key={i} className="flex items-start gap-1">
                           <span className="text-anotata-roxo">•</span>
@@ -648,11 +648,11 @@ export default function InsightPanel({
                     <div className="flex gap-1.5">
                       <button
                         onClick={() => store.connectNotes(note.id, c.noteId, c.reasons[0] || 'Sugerida pelo sistema')}
-                        className="text-[10px] px-2 py-1 bg-anotata-roxo text-white rounded hover:bg-anotata-roxo-escuro font-medium"
+                        className="text-2xs px-2 py-1 bg-anotata-roxo text-white rounded hover:bg-anotata-roxo-escuro font-medium"
                       >Aceitar</button>
                       <button
                         onClick={() => store.ignoreSuggestion(note.id, c.noteId)}
-                        className="text-[10px] px-2 py-1 text-anotata-muted hover:text-anotata-goiaba"
+                        className="text-2xs px-2 py-1 text-anotata-muted hover:text-anotata-goiaba"
                       >Ignorar</button>
                     </div>
                   </div>
@@ -672,9 +672,9 @@ export default function InsightPanel({
             <Row label="Versões salvas" value={<span className="text-anotata-text-suave">{(note.versions || []).length}</span>} />
             <button
               onClick={() => store.markAsReviewed(note.id)}
-              className="w-full mt-2 p-1.5 text-[11px] text-anotata-roxo border border-anotata-border hover:border-anotata-roxo rounded-lg hover:bg-anotata-hover transition-colors flex items-center justify-center gap-1"
+              className="w-full mt-2 p-1.5 text-xs text-anotata-roxo border border-anotata-border hover:border-anotata-roxo rounded-lg hover:bg-anotata-hover transition-colors flex items-center justify-center gap-1"
             >
-              <Eye size={11} />
+              <Eye size={12} />
               Marcar como revisada agora
             </button>
           </div>
@@ -687,7 +687,7 @@ export default function InsightPanel({
 function Row({ label, value }) {
   return (
     <div className="flex items-start justify-between gap-2">
-      <span className="text-[11px] text-anotata-muted">{label}</span>
+      <span className="text-xs text-anotata-muted">{label}</span>
       <span className="text-right">{value}</span>
     </div>
   );

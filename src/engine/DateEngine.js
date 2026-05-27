@@ -121,7 +121,7 @@ export function formatDueDate(dueDateIso) {
 export function getDueDateMeta(status) {
   const map = {
     'vencido': { label: 'Vencido', color: '#C44862', bg: '#FCE7EB' },
-    'hoje': { label: 'Hoje', color: '#E8637C', bg: '#FFE4EA' },
+    'hoje': { label: 'Hoje', color: '#E8637C', bg: '#FCE7EB' },
     'amanha': { label: 'Amanhã', color: '#9B6F00', bg: '#FFF4D9' },
     'em-breve': { label: 'Em breve', color: '#7C4DC9', bg: '#EDE8F2' },
     'esta-semana': { label: 'Esta semana', color: '#5B2D8E', bg: '#EDE8F2' },

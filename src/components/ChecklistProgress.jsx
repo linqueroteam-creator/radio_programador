@@ -9,13 +9,13 @@ export default function ChecklistProgress({ stats, size = 'sm', showLabel = true
 
   const allDone = stats.done === stats.total;
   const colors = allDone
-    ? { bar: '#10B981', bg: '#D4F4DD', text: '#0F7A3F' }
+    ? { bar: '#0F7A3F', bg: '#D4F4DD', text: '#0F7A3F' }
     : stats.percent > 50
       ? { bar: '#7C4DC9', bg: '#EDE8F2', text: '#5B2D8E' }
-      : { bar: '#E8637C', bg: '#FFE4EA', text: '#C44862' };
+      : { bar: '#E8637C', bg: '#FCE7EB', text: '#C44862' };
 
   const sizes = {
-    sm: { h: 4, text: 'text-[10px]', icon: 10, padding: 'px-1.5 py-0.5' },
+    sm: { h: 4, text: 'text-2xs', icon: 10, padding: 'px-1.5 py-0.5' },
     md: { h: 6, text: 'text-xs', icon: 11, padding: 'px-2 py-1' },
   };
   const sz = sizes[size];

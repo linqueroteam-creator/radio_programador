@@ -298,7 +298,7 @@ export default function CommandPalette({ store, isOpen, onClose, onAction }) {
             placeholder="Digite um comando ou busque por nota..."
             className="flex-1 text-sm text-anotata-text placeholder:text-anotata-muted bg-transparent border-none focus:outline-none"
           />
-          <kbd className="text-[10px] text-anotata-muted bg-anotata-lavanda-clara px-1.5 py-0.5 rounded">Esc</kbd>
+          <kbd className="text-2xs text-anotata-muted bg-anotata-lavanda-clara px-1.5 py-0.5 rounded">Esc</kbd>
         </div>
 
         <div ref={listRef} className="flex-1 overflow-y-auto py-2">
@@ -309,7 +309,7 @@ export default function CommandPalette({ store, isOpen, onClose, onAction }) {
           ) : (
             Object.entries(grouped).map(([groupName, cmds]) => (
               <div key={groupName} className="mb-2">
-                <div className="px-3 py-1 text-[10px] uppercase font-semibold text-anotata-muted tracking-wider">
+                <div className="px-3 py-1 text-2xs uppercase font-semibold text-anotata-muted tracking-wider">
                   {groupName}
                 </div>
                 {cmds.map(cmd => {
@@ -335,7 +335,7 @@ export default function CommandPalette({ store, isOpen, onClose, onAction }) {
                           {cmd.label}
                         </div>
                         {cmd.desc && (
-                          <div className={`text-[11px] truncate ${isActive ? 'text-white/80' : 'text-anotata-text-suave'}`}>
+                          <div className={`text-xs truncate ${isActive ? 'text-white/80' : 'text-anotata-text-suave'}`}>
                             {cmd.desc}
                           </div>
                         )}
@@ -349,7 +349,7 @@ export default function CommandPalette({ store, isOpen, onClose, onAction }) {
           )}
         </div>
 
-        <div className="px-3 py-2 border-t border-anotata-border bg-anotata-lavanda-clara flex items-center justify-between text-[10px] text-anotata-text-suave">
+        <div className="px-3 py-2 border-t border-anotata-border bg-anotata-lavanda-clara flex items-center justify-between text-2xs text-anotata-text-suave">
           <div className="flex items-center gap-3">
             <span><kbd className="bg-white border border-anotata-border rounded px-1">↑↓</kbd> navegar</span>
             <span><kbd className="bg-white border border-anotata-border rounded px-1">Enter</kbd> executar</span>

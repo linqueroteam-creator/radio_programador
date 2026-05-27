@@ -141,7 +141,7 @@ export default function Home({ store, onOpenInsights, onCreateNote }) {
               className="flex items-center gap-2 px-4 py-2 bg-anotata-roxo text-white rounded-xl text-sm font-medium hover:bg-anotata-roxo-escuro transition-all shadow-sm hover:shadow-md"
               title="Nova anotação (com modelo)"
             >
-              <Sparkles size={15} />
+              <Sparkles size={14} />
               <span>Nova com modelo</span>
             </button>
 
@@ -151,7 +151,7 @@ export default function Home({ store, onOpenInsights, onCreateNote }) {
               className="flex items-center gap-2 px-4 py-2 bg-white border border-anotata-border rounded-xl text-sm text-anotata-text-suave hover:border-anotata-roxo hover:text-anotata-roxo transition-all shadow-sm"
               title="Ver estatísticas detalhadas"
             >
-              <TrendingUp size={15} />
+              <TrendingUp size={14} />
               <span>Insights</span>
             </button>
 
@@ -237,7 +237,7 @@ export default function Home({ store, onOpenInsights, onCreateNote }) {
             <p className="text-sm font-medium text-anotata-text-suave group-hover:text-anotata-roxo transition-colors">
               Criar caderno
             </p>
-            <p className="text-[10px] text-anotata-muted mt-0.5">
+            <p className="text-2xs text-anotata-muted mt-0.5">
               Capa gerada automaticamente
             </p>
           </button>
@@ -249,7 +249,7 @@ export default function Home({ store, onOpenInsights, onCreateNote }) {
         <div className="px-8 pb-12 max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-anotata-text flex items-center gap-2">
-              <Clock size={18} className="text-anotata-roxo" />
+              <Clock size={16} className="text-anotata-roxo" />
               Notas recentes
             </h2>
             <button
@@ -273,7 +273,7 @@ export default function Home({ store, onOpenInsights, onCreateNote }) {
                   <div className="flex items-start gap-2 mb-2">
                     {nb && (
                       <div
-                        className="px-2 py-0.5 rounded-full text-[10px] font-medium"
+                        className="px-2 py-0.5 rounded-full text-2xs font-medium"
                         style={{
                           backgroundColor: nb.color + '20',
                           color: nb.color,
@@ -283,7 +283,7 @@ export default function Home({ store, onOpenInsights, onCreateNote }) {
                       </div>
                     )}
                     {note.isFavorite && (
-                      <Star size={11} className="text-yellow-500 fill-yellow-500 ml-auto mt-0.5" />
+                      <Star size={12} className="text-anotata-favorite fill-anotata-favorite ml-auto mt-0.5" />
                     )}
                   </div>
                   <h3 className="font-semibold text-anotata-text text-sm mb-1 truncate group-hover:text-anotata-roxo transition-colors">
@@ -292,7 +292,7 @@ export default function Home({ store, onOpenInsights, onCreateNote }) {
                   <p className="text-xs text-anotata-text-suave line-clamp-2 leading-relaxed">
                     {stripHtml(note.content) || 'Nota vazia...'}
                   </p>
-                  <p className="text-[10px] text-anotata-muted mt-2">
+                  <p className="text-2xs text-anotata-muted mt-2">
                     {formatRelativeDate(note.updatedAt)}
                   </p>
                 </button>
@@ -384,7 +384,7 @@ function NotebookCard({ notebook, onClick, onDelete }) {
           <div className="fixed inset-0 z-30" onClick={() => setShowMenu(false)} />
           <div className="absolute top-10 right-2 z-40 bg-white border border-anotata-border rounded-lg shadow-xl py-1 min-w-[180px]">
             {isDefault ? (
-              <div className="px-3 py-2 text-[11px] text-anotata-muted italic">
+              <div className="px-3 py-2 text-xs text-anotata-muted italic">
                 Caderno principal — não pode ser excluído
               </div>
             ) : (
@@ -392,7 +392,7 @@ function NotebookCard({ notebook, onClick, onDelete }) {
                 onClick={(e) => { e.stopPropagation(); setShowMenu(false); onDelete && onDelete(); }}
                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-anotata-goiaba hover:bg-anotata-hover"
               >
-                <Trash2 size={13} />
+                <Trash2 size={14} />
                 Excluir caderno
               </button>
             )}
@@ -422,7 +422,7 @@ function NewNotebookModal({ name, color, onChangeName, onChangeColor, onConfirm,
             onClick={onCancel}
             className="p-1 text-anotata-muted hover:text-anotata-text rounded hover:bg-anotata-hover transition-colors"
           >
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
 
@@ -470,7 +470,7 @@ function NewNotebookModal({ name, color, onChangeName, onChangeColor, onConfirm,
                 />
               ))}
             </div>
-            <p className="text-[10px] text-anotata-muted mt-2">
+            <p className="text-2xs text-anotata-muted mt-2">
               💡 A capa ganha um padrão único automaticamente
             </p>
           </div>

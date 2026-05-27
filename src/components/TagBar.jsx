@@ -25,7 +25,7 @@ export default function TagBar({ store, noteId, noteTags }) {
             onClick={() => store.removeTagFromNote(noteId, tag)}
             className="hover:text-anotata-goiaba transition-colors"
           >
-            <X size={10} />
+            <X size={12} />
           </button>
         </span>
       ))}
@@ -53,7 +53,7 @@ export default function TagBar({ store, noteId, noteTags }) {
           onClick={() => setShowInput(true)}
           className="inline-flex items-center gap-0.5 text-xs text-anotata-muted hover:text-anotata-roxo transition-colors"
         >
-          <Plus size={10} />
+          <Plus size={12} />
           tag
         </button>
       )}
