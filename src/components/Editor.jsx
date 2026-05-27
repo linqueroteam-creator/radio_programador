@@ -17,13 +17,14 @@ import GrammarPanel from './GrammarPanel';
 import NoteMetaBar from './NoteMetaBar';
 import InsightPanel from './InsightPanel';
 import ConnectionModal from './ConnectionModal';
+import ConnectionMap from './ConnectionMap';
 import predictiveEngine from '../engine/PredictiveEngine';
 import grammarEngine from '../engine/GrammarEngine';
 import rulesEngine from '../engine/RulesEngine';
 import {
   Star, Trash2, BookOpen, Clock, Sparkles, SpellCheck,
   Image as ImageIcon, CheckCircle, AlertCircle, Cloud, CloudOff,
-  PanelRight, Link2
+  PanelRight, Link2, Map as MapIcon
 } from 'lucide-react';
 
 export default function Editor({ store }) {
@@ -34,6 +35,10 @@ export default function Editor({ store }) {
   const [isCheckingGrammar, setIsCheckingGrammar] = useState(false);
   const [showInsightPanel, setShowInsightPanel] = useState(true);
   const [showConnectionModal, setShowConnectionModal] = useState(false);
+  // === Mapa visual de conexões (P5 — Mapa de Conexões) ===
+  // ATENÇÃO: este useState está aqui em cima, junto dos outros, ANTES de qualquer
+  // early return. Mover daqui = correr risco de tela branca por Rules of Hooks.
+  const [showConnectionMap, setShowConnectionMap] = useState(false);
 
   const editor = useEditor({
     extensions: [
@@ -244,6 +249,13 @@ export default function Editor({ store }) {
               <Link2 size={16} />
             </button>
             <button
+              onClick={() => setShowConnectionMap(true)}
+              className="p-1.5 rounded text-anotata-text-suave hover:bg-anotata-hover hover:text-anotata-roxo transition-colors"
+              title="Mapa visual de conexões"
+            >
+              <MapIcon size={16} />
+            </button>
+            <button
               onClick={checkGrammar}
               disabled={isCheckingGrammar}
               className={`p-1.5 rounded transition-colors ${
@@ -355,6 +367,15 @@ export default function Editor({ store }) {
           currentNote={selectedNote}
           store={store}
           onClose={() => setShowConnectionModal(false)}
+        />
+      )}
+
+      {/* Mapa visual de conexões (P5) */}
+      {showConnectionMap && (
+        <ConnectionMap
+          note={selectedNote}
+          store={store}
+          onClose={() => setShowConnectionMap(false)}
         />
       )}
     </div>
