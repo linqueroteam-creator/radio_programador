@@ -31,10 +31,11 @@ import rulesEngine from '../engine/RulesEngine';
 import {
   Star, Trash2, BookOpen, Clock, Sparkles, SpellCheck,
   Image as ImageIcon, CheckCircle, AlertCircle, Cloud, CloudOff,
-  PanelRight, Link2, Map as MapIcon, RotateCw
+  PanelRight, Link2, Map as MapIcon, RotateCw,
+  Menu, FileText
 } from 'lucide-react';
 
-export default function Editor({ store }) {
+export default function Editor({ store, onOpenMobileMenu, onOpenMobileNoteList }) {
   const { selectedNote } = store;
   const [title, setTitle] = useState('');
   const [showGrammar, setShowGrammar] = useState(false);
@@ -499,11 +500,35 @@ export default function Editor({ store }) {
 
   if (!selectedNote) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-anotata-bg">
-        <div className="text-center">
+      <div className="flex-1 flex items-center justify-center bg-anotata-bg relative">
+        {/* Botões mobile fixos (só aparecem em < md) */}
+        {(onOpenMobileMenu || onOpenMobileNoteList) && (
+          <div className="absolute top-3 left-3 flex items-center gap-1 md:hidden">
+            {onOpenMobileMenu && (
+              <IconButton
+                icon={Menu}
+                label="Abrir menu"
+                onClick={onOpenMobileMenu}
+                size="lg"
+              />
+            )}
+            {onOpenMobileNoteList && (
+              <IconButton
+                icon={FileText}
+                label="Abrir lista de notas"
+                onClick={onOpenMobileNoteList}
+                size="lg"
+              />
+            )}
+          </div>
+        )}
+        <div className="text-center px-4">
           <div className="text-6xl mb-4">📝</div>
           <h2 className="text-xl font-semibold text-anotata-text mb-2">Selecione uma nota</h2>
-          <p className="text-anotata-muted text-sm">Escolha uma nota na lista ou crie uma nova</p>
+          <p className="text-anotata-muted text-sm">
+            <span className="md:hidden">Toque no menu (☰) ou na lista (📋) acima para começar.</span>
+            <span className="hidden md:inline">Escolha uma nota na lista ou crie uma nova</span>
+          </p>
         </div>
       </div>
     );
@@ -512,22 +537,43 @@ export default function Editor({ store }) {
   return (
     <div className="flex-1 flex flex-col h-full bg-white overflow-hidden">
       {/* Header do editor */}
-      <div className="border-b border-anotata-border px-6 py-4 bg-white">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3 text-xs text-anotata-text-suave flex-wrap">
-            <div className="flex items-center gap-1">
-              <BookOpen size={12} />
+      <div className="border-b border-anotata-border px-3 sm:px-6 py-3 sm:py-4 bg-white">
+        <div className="flex items-start sm:items-center justify-between mb-3 gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 text-xs text-anotata-text-suave flex-wrap min-w-0 flex-1">
+            {/* Botões mobile (só < md) */}
+            {(onOpenMobileMenu || onOpenMobileNoteList) && (
+              <div className="flex items-center gap-1 md:hidden mr-1">
+                {onOpenMobileMenu && (
+                  <IconButton
+                    icon={Menu}
+                    label="Abrir menu"
+                    onClick={onOpenMobileMenu}
+                    size="md"
+                  />
+                )}
+                {onOpenMobileNoteList && (
+                  <IconButton
+                    icon={FileText}
+                    label="Abrir lista de notas"
+                    onClick={onOpenMobileNoteList}
+                    size="md"
+                  />
+                )}
+              </div>
+            )}
+            <div className="flex items-center gap-1 min-w-0">
+              <BookOpen size={12} className="shrink-0" />
               <select
                 value={selectedNote.notebookId}
                 onChange={handleNotebookChange}
-                className="bg-transparent text-anotata-text-suave text-xs border-none focus:outline-none cursor-pointer hover:text-anotata-roxo"
+                className="bg-transparent text-anotata-text-suave text-xs border-none focus:outline-none cursor-pointer hover:text-anotata-roxo max-w-[120px] sm:max-w-none truncate"
               >
                 {store.notebooks.map(nb => (
                   <option key={nb.id} value={nb.id}>{nb.name}</option>
                 ))}
               </select>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="hidden sm:flex items-center gap-1">
               <Clock size={12} />
               <span>{new Date(selectedNote.updatedAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</span>
             </div>
@@ -535,24 +581,27 @@ export default function Editor({ store }) {
             <SaveIndicator status={store.saveStatus} />
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 sm:gap-1 flex-wrap justify-end shrink-0">
             <IconButton
               icon={ImageIcon}
               label="Inserir imagem do computador (também pode colar com Ctrl+V)"
               onClick={insertImageFromFile}
               size="lg"
+              className="hidden sm:inline-flex"
             />
             <IconButton
               icon={Link2}
               label="Conectar com outra nota"
               onClick={() => setShowConnectionModal(true)}
               size="lg"
+              className="hidden sm:inline-flex"
             />
             <IconButton
               icon={MapIcon}
               label="Mapa visual de conexões"
               onClick={() => setShowConnectionMap(true)}
               size="lg"
+              className="hidden sm:inline-flex"
             />
             <IconButton
               icon={RotateCw}
@@ -574,12 +623,14 @@ export default function Editor({ store }) {
               onClick={() => setShowInsightPanel(!showInsightPanel)}
               isActive={showInsightPanel}
               size="lg"
+              className="hidden sm:inline-flex"
             />
             <IconButton
               icon={Sparkles}
               label="Assistente IA (em breve)"
               onClick={handleAiRequest}
               size="lg"
+              className="hidden sm:inline-flex"
             />
             <IconButton
               icon={Star}
@@ -604,7 +655,7 @@ export default function Editor({ store }) {
           value={title}
           onChange={handleTitleChange}
           placeholder="Título da nota..."
-          className="w-full text-2xl font-bold bg-transparent text-anotata-text border-none focus:outline-none placeholder:text-anotata-muted"
+          className="w-full text-xl sm:text-2xl font-bold bg-transparent text-anotata-text border-none focus:outline-none placeholder:text-anotata-muted"
         />
 
         {/* === Barra de metadados (tipo, status, prioridade) === */}

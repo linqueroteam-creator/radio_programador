@@ -38,7 +38,7 @@ function formatRelativeDate(iso) {
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
 }
 
-export default function Home({ store, onOpenInsights, onCreateNote }) {
+export default function Home({ store, onOpenInsights, onCreateNote, onOpenMobileMenu }) {
   const [showNewNotebook, setShowNewNotebook] = useState(false);
   const [newNotebookName, setNewNotebookName] = useState('');
   const [newNotebookColor, setNewNotebookColor] = useState(NOTEBOOK_COLORS[0]);
@@ -119,11 +119,22 @@ export default function Home({ store, onOpenInsights, onCreateNote }) {
 
   return (
     <div className="flex-1 overflow-y-auto bg-anotata-bg">
+      {/* Botão menu mobile flutuante */}
+      {onOpenMobileMenu && (
+        <button
+          onClick={onOpenMobileMenu}
+          className="md:hidden fixed top-3 left-3 z-30 p-2 bg-white border border-anotata-border rounded-lg shadow-sm text-anotata-text-suave hover:text-anotata-roxo focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-anotata-roxo/50"
+          aria-label="Abrir menu"
+          title="Abrir menu"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+      )}
       {/* Header com saudação e busca */}
-      <div className="px-8 pt-8 pb-6 max-w-7xl mx-auto">
-        <div className="flex items-start justify-between flex-wrap gap-4 mb-6">
+      <div className="px-4 sm:px-6 lg:px-8 pt-4 pl-14 sm:pl-6 lg:pl-8 sm:pt-8 pb-6 max-w-7xl mx-auto">
+        <div className="flex items-start justify-between flex-col sm:flex-row gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-anotata-text mb-1">
+            <h1 className="text-2xl sm:text-3xl font-bold text-anotata-text mb-1">
               {greeting} ✨
             </h1>
             <p className="text-sm text-anotata-text-suave">
@@ -134,21 +145,22 @@ export default function Home({ store, onOpenInsights, onCreateNote }) {
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
             {/* Botão Nova com modelo */}
             <button
               onClick={() => onCreateNote ? onCreateNote() : store.createNote()}
-              className="flex items-center gap-2 px-4 py-2 bg-anotata-roxo text-white rounded-xl text-sm font-medium hover:bg-anotata-roxo-escuro transition-all shadow-sm hover:shadow-md"
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-anotata-roxo text-white rounded-xl text-sm font-medium hover:bg-anotata-roxo-escuro transition-all shadow-sm hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-anotata-roxo/50"
               title="Nova anotação (com modelo)"
             >
               <Sparkles size={14} />
-              <span>Nova com modelo</span>
+              <span className="hidden sm:inline">Nova com modelo</span>
+              <span className="sm:hidden">Nova</span>
             </button>
 
             {/* Botão Insights */}
             <button
               onClick={onOpenInsights}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-anotata-border rounded-xl text-sm text-anotata-text-suave hover:border-anotata-roxo hover:text-anotata-roxo transition-all shadow-sm"
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-white border border-anotata-border rounded-xl text-sm text-anotata-text-suave hover:border-anotata-roxo hover:text-anotata-roxo transition-all shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-anotata-roxo/50"
               title="Ver estatísticas detalhadas"
             >
               <TrendingUp size={14} />
@@ -156,7 +168,7 @@ export default function Home({ store, onOpenInsights, onCreateNote }) {
             </button>
 
             {/* Busca rápida */}
-            <div className="relative">
+            <div className="relative flex-1 sm:flex-none">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-anotata-muted" />
               <input
                 type="text"
@@ -169,14 +181,14 @@ export default function Home({ store, onOpenInsights, onCreateNote }) {
                     store.setSelectedNoteId(null);
                   }
                 }}
-                className="bg-white border border-anotata-border rounded-xl pl-9 pr-3 py-2 text-sm text-anotata-text placeholder:text-anotata-muted focus:outline-none focus:border-anotata-roxo focus:ring-2 focus:ring-anotata-roxo/10 w-48"
+                className="bg-white border border-anotata-border rounded-xl pl-9 pr-3 py-2 text-sm text-anotata-text placeholder:text-anotata-muted focus:outline-none focus:border-anotata-roxo focus:ring-2 focus:ring-anotata-roxo/10 w-full sm:w-48"
               />
             </div>
           </div>
         </div>
 
         {/* Stats inline minimalistas */}
-        <div className="flex items-center gap-6 text-xs text-anotata-text-suave">
+        <div className="grid grid-cols-2 sm:flex sm:items-center sm:gap-6 gap-2 text-xs text-anotata-text-suave">
           <span className="flex items-center gap-1.5">
             <BookOpen size={12} className="text-anotata-roxo" />
             <strong className="text-anotata-text">{quickStats.notebooks}</strong> cadernos
@@ -191,31 +203,32 @@ export default function Home({ store, onOpenInsights, onCreateNote }) {
           </span>
           <span className="flex items-center gap-1.5">
             <Sparkles size={12} className="text-anotata-roxo" />
-            <strong className="text-anotata-text">{quickStats.totalWords.toLocaleString('pt-BR')}</strong> palavras escritas
+            <strong className="text-anotata-text">{quickStats.totalWords.toLocaleString('pt-BR')}</strong> palavras
           </span>
         </div>
       </div>
 
       {/* Seção de Cadernos */}
-      <div className="px-8 pb-12 max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-xl font-bold text-anotata-text">Seus cadernos</h2>
-            <p className="text-xs text-anotata-text-suave mt-0.5">
+      <div className="px-4 sm:px-6 lg:px-8 pb-12 max-w-7xl mx-auto">
+        <div className="flex items-center justify-between mb-6 gap-2">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-lg sm:text-xl font-bold text-anotata-text">Seus cadernos</h2>
+            <p className="text-xs text-anotata-text-suave mt-0.5 hidden sm:block">
               Cada caderno ganha uma capa única gerada automaticamente
             </p>
           </div>
           <button
             onClick={() => setShowNewNotebook(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-anotata-roxo text-white rounded-xl text-sm font-medium hover:bg-anotata-roxo-escuro transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-anotata-roxo text-white rounded-xl text-sm font-medium hover:bg-anotata-roxo-escuro transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-anotata-roxo/50"
           >
             <Plus size={16} />
-            Novo caderno
+            <span className="hidden sm:inline">Novo caderno</span>
+            <span className="sm:hidden">Novo</span>
           </button>
         </div>
 
         {/* Grid de capas */}
-        <div className="grid gap-6" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}>
+        <div className="grid gap-4 sm:gap-6" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}>
           {notebooksWithCount.map((nb) => (
             <NotebookCard
               key={nb.id}
@@ -228,8 +241,7 @@ export default function Home({ store, onOpenInsights, onCreateNote }) {
           {/* Card de adicionar novo caderno */}
           <button
             onClick={() => setShowNewNotebook(true)}
-            className="group flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-anotata-border hover:border-anotata-roxo hover:bg-anotata-lavanda-clara transition-all"
-            style={{ width: 200, height: 260 }}
+            className="group flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-anotata-border hover:border-anotata-roxo hover:bg-anotata-lavanda-clara transition-all aspect-[200/260] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-anotata-roxo/50"
           >
             <div className="w-14 h-14 rounded-full bg-anotata-lavanda-clara group-hover:bg-anotata-roxo group-hover:scale-110 transition-all flex items-center justify-center mb-3">
               <Plus size={24} className="text-anotata-roxo group-hover:text-white transition-colors" />
@@ -237,7 +249,7 @@ export default function Home({ store, onOpenInsights, onCreateNote }) {
             <p className="text-sm font-medium text-anotata-text-suave group-hover:text-anotata-roxo transition-colors">
               Criar caderno
             </p>
-            <p className="text-2xs text-anotata-muted mt-0.5">
+            <p className="text-2xs text-anotata-muted mt-0.5 hidden sm:block">
               Capa gerada automaticamente
             </p>
           </button>
@@ -246,9 +258,9 @@ export default function Home({ store, onOpenInsights, onCreateNote }) {
 
       {/* Notas recentes */}
       {recentNotes.length > 0 && (
-        <div className="px-8 pb-12 max-w-7xl mx-auto">
+        <div className="px-4 sm:px-6 lg:px-8 pb-12 max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-anotata-text flex items-center gap-2">
+            <h2 className="text-lg sm:text-xl font-bold text-anotata-text flex items-center gap-2">
               <Clock size={16} className="text-anotata-roxo" />
               Notas recentes
             </h2>
@@ -261,7 +273,7 @@ export default function Home({ store, onOpenInsights, onCreateNote }) {
             </button>
           </div>
 
-          <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
+          <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}>
             {recentNotes.map(note => {
               const nb = store.notebooks.find(n => n.id === note.notebookId);
               return (
@@ -304,7 +316,7 @@ export default function Home({ store, onOpenInsights, onCreateNote }) {
 
       {/* Estado vazio (primeiro acesso) */}
       {recentNotes.length === 0 && quickStats.total === 0 && (
-        <div className="px-8 pb-12 max-w-2xl mx-auto text-center">
+        <div className="px-4 sm:px-6 lg:px-8 pb-12 max-w-2xl mx-auto text-center">
           <div className="bg-white border border-anotata-border rounded-2xl p-10">
             <div className="w-16 h-16 mx-auto bg-anotata-lavanda-clara rounded-2xl flex items-center justify-center mb-4">
               <Edit3 size={28} className="text-anotata-roxo" />

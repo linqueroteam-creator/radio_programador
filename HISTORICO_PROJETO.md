@@ -462,3 +462,64 @@ Restam apenas 3 ocorrências de `text-[8px]` (badges decorativos minúsculos no 
 
 — última atualização: Polimento visual completo (auditoria B → A), 27/05/2026
 
+
+
+---
+
+### Mobile 1 — Layout responsivo (27/05/2026)
+> Implementado em 5 fases pelo Design Mestre, sem quebrar nada do desktop.
+
+**Resultado:** ANOTATA agora é **usável em celular**. Telas < 768px ganham layout de gavetas; ≥ 768px continua idêntico ao desktop original.
+
+#### Fase A — Fundação
+- `src/hooks/useIsMobile.js` — hook reativo de viewport (debounce via rAF, breakpoint configurável, default 768px)
+- `App.jsx`: estado `sidebarOpenMobile` e `noteListOpenMobile` separados dos `*Collapsed` do desktop
+- Travamento de scroll do body quando uma gaveta está aberta (evita rolagem dupla atrás do drawer)
+- Auto-fecha gavetas ao trocar de view ou selecionar nota (UX: usuário clicou pra ir pra algum lugar, deixe ele ver)
+- Tecla Esc fecha gaveta (após modais maiores na ordem de prioridade)
+- Botões fixos do rodapé (Ctrl+K, Logout) escondidos em mobile — Ctrl+K não faz sentido sem teclado, e Logout migrou para o rodapé da Sidebar (drawer)
+
+#### Fase B — Sidebar como gaveta
+- Em mobile: `position: fixed`, `w-72 max-w-[85vw]`, `translate-x` controlando aberto/fechado, transição 300ms ease-in-out
+- Backdrop preto translúcido `bg-black/40` com fade
+- Header da gaveta: botão X (mobile) ↔ ChevronLeft (desktop)
+- Rodapé extra com "Central de comandos" e "Sair" (só em mobile)
+- Conteúdo expandido extraído em sub-componente `<ExpandedSidebar>` reaproveitado entre desktop expandido e mobile
+
+#### Fase C — NoteList como gaveta
+- Mesma técnica da Sidebar: drawer da esquerda em mobile, layout intacto em desktop
+- Header da gaveta com botão X de fechar + botão "+" de criar nota
+- 3 modos coexistindo: collapsed (faixa de 48px), expanded (320px), mobile (drawer 80% da tela)
+- Auto-fecha quando usuário seleciona uma nota (foco no editor)
+
+#### Fase D — Editor adapta header
+- 2 botões hambúrguer só em mobile (Menu = abrir Sidebar, FileText = abrir NoteList)
+- Padding reduzido em mobile: `px-3 py-3` vs `px-6 py-4` desktop
+- Título da nota: `text-xl` em mobile, `text-2xl` em desktop
+- 5 botões da toolbar do header escondidos em mobile (Imagem, Conexão, Mapa, Painel diagnóstico, IA) — `hidden sm:inline-flex`. Em telas pequenas só aparecem os essenciais: Reescrever, Gramática, Favoritar, Excluir
+- Empty state ("Selecione uma nota") com mesmos botões hambúrguer flutuantes + texto adaptado
+
+#### Fase E — Telas globais responsivas
+- **Home**: `px-4 sm:px-6 lg:px-8`, greeting em coluna no mobile, stats em grid 2x2 no mobile, grid de cadernos `minmax(160px, 1fr)` (era 200), botão hambúrguer flutuante no canto, NotebookCard sem width fixo (aspect-ratio em vez de pixels), texto auxiliar escondido em mobile (`hidden sm:block`)
+- **Dashboard**: padding adaptado, botão hambúrguer no header gradient, grid de stats já era `grid-cols-2 md:grid-cols-4`
+- **Corretor**: 2 colunas viram empilhadas em mobile (`flex-col md:flex-row`), coluna de sugestões com `max-h-[50vh]` em mobile
+- **Timeline**: botão hambúrguer no header
+- **Modais grandes**: já usavam `max-w-*` + `w-full` + `p-4` no overlay → responsivos por design, sem mudança
+
+#### Arquivos novos
+- `src/hooks/useIsMobile.js`
+
+#### Arquivos modificados
+- `src/App.jsx` — orquestração mobile + estados de gaveta
+- `src/components/Sidebar.jsx` — modo drawer
+- `src/components/NoteList.jsx` — modo drawer
+- `src/components/Editor.jsx` — botões hambúrguer + paddings adaptativos
+- `src/components/Home.jsx` — layout responsivo
+- `src/components/Dashboard.jsx` — header mobile
+- `src/components/Corretor.jsx` — colunas empilhadas
+- `src/components/Timeline.jsx` — header mobile
+
+#### Tests
+32 testes vitest passando. Build OK 3.2s. Sem mudança comportamental em desktop.
+
+— última atualização: Mobile 1 (layout responsivo), 27/05/2026

@@ -25,7 +25,7 @@ function getDayKey(iso) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-export default function Dashboard({ store }) {
+export default function Dashboard({ store, onOpenMobileMenu }) {
   const stats = useMemo(() => {
     const activeNotes = store.notes.filter(n => !n.isTrash);
     const trashedNotes = store.notes.filter(n => n.isTrash);
@@ -114,14 +114,24 @@ export default function Dashboard({ store }) {
   return (
     <div className="flex-1 overflow-y-auto bg-anotata-bg">
       {/* Header */}
-      <div className="bg-gradient-to-r from-anotata-roxo to-anotata-roxo-claro px-8 py-6 text-white">
-        <h1 className="text-2xl font-bold mb-1">{greetings}! ✨</h1>
+      <div className="bg-gradient-to-r from-anotata-roxo to-anotata-roxo-claro px-4 sm:px-8 py-6 text-white relative">
+        {onOpenMobileMenu && (
+          <button
+            onClick={onOpenMobileMenu}
+            className="md:hidden absolute top-4 right-4 p-2 bg-white/15 hover:bg-white/25 rounded-lg text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+            aria-label="Abrir menu"
+            title="Abrir menu"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+        )}
+        <h1 className="text-2xl font-bold mb-1 pr-12 md:pr-0">{greetings}! ✨</h1>
         <p className="text-sm text-white/80">
           Você tem {stats.total} {stats.total === 1 ? 'nota ativa' : 'notas ativas'} • {stats.totalWords.toLocaleString('pt-BR')} palavras escritas
         </p>
       </div>
 
-      <div className="p-8 max-w-6xl mx-auto space-y-6">
+      <div className="p-4 sm:p-8 max-w-6xl mx-auto space-y-6">
         {/* Cards de estatísticas */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatCard

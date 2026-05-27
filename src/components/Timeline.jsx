@@ -91,7 +91,7 @@ function formatDate(d) {
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
 }
 
-export default function Timeline({ store }) {
+export default function Timeline({ store, onOpenMobileMenu }) {
   // ====== TODOS OS HOOKS NO TOPO ======
   const [activeFilters, setActiveFilters] = useState(() => new Set(FILTER_GROUPS.map(f => f.id)));
 
@@ -212,8 +212,18 @@ export default function Timeline({ store }) {
   return (
     <div className="flex-1 flex flex-col h-full bg-anotata-bg overflow-hidden">
       {/* === HEADER === */}
-      <div className="px-6 py-4 border-b border-anotata-border bg-white">
+      <div className="px-4 sm:px-6 py-4 border-b border-anotata-border bg-white">
         <div className="flex items-center gap-3 mb-3">
+          {onOpenMobileMenu && (
+            <button
+              onClick={onOpenMobileMenu}
+              className="md:hidden p-2 rounded-lg text-anotata-text-suave hover:text-anotata-roxo hover:bg-anotata-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-anotata-roxo/50"
+              aria-label="Abrir menu"
+              title="Abrir menu"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+          )}
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-anotata-roxo to-anotata-roxo-escuro flex items-center justify-center text-white shadow-sm">
             <Clock size={16} />
           </div>

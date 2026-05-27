@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Plus, Star, Trash2, RotateCcw, Copy, MoreVertical, Sparkles, Pin,
-  PanelLeftClose, PanelLeftOpen, FileText
+  PanelLeftClose, PanelLeftOpen, FileText, X
 } from 'lucide-react';
 import searchEngine from '../engine/SearchEngine';
 import { runCollection, COLLECTIONS } from '../engine/CollectionsEngine';
@@ -49,9 +49,10 @@ function NoteCard({ note, isSelected, store, reason }) {
     >
       <button
         onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
-        className={`absolute top-2 right-2 text-anotata-muted hover:text-anotata-roxo transition-opacity ${
+        className={`absolute top-2 right-2 p-1 rounded text-anotata-muted hover:text-anotata-roxo transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-anotata-roxo/50 ${
           showMenu ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
         }`}
+        aria-label="Opções da nota"
       >
         <MoreVertical size={14} />
       </button>
@@ -159,7 +160,11 @@ function NoteCard({ note, isSelected, store, reason }) {
   );
 }
 
-export default function NoteList({ store, onCreateNote, isCollapsed = false, onToggle }) {
+export default function NoteList({
+  store, onCreateNote,
+  isCollapsed = false, onToggle,
+  isMobile = false, isOpenMobile = false, onCloseMobile,
+}) {
   const { searchQuery } = store;
 
   const notes = useMemo(() => {
@@ -183,6 +188,14 @@ export default function NoteList({ store, onCreateNote, isCollapsed = false, onT
 
   const isCollection = store.currentView === 'collection';
   const isSearch = searchQuery && searchQuery.trim().length >= 2;
+
+  // Esc fecha o drawer no mobile
+  useEffect(() => {
+    if (!isMobile || !isOpenMobile) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape' && onCloseMobile) onCloseMobile(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isMobile, isOpenMobile, onCloseMobile]);
 
   const getViewTitle = () => {
     if (isSearch) return `Busca: "${searchQuery}"`;
@@ -217,7 +230,96 @@ export default function NoteList({ store, onCreateNote, isCollapsed = false, onT
 
   const showActionButton = !isCollection && store.currentView !== 'trash' && store.currentView !== 'archived';
 
-  // === VERSÃO RECOLHIDA ===
+  // Conteúdo central reaproveitado entre desktop e mobile.
+  const renderContent = () => (
+    <div className="flex-1 overflow-y-auto p-2 space-y-1">
+      {notes.length === 0 ? (
+        <EmptyState
+          icon={isSearch ? '🔍' : isCollection ? '✨' : '📝'}
+          title={
+            isSearch ? 'Nenhum resultado'
+              : isCollection ? 'Nenhuma nota nesta coleção'
+              : store.currentView === 'trash' ? 'Lixeira vazia'
+              : store.currentView === 'archived' ? 'Nenhuma nota arquivada'
+              : 'Nenhuma nota aqui'
+          }
+          message={
+            isSearch ? 'Tente outras palavras ou verifique a ortografia. A busca é aproximada — encontra mesmo com erros.'
+              : isCollection ? 'Quando alguma nota se encaixar nas regras desta coleção, ela aparece aqui sozinha.'
+              : store.currentView === 'trash' ? 'Suas notas excluídas aparecem aqui.'
+              : 'Crie sua primeira anotação para começar.'
+          }
+          action={showActionButton ? (() => onCreateNote ? onCreateNote() : store.createNote()) : undefined}
+          actionLabel={showActionButton ? 'Criar anotação' : undefined}
+        />
+      ) : (
+        notes.map(note => (
+          <NoteCard
+            key={note.id}
+            note={note}
+            isSelected={store.selectedNoteId === note.id}
+            store={store}
+            reason={note._collectionReason}
+          />
+        ))
+      )}
+    </div>
+  );
+
+  // === MOBILE: gaveta com backdrop ===
+  if (isMobile) {
+    return (
+      <>
+        <div
+          onClick={onCloseMobile}
+          className={`fixed inset-0 bg-black/40 z-40 transition-opacity duration-300 md:hidden ${
+            isOpenMobile ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}
+          aria-hidden="true"
+        />
+        <aside
+          role="dialog"
+          aria-modal={isOpenMobile}
+          aria-label="Lista de notas"
+          aria-hidden={!isOpenMobile}
+          className={`fixed top-0 left-0 h-full w-80 max-w-[85vw] bg-anotata-bg border-r border-anotata-border z-50 flex flex-col transition-transform duration-300 ease-in-out md:hidden ${
+            isOpenMobile ? 'translate-x-0' : '-translate-x-full'
+          }`}
+        >
+          {/* Header com botão X */}
+          <div className="p-4 border-b border-anotata-border flex items-center justify-between bg-white gap-2">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-base font-semibold text-anotata-text truncate">{getViewTitle()}</h2>
+              <p className="text-xs text-anotata-muted truncate">{getViewSubtitle()}</p>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              {showActionButton && (
+                <button
+                  onClick={() => onCreateNote ? onCreateNote() : store.createNote(store.currentView === 'notebook' ? store.currentNotebookId : 'default')}
+                  className="p-2 bg-anotata-roxo rounded-lg hover:bg-anotata-roxo-escuro transition-colors shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-anotata-roxo/50"
+                  title="Nova nota"
+                  aria-label="Criar nova nota"
+                >
+                  <Plus size={16} className="text-white" />
+                </button>
+              )}
+              <button
+                onClick={onCloseMobile}
+                className="p-2 rounded-lg text-anotata-text-suave hover:text-anotata-roxo hover:bg-anotata-hover transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-anotata-roxo/50"
+                aria-label="Fechar lista de notas"
+                title="Fechar"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+          {renderContent()}
+        </aside>
+      </>
+    );
+  }
+
+  // === DESKTOP RECOLHIDO ===
   // Faixa fina vertical (48px) com:
   //  - Botão expandir no topo
   //  - Ícone "FileText" + contador no meio (situa o usuário sem precisar
@@ -230,7 +332,7 @@ export default function NoteList({ store, onCreateNote, isCollapsed = false, onT
         <div className="p-2 border-b border-anotata-border bg-white flex justify-center">
           <button
             onClick={onToggle}
-            className="p-1.5 rounded-lg hover:bg-anotata-hover text-anotata-roxo transition-colors"
+            className="p-1.5 rounded-lg hover:bg-anotata-hover text-anotata-roxo transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-anotata-roxo/50"
             title={`Expandir ${getViewTitle()}`}
             aria-label="Expandir lista de notas"
           >
@@ -254,7 +356,7 @@ export default function NoteList({ store, onCreateNote, isCollapsed = false, onT
           <div className="p-2 border-t border-anotata-border flex justify-center">
             <button
               onClick={() => onCreateNote ? onCreateNote() : store.createNote(store.currentView === 'notebook' ? store.currentNotebookId : 'default')}
-              className="p-1.5 bg-anotata-roxo rounded-lg hover:bg-anotata-roxo-escuro transition-colors shadow-sm"
+              className="p-1.5 bg-anotata-roxo rounded-lg hover:bg-anotata-roxo-escuro transition-colors shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-anotata-roxo/50"
               title="Nova nota (Ctrl+N)"
               aria-label="Nova nota"
             >
@@ -266,7 +368,7 @@ export default function NoteList({ store, onCreateNote, isCollapsed = false, onT
     );
   }
 
-  // === VERSÃO EXPANDIDA ===
+  // === DESKTOP EXPANDIDO ===
   return (
     <div className="w-80 min-w-[280px] border-r border-anotata-border flex flex-col h-full bg-anotata-bg transition-all duration-300 ease-in-out">
       <div className="p-4 border-b border-anotata-border flex items-center justify-between bg-white gap-2">
@@ -278,7 +380,7 @@ export default function NoteList({ store, onCreateNote, isCollapsed = false, onT
           {onToggle && (
             <button
               onClick={onToggle}
-              className="p-1.5 rounded-lg text-anotata-text-suave hover:text-anotata-roxo hover:bg-anotata-hover transition-colors"
+              className="p-1.5 rounded-lg text-anotata-text-suave hover:text-anotata-roxo hover:bg-anotata-hover transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-anotata-roxo/50"
               title="Recolher lista"
               aria-label="Recolher lista de notas"
             >
@@ -288,8 +390,9 @@ export default function NoteList({ store, onCreateNote, isCollapsed = false, onT
           {showActionButton && (
             <button
               onClick={() => onCreateNote ? onCreateNote() : store.createNote(store.currentView === 'notebook' ? store.currentNotebookId : 'default')}
-              className="p-2 bg-anotata-roxo rounded-lg hover:bg-anotata-roxo-escuro transition-colors shadow-sm"
+              className="p-2 bg-anotata-roxo rounded-lg hover:bg-anotata-roxo-escuro transition-colors shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-anotata-roxo/50"
               title="Nova nota (Ctrl+N)"
+              aria-label="Nova nota"
             >
               <Plus size={16} className="text-white" />
             </button>
@@ -305,38 +408,7 @@ export default function NoteList({ store, onCreateNote, isCollapsed = false, onT
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2 space-y-1">
-        {notes.length === 0 ? (
-          <EmptyState
-            icon={isSearch ? '🔍' : isCollection ? '✨' : '📝'}
-            title={
-              isSearch ? 'Nenhum resultado'
-                : isCollection ? 'Nenhuma nota nesta coleção'
-                : store.currentView === 'trash' ? 'Lixeira vazia'
-                : store.currentView === 'archived' ? 'Nenhuma nota arquivada'
-                : 'Nenhuma nota aqui'
-            }
-            message={
-              isSearch ? 'Tente outras palavras ou verifique a ortografia. A busca é aproximada — encontra mesmo com erros.'
-                : isCollection ? 'Quando alguma nota se encaixar nas regras desta coleção, ela aparece aqui sozinha.'
-                : store.currentView === 'trash' ? 'Suas notas excluídas aparecem aqui.'
-                : 'Crie sua primeira anotação para começar.'
-            }
-            action={showActionButton ? (() => onCreateNote ? onCreateNote() : store.createNote()) : undefined}
-            actionLabel={showActionButton ? 'Criar anotação' : undefined}
-          />
-        ) : (
-          notes.map(note => (
-            <NoteCard
-              key={note.id}
-              note={note}
-              isSelected={store.selectedNoteId === note.id}
-              store={store}
-              reason={note._collectionReason}
-            />
-          ))
-        )}
-      </div>
+      {renderContent()}
     </div>
   );
 }
