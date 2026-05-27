@@ -99,7 +99,7 @@ export default function PredictiveBar({ editor }) {
 
       {suggestions.length === 0 && isActive && (
         <span className="text-[11px] text-anotata-muted italic">
-          Comece a escrever — vou aprender seu jeito...
+          As sugestões aparecem em <span className="text-anotata-roxo not-italic">cinza dentro do texto</span> — aperte <kbd className="px-1 py-0.5 text-[9px] bg-anotata-lavanda-clara border border-anotata-lavanda rounded font-sans not-italic">→</kbd> para aceitar
         </span>
       )}
     </div>

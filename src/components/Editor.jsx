@@ -10,6 +10,7 @@ import Highlight from '@tiptap/extension-highlight';
 import TextStyle from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
 import ResizableImage from '../extensions/ResizableImage';
+import InlinePredictive from '../extensions/InlinePredictive';
 import Toolbar from './Toolbar';
 import TagBar from './TagBar';
 import PredictiveBar from './PredictiveBar';
@@ -46,7 +47,11 @@ export default function Editor({ store }) {
       Underline,
       Link.configure({ openOnClick: false }),
       ResizableImage,
-      Placeholder.configure({ placeholder: 'Comece a escrever... (cole imagens com Ctrl+V)' }),
+      // === Texto preditivo inline (ghost text estilo Copilot) ===
+      // Mostra a sugestão dentro do próprio texto, em cinza claro, à direita
+      // do cursor. Seta direita (→) ou Tab confirmam. Esc cancela.
+      InlinePredictive.configure({ engine: predictiveEngine }),
+      Placeholder.configure({ placeholder: 'Comece a escrever... (a sugestão cinza aparece à direita — aperte → para aceitar)' }),
       TaskList,
       TaskItem.configure({ nested: true }),
       Highlight.configure({ multicolor: true }),
@@ -124,6 +129,15 @@ export default function Editor({ store }) {
       if (selectedNote.title) predictiveEngine.learn(selectedNote.title);
     }
   }, [selectedNote?.id]);
+
+  // === BOOTSTRAP DO CÉREBRO PREDITIVO ===
+  // Toda vez que a coleção de notas mudar, garante que o motor aprendeu
+  // de todas elas (titulos, conteúdo, tags e motivos de conexão). A engine
+  // tem cache interno (fingerprint), então só re-processa quando algo
+  // realmente mudou. Isso é o que faz a sugestão inline ficar boa.
+  useEffect(() => {
+    try { predictiveEngine.learnFromAll(store.notes); } catch (_) { /* nunca quebrar a tela por isso */ }
+  }, [store.notes]);
 
   // === ANÁLISE LOCAL EM TEMPO REAL ===
   const suggestions = useMemo(() => {
