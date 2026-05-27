@@ -10,7 +10,50 @@ import AuthGate from './components/AuthGate';
 import TemplatePicker from './components/TemplatePicker';
 import CommandPalette from './components/CommandPalette';
 import useKeyboardShortcuts from './hooks/useKeyboardShortcuts';
-import { LogOut, Command } from 'lucide-react';
+import { LogOut, Command, AlertTriangle } from 'lucide-react';
+
+// === Error Boundary ===
+// Em vez de tela branca silenciosa, mostra o erro real na tela.
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  componentDidCatch(error, info) {
+    // eslint-disable-next-line no-console
+    console.error('[ANOTATA] erro capturado pelo ErrorBoundary:', error, info);
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, background: '#F2F1F4', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+          <div style={{ maxWidth: 560, background: 'white', border: '1px solid #E8E4F0', borderRadius: 16, padding: 28, boxShadow: '0 8px 24px rgba(45,27,78,.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <AlertTriangle size={20} color="#E8637C" />
+              <h2 style={{ margin: 0, color: '#3D1B66', fontSize: 18 }}>ANOTATA encontrou um problema</h2>
+            </div>
+            <p style={{ color: '#6B5E80', fontSize: 13, lineHeight: 1.5 }}>
+              Suas notas estão salvas com segurança no navegador. Recarregue a página para tentar de novo. Se o problema persistir, copie o detalhe abaixo e mande para o desenvolvedor.
+            </p>
+            <pre style={{ background: '#F6F4F9', border: '1px solid #E8E4F0', borderRadius: 8, padding: 12, fontSize: 11, color: '#3D1B66', overflow: 'auto', maxHeight: 220, whiteSpace: 'pre-wrap' }}>
+              {String(this.state.error && this.state.error.stack || this.state.error)}
+            </pre>
+            <button
+              onClick={() => window.location.reload()}
+              style={{ marginTop: 12, padding: '8px 16px', background: '#5B2D8E', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 500 }}
+            >
+              Recarregar página
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function MainApp({ logout }) {
   const store = useStore();
@@ -34,23 +77,9 @@ function MainApp({ logout }) {
     },
   });
 
-  if (!store.isLoaded) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-anotata-bg">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-anotata-roxo mb-2">ANOTATA</h1>
-          <p className="text-anotata-muted">Carregando...</p>
-        </div>
-      </div>
-    );
-  }
-
-  const handleLogout = () => {
-    if (confirm('Sair do ANOTATA? Você precisará digitar a senha para entrar de novo.')) {
-      logout();
-    }
-  };
-
+  // ATENÇÃO: TODOS os hooks (useCallback / useMemo / useState / useEffect) PRECISAM
+  // ser chamados ANTES de qualquer early return. Caso contrário, o React quebra com
+  // "Rendered more hooks than during the previous render" e a tela fica branca.
   const handleNewNote = useCallback(() => {
     setShowTemplatePicker(true);
   }, []);
@@ -93,6 +122,25 @@ function MainApp({ logout }) {
         break;
     }
   }, [store]);
+
+  // === A PARTIR DAQUI, NENHUM HOOK NOVO === (early return é seguro só depois de todos os hooks)
+
+  if (!store.isLoaded) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-anotata-bg">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-anotata-roxo mb-2">ANOTATA</h1>
+          <p className="text-anotata-muted">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const handleLogout = () => {
+    if (confirm('Sair do ANOTATA? Você precisará digitar a senha para entrar de novo.')) {
+      logout();
+    }
+  };
 
   const renderMainArea = () => {
     if (store.currentView === 'home') {
@@ -179,6 +227,11 @@ function downloadFile(content, filename, mime) {
 }
 
 export default function App() {
-  // TEMPORÁRIO: login desativado pra debug
-  return <MainApp logout={() => {}} />;
+  return (
+    <ErrorBoundary>
+      <AuthGate>
+        {({ logout }) => <MainApp logout={logout} />}
+      </AuthGate>
+    </ErrorBoundary>
+  );
 }
