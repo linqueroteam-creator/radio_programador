@@ -37,7 +37,7 @@ function formatRelativeDate(iso) {
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
 }
 
-export default function Home({ store, onOpenInsights }) {
+export default function Home({ store, onOpenInsights, onCreateNote }) {
   const [showNewNotebook, setShowNewNotebook] = useState(false);
   const [newNotebookName, setNewNotebookName] = useState('');
   const [newNotebookColor, setNewNotebookColor] = useState(NOTEBOOK_COLORS[0]);
@@ -120,6 +120,16 @@ export default function Home({ store, onOpenInsights }) {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Botão Nova com modelo */}
+            <button
+              onClick={() => onCreateNote ? onCreateNote() : store.createNote()}
+              className="flex items-center gap-2 px-4 py-2 bg-anotata-roxo text-white rounded-xl text-sm font-medium hover:bg-anotata-roxo-escuro transition-all shadow-sm hover:shadow-md"
+              title="Nova anotação (com modelo)"
+            >
+              <Sparkles size={15} />
+              <span>Nova com modelo</span>
+            </button>
+
             {/* Botão Insights */}
             <button
               onClick={onOpenInsights}
@@ -290,10 +300,10 @@ export default function Home({ store, onOpenInsights }) {
               Escolha um caderno acima e clique em "Nova nota" pra começar a escrever.
             </p>
             <button
-              onClick={() => store.createNote()}
+              onClick={() => onCreateNote ? onCreateNote() : store.createNote()}
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-anotata-roxo text-white rounded-xl font-medium hover:bg-anotata-roxo-escuro transition-colors shadow-sm"
             >
-              <Plus size={16} />
+              <Sparkles size={16} />
               Criar primeira nota
             </button>
           </div>

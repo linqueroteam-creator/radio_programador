@@ -1,5 +1,9 @@
-import React, { useState } from 'react';
-import { Plus, Star, Trash2, RotateCcw, Copy, MoreVertical } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Plus, Star, Trash2, RotateCcw, Copy, MoreVertical, Sparkles } from 'lucide-react';
+import searchEngine from '../engine/SearchEngine';
+import { runCollection, COLLECTIONS } from '../engine/CollectionsEngine';
+import { NOTE_TYPES } from '../engine/RulesEngine';
+import EmptyState from './EmptyState';
 
 function stripHtml(html) {
   if (!html) return '';
@@ -21,8 +25,9 @@ function formatDate(isoStr) {
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
 }
 
-function NoteCard({ note, isSelected, store }) {
+function NoteCard({ note, isSelected, store, reason }) {
   const [showMenu, setShowMenu] = useState(false);
+  const typeMeta = NOTE_TYPES[note.type] || NOTE_TYPES.rascunho;
 
   return (
     <div
@@ -90,14 +95,26 @@ function NoteCard({ note, isSelected, store }) {
         </div>
       )}
 
-      <h3 className="text-sm font-medium text-anotata-text truncate pr-6">
-        {note.title || 'Nota sem título'}
-        {note.isFavorite && <Star size={10} className="inline ml-1 text-yellow-500 fill-yellow-500" />}
-      </h3>
+      <div className="flex items-start gap-1.5 pr-6">
+        <span className="text-xs mt-0.5">{typeMeta.icon}</span>
+        <h3 className="text-sm font-medium text-anotata-text truncate flex-1">
+          {note.title || 'Nota sem título'}
+          {note.isFavorite && <Star size={10} className="inline ml-1 text-yellow-500 fill-yellow-500" />}
+          {note.isPinned && <span className="ml-1 text-anotata-roxo">📌</span>}
+        </h3>
+      </div>
 
       <p className="text-xs text-anotata-text-suave mt-1 line-clamp-2">
         {stripHtml(note.content) || 'Nota vazia...'}
       </p>
+
+      {/* Motivo da coleção, quando aplicável */}
+      {reason && (
+        <div className="mt-1.5 inline-flex items-center gap-1 text-[10px] text-anotata-roxo bg-anotata-lavanda-clara px-1.5 py-0.5 rounded">
+          <Sparkles size={9} />
+          <span>{reason}</span>
+        </div>
+      )}
 
       <div className="flex items-center gap-2 mt-2">
         <span className="text-[10px] text-anotata-muted">{formatDate(note.updatedAt)}</span>
@@ -118,13 +135,54 @@ function NoteCard({ note, isSelected, store }) {
   );
 }
 
-export default function NoteList({ store }) {
-  const notes = store.filteredNotes;
+export default function NoteList({ store, onCreateNote }) {
+  const { searchQuery } = store;
+
+  // === LISTA DE NOTAS (com busca aproximada quando há query) ===
+  const notes = useMemo(() => {
+    // Se está numa coleção, mostrar essa coleção
+    if (store.currentView === 'collection' && store.currentCollectionId) {
+      const allActive = store.notes;
+      return runCollection(store.currentCollectionId, allActive);
+    }
+
+    // Se tem busca, usar busca aproximada
+    if (searchQuery && searchQuery.trim().length >= 2) {
+      const allNotes = store.notes;
+      const includeArchived = store.currentView === 'archived';
+      const includeTrash = store.currentView === 'trash';
+      const results = searchEngine.search(allNotes, searchQuery, {
+        limit: 100,
+        includeArchived,
+        includeTrash,
+      });
+      return results.map(r => r.note);
+    }
+
+    // Caso contrário, usa o filtro padrão
+    return store.filteredNotes;
+  }, [
+    store.currentView,
+    store.currentCollectionId,
+    store.notes,
+    store.filteredNotes,
+    searchQuery,
+  ]);
+
+  const isCollection = store.currentView === 'collection';
+  const isSearch = searchQuery && searchQuery.trim().length >= 2;
 
   const getViewTitle = () => {
+    if (isSearch) return `Busca: "${searchQuery}"`;
+    if (isCollection) {
+      const c = COLLECTIONS[store.currentCollectionId];
+      return c ? `${c.icon} ${c.name}` : 'Coleção';
+    }
     switch (store.currentView) {
       case 'all': return 'Todas as Notas';
       case 'favorites': return 'Favoritos';
+      case 'pinned': return 'Fixadas';
+      case 'archived': return 'Arquivadas';
       case 'trash': return 'Lixeira';
       case 'notebook':
         const nb = store.getNotebookById(store.currentNotebookId);
@@ -134,18 +192,33 @@ export default function NoteList({ store }) {
     }
   };
 
+  const getViewSubtitle = () => {
+    if (isSearch) {
+      return notes.length === 0
+        ? 'Nenhum resultado'
+        : `${notes.length} resultado${notes.length !== 1 ? 's' : ''}`;
+    }
+    if (isCollection) {
+      const c = COLLECTIONS[store.currentCollectionId];
+      return c?.description || '';
+    }
+    return `${notes.length} nota${notes.length !== 1 ? 's' : ''}`;
+  };
+
+  const showActionButton = !isCollection && store.currentView !== 'trash' && store.currentView !== 'archived';
+
   return (
     <div className="w-80 min-w-[280px] border-r border-anotata-border flex flex-col h-full bg-anotata-bg">
       <div className="p-4 border-b border-anotata-border flex items-center justify-between bg-white">
-        <div>
-          <h2 className="text-base font-semibold text-anotata-text">{getViewTitle()}</h2>
-          <p className="text-xs text-anotata-muted">{notes.length} nota{notes.length !== 1 ? 's' : ''}</p>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-base font-semibold text-anotata-text truncate">{getViewTitle()}</h2>
+          <p className="text-xs text-anotata-muted truncate">{getViewSubtitle()}</p>
         </div>
-        {store.currentView !== 'trash' && (
+        {showActionButton && (
           <button
-            onClick={() => store.createNote(store.currentView === 'notebook' ? store.currentNotebookId : 'default')}
-            className="p-2 bg-anotata-roxo rounded-lg hover:bg-anotata-roxo-escuro transition-colors shadow-sm"
-            title="Nova nota"
+            onClick={() => onCreateNote ? onCreateNote() : store.createNote(store.currentView === 'notebook' ? store.currentNotebookId : 'default')}
+            className="p-2 bg-anotata-roxo rounded-lg hover:bg-anotata-roxo-escuro transition-colors shadow-sm shrink-0 ml-2"
+            title="Nova nota (escolha modelo)"
           >
             <Plus size={16} className="text-white" />
           </button>
@@ -153,7 +226,7 @@ export default function NoteList({ store }) {
         {store.currentView === 'trash' && notes.length > 0 && (
           <button
             onClick={() => { if (confirm('Esvaziar toda a lixeira?')) store.emptyTrash(); }}
-            className="text-xs text-anotata-goiaba hover:text-anotata-goiaba-escuro px-2 py-1 border border-anotata-goiaba rounded"
+            className="text-xs text-anotata-goiaba hover:text-anotata-goiaba-escuro px-2 py-1 border border-anotata-goiaba rounded shrink-0 ml-2"
           >
             Esvaziar
           </button>
@@ -162,19 +235,24 @@ export default function NoteList({ store }) {
 
       <div className="flex-1 overflow-y-auto p-2 space-y-1">
         {notes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center px-4">
-            <p className="text-anotata-muted text-sm">
-              {store.currentView === 'trash' ? 'Lixeira vazia' : 'Nenhuma nota aqui'}
-            </p>
-            {store.currentView !== 'trash' && (
-              <button
-                onClick={() => store.createNote(store.currentView === 'notebook' ? store.currentNotebookId : 'default')}
-                className="mt-3 text-sm text-anotata-roxo hover:underline"
-              >
-                + Criar primeira nota
-              </button>
-            )}
-          </div>
+          <EmptyState
+            icon={isSearch ? '🔍' : isCollection ? '✨' : '📝'}
+            title={
+              isSearch ? 'Nenhum resultado'
+                : isCollection ? 'Nenhuma nota nesta coleção'
+                : store.currentView === 'trash' ? 'Lixeira vazia'
+                : store.currentView === 'archived' ? 'Nenhuma nota arquivada'
+                : 'Nenhuma nota aqui'
+            }
+            message={
+              isSearch ? 'Tente outras palavras ou verifique a ortografia. A busca é aproximada — encontra mesmo com erros.'
+                : isCollection ? 'Quando alguma nota se encaixar nas regras desta coleção, ela aparece aqui sozinha.'
+                : store.currentView === 'trash' ? 'Suas notas excluídas aparecem aqui.'
+                : 'Crie sua primeira anotação para começar.'
+            }
+            action={showActionButton ? (() => onCreateNote ? onCreateNote() : store.createNote()) : undefined}
+            actionLabel={showActionButton ? 'Criar anotação' : undefined}
+          />
         ) : (
           notes.map(note => (
             <NoteCard
@@ -182,6 +260,7 @@ export default function NoteList({ store }) {
               note={note}
               isSelected={store.selectedNoteId === note.id}
               store={store}
+              reason={note._collectionReason}
             />
           ))
         )}

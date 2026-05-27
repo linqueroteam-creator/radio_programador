@@ -114,6 +114,7 @@ export function useStore() {
   const [currentView, setCurrentView] = useState('home');
   const [currentNotebookId, setCurrentNotebookId] = useState(null);
   const [currentTagFilter, setCurrentTagFilter] = useState(null);
+  const [currentCollectionId, setCurrentCollectionId] = useState(null);
   const [selectedNoteId, setSelectedNoteId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoaded, setIsLoaded] = useState(false);
@@ -469,12 +470,14 @@ export function useStore() {
     currentView,
     currentNotebookId,
     currentTagFilter,
+    currentCollectionId,
     selectedNoteId,
     searchQuery,
 
     setCurrentView,
     setCurrentNotebookId,
     setCurrentTagFilter,
+    setCurrentCollectionId,
     setSelectedNoteId,
     setSearchQuery,
 

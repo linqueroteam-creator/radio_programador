@@ -7,11 +7,13 @@ import Dashboard from './components/Dashboard';
 import Corretor from './components/Corretor';
 import Home from './components/Home';
 import AuthGate from './components/AuthGate';
+import TemplatePicker from './components/TemplatePicker';
 import { LogOut } from 'lucide-react';
 
 function MainApp({ logout }) {
   const store = useStore();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
 
   if (!store.isLoaded) {
     return (
@@ -30,13 +32,17 @@ function MainApp({ logout }) {
     }
   };
 
-  // Renderiza a área principal baseado na view
+  const handleNewNote = () => {
+    setShowTemplatePicker(true);
+  };
+
   const renderMainArea = () => {
     if (store.currentView === 'home') {
       return (
         <Home
           store={store}
           onOpenInsights={() => { store.setCurrentView('insights'); store.setSelectedNoteId(null); }}
+          onCreateNote={handleNewNote}
         />
       );
     }
@@ -46,9 +52,10 @@ function MainApp({ logout }) {
     if (store.currentView === 'corretor') {
       return <Corretor store={store} />;
     }
+    // Para todas as outras views (all, favorites, pinned, archived, trash, notebook, tag, collection)
     return (
       <>
-        <NoteList store={store} />
+        <NoteList store={store} onCreateNote={handleNewNote} />
         <Editor store={store} />
       </>
     );
@@ -65,14 +72,20 @@ function MainApp({ logout }) {
         {renderMainArea()}
       </div>
 
-      {/* Botão de sair (canto inferior esquerdo) */}
+      {showTemplatePicker && (
+        <TemplatePicker
+          store={store}
+          onClose={() => setShowTemplatePicker(false)}
+          defaultNotebookId={
+            store.currentView === 'notebook' ? store.currentNotebookId : 'default'
+          }
+        />
+      )}
+
       <button
         onClick={handleLogout}
         className="fixed bottom-3 left-3 z-50 p-2 bg-white border border-anotata-border rounded-lg text-anotata-muted hover:text-anotata-goiaba hover:border-anotata-goiaba transition-all shadow-sm hover:shadow-md"
         title="Sair do ANOTATA"
-        style={{
-          left: sidebarCollapsed ? '14px' : '14px',
-        }}
       >
         <LogOut size={14} />
       </button>

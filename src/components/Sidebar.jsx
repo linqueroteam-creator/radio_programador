@@ -1,18 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   FileText, Star, Trash2, BookOpen, Tag, Plus,
   ChevronDown, ChevronRight, Search, Sparkles, X,
-  ChevronLeft, Menu, LayoutDashboard, SpellCheck,
-  Home as HomeIcon, TrendingUp
+  ChevronLeft, Menu, SpellCheck,
+  Home as HomeIcon, TrendingUp, Layers, Pin, Archive
 } from 'lucide-react';
+import { COLLECTION_LIST, countCollections } from '../engine/CollectionsEngine';
 
 export default function Sidebar({ store, isCollapsed, onToggle }) {
   const [notebooksOpen, setNotebooksOpen] = useState(true);
-  const [tagsOpen, setTagsOpen] = useState(true);
+  const [tagsOpen, setTagsOpen] = useState(false);
+  const [collectionsOpen, setCollectionsOpen] = useState(true);
   const [showNewNotebook, setShowNewNotebook] = useState(false);
   const [newNotebookName, setNewNotebookName] = useState('');
   const [showNewTag, setShowNewTag] = useState(false);
   const [newTagName, setNewTagName] = useState('');
+
+  // Conta coleções (cacheado por mudança em notes)
+  const collectionCounts = useMemo(() => countCollections(store.notes), [store.notes]);
+
+  // Top 6 coleções com mais resultados (para não poluir)
+  const visibleCollections = useMemo(() => {
+    return COLLECTION_LIST
+      .map(c => ({ ...c, count: collectionCounts[c.id] || 0 }))
+      .filter(c => c.count > 0)
+      .sort((a, b) => b.count - a.count);
+  }, [collectionCounts]);
 
   const handleCreateNotebook = () => {
     if (newNotebookName.trim()) {
@@ -30,11 +43,12 @@ export default function Sidebar({ store, isCollapsed, onToggle }) {
     }
   };
 
-  const totalNotes = store.notes.filter(n => !n.isTrash).length;
+  const totalNotes = store.notes.filter(n => !n.isTrash && !n.isArchived).length;
   const favCount = store.notes.filter(n => n.isFavorite && !n.isTrash).length;
   const trashCount = store.notes.filter(n => n.isTrash).length;
+  const archivedCount = store.notes.filter(n => n.isArchived && !n.isTrash).length;
 
-  // Versão recolhida (apenas ícones)
+  // Versão recolhida
   if (isCollapsed) {
     return (
       <aside className="w-14 bg-anotata-sidebar border-r border-anotata-border flex flex-col h-full transition-all duration-300 ease-in-out">
@@ -48,7 +62,7 @@ export default function Sidebar({ store, isCollapsed, onToggle }) {
           </button>
         </div>
 
-        <nav className="flex-1 py-3 flex flex-col items-center gap-1">
+        <nav className="flex-1 py-3 flex flex-col items-center gap-1 overflow-y-auto">
           <SidebarIconBtn
             icon={<HomeIcon size={18} />}
             active={store.currentView === 'home'}
@@ -66,6 +80,16 @@ export default function Sidebar({ store, isCollapsed, onToggle }) {
             active={store.currentView === 'favorites'}
             onClick={() => { store.setCurrentView('favorites'); store.setSelectedNoteId(null); }}
             title={`Favoritos (${favCount})`}
+          />
+          <SidebarIconBtn
+            icon={<Layers size={18} />}
+            active={store.currentView === 'collection'}
+            onClick={() => {
+              store.setCurrentView('collection');
+              store.setCurrentCollectionId('recentes');
+              store.setSelectedNoteId(null);
+            }}
+            title="Coleções automáticas"
           />
           <SidebarIconBtn
             icon={<SpellCheck size={18} />}
@@ -93,7 +117,6 @@ export default function Sidebar({ store, isCollapsed, onToggle }) {
   // Versão expandida
   return (
     <aside className="w-64 min-w-[240px] bg-anotata-sidebar border-r border-anotata-border flex flex-col h-full transition-all duration-300 ease-in-out">
-      {/* Header com botão de recolher */}
       <div className="p-4 border-b border-anotata-border flex items-start justify-between">
         <div>
           <h1 className="text-xl font-bold text-anotata-roxo tracking-wide">ANOTATA</h1>
@@ -108,15 +131,20 @@ export default function Sidebar({ store, isCollapsed, onToggle }) {
         </button>
       </div>
 
-      {/* Busca */}
+      {/* Busca aproximada */}
       <div className="p-3">
         <div className="relative">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-anotata-muted" />
           <input
             type="text"
-            placeholder="Buscar notas..."
+            placeholder="Buscar (mesmo com erros)..."
             value={store.searchQuery}
-            onChange={(e) => store.setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              store.setSearchQuery(e.target.value);
+              if (e.target.value && store.currentView === 'home') {
+                store.setCurrentView('all');
+              }
+            }}
             className="w-full bg-white border border-anotata-border rounded-lg pl-9 pr-3 py-2 text-sm text-anotata-text placeholder:text-anotata-muted focus:outline-none focus:border-anotata-roxo focus:ring-2 focus:ring-anotata-roxo/10"
           />
           {store.searchQuery && (
@@ -130,9 +158,8 @@ export default function Sidebar({ store, isCollapsed, onToggle }) {
         </div>
       </div>
 
-      {/* Menu principal */}
       <nav className="flex-1 overflow-y-auto px-2">
-        {/* Início (Home) */}
+        {/* Início */}
         <NavBtn
           icon={<HomeIcon size={16} />}
           label="Início"
@@ -140,16 +167,14 @@ export default function Sidebar({ store, isCollapsed, onToggle }) {
           onClick={() => { store.setCurrentView('home'); store.setSelectedNoteId(null); }}
         />
 
-        {/* Todas as notas */}
         <NavBtn
           icon={<FileText size={16} />}
           label="Todas as Notas"
           count={totalNotes}
-          active={store.currentView === 'all'}
+          active={store.currentView === 'all' && !store.searchQuery}
           onClick={() => { store.setCurrentView('all'); store.setSelectedNoteId(null); }}
         />
 
-        {/* Favoritos */}
         <NavBtn
           icon={<Star size={16} />}
           label="Favoritos"
@@ -158,7 +183,14 @@ export default function Sidebar({ store, isCollapsed, onToggle }) {
           onClick={() => { store.setCurrentView('favorites'); store.setSelectedNoteId(null); }}
         />
 
-        {/* Corretor Ortográfico */}
+        <NavBtn
+          icon={<Pin size={16} />}
+          label="Fixadas"
+          count={store.notes.filter(n => n.isPinned && !n.isTrash).length}
+          active={store.currentView === 'pinned'}
+          onClick={() => { store.setCurrentView('pinned'); store.setSelectedNoteId(null); }}
+        />
+
         <NavBtn
           icon={<SpellCheck size={16} />}
           label="Corretor"
@@ -167,7 +199,16 @@ export default function Sidebar({ store, isCollapsed, onToggle }) {
           highlight
         />
 
-        {/* Lixeira */}
+        {archivedCount > 0 && (
+          <NavBtn
+            icon={<Archive size={16} />}
+            label="Arquivadas"
+            count={archivedCount}
+            active={store.currentView === 'archived'}
+            onClick={() => { store.setCurrentView('archived'); store.setSelectedNoteId(null); }}
+          />
+        )}
+
         <NavBtn
           icon={<Trash2 size={16} />}
           label="Lixeira"
@@ -176,7 +217,6 @@ export default function Sidebar({ store, isCollapsed, onToggle }) {
           onClick={() => { store.setCurrentView('trash'); store.setSelectedNoteId(null); }}
         />
 
-        {/* IA (porta aberta) */}
         <button
           className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-anotata-muted opacity-60 cursor-not-allowed"
           title="IA será conectada futuramente"
@@ -186,7 +226,47 @@ export default function Sidebar({ store, isCollapsed, onToggle }) {
           <span className="ml-auto text-[9px] bg-anotata-roxo px-1.5 py-0.5 rounded text-white">Em breve</span>
         </button>
 
-        {/* Separador */}
+        <div className="border-t border-anotata-border my-3"></div>
+
+        {/* === COLEÇÕES AUTOMÁTICAS === */}
+        {visibleCollections.length > 0 && (
+          <div className="mb-2">
+            <button
+              onClick={() => setCollectionsOpen(!collectionsOpen)}
+              className="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-semibold uppercase text-anotata-text-suave hover:text-anotata-roxo transition-colors"
+            >
+              {collectionsOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+              <Layers size={12} />
+              <span>Coleções automáticas</span>
+            </button>
+
+            {collectionsOpen && (
+              <div className="ml-4 mt-1 space-y-0.5">
+                {visibleCollections.map(c => (
+                  <button
+                    key={c.id}
+                    onClick={() => {
+                      store.setCurrentView('collection');
+                      store.setCurrentCollectionId(c.id);
+                      store.setSelectedNoteId(null);
+                    }}
+                    className={`w-full flex items-center gap-2 px-3 py-1.5 rounded text-sm transition-colors ${
+                      store.currentView === 'collection' && store.currentCollectionId === c.id
+                        ? 'bg-anotata-hover text-anotata-roxo font-medium'
+                        : 'text-anotata-text hover:bg-anotata-hover'
+                    }`}
+                    title={c.description}
+                  >
+                    <span className="text-xs">{c.icon}</span>
+                    <span className="truncate">{c.name}</span>
+                    <span className="ml-auto text-xs text-anotata-muted">{c.count}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="border-t border-anotata-border my-3"></div>
 
         {/* Cadernos */}
@@ -307,9 +387,8 @@ export default function Sidebar({ store, isCollapsed, onToggle }) {
         </div>
       </nav>
 
-      {/* Footer */}
       <div className="p-3 border-t border-anotata-border">
-        <p className="text-[10px] text-anotata-muted text-center">ANOTATA v2.0 • Uso pessoal</p>
+        <p className="text-[10px] text-anotata-muted text-center">ANOTATA v3.0 • Uso pessoal</p>
       </div>
     </aside>
   );
