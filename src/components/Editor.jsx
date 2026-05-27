@@ -11,10 +11,12 @@ import TextStyle from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
 import ResizableImage from '../extensions/ResizableImage';
 import InlinePredictive from '../extensions/InlinePredictive';
+import InlineGrammar, { buildPlainTextMap } from '../extensions/InlineGrammar';
 import Toolbar from './Toolbar';
 import TagBar from './TagBar';
 import PredictiveBar from './PredictiveBar';
 import GrammarPanel from './GrammarPanel';
+import GrammarPopover from './GrammarPopover';
 import NoteMetaBar from './NoteMetaBar';
 import InsightPanel from './InsightPanel';
 import ConnectionModal from './ConnectionModal';
@@ -40,6 +42,14 @@ export default function Editor({ store }) {
   // ATENÇÃO: este useState está aqui em cima, junto dos outros, ANTES de qualquer
   // early return. Mover daqui = correr risco de tela branca por Rules of Hooks.
   const [showConnectionMap, setShowConnectionMap] = useState(false);
+  // === Spell-check inline (P5 — Gramática Inline) ===
+  // Issue atualmente sob o cursor (hover) e a posição da palavra na tela
+  const [hoveredIssue, setHoveredIssue] = useState(null);
+  const [hoveredRect, setHoveredRect] = useState(null);
+  const grammarHoverTimerRef = React.useRef(null);
+  const grammarLeaveTimerRef = React.useRef(null);
+  const grammarCheckTimerRef = React.useRef(null);
+  const lastCheckedTextRef = React.useRef('');
 
   const editor = useEditor({
     extensions: [
@@ -51,6 +61,10 @@ export default function Editor({ store }) {
       // Mostra a sugestão dentro do próprio texto, em cinza claro, à direita
       // do cursor. Seta direita (→) ou Tab confirmam. Esc cancela.
       InlinePredictive.configure({ engine: predictiveEngine }),
+      // === Spell-check inline (sublinhado ondulado goiaba) ===
+      // Pinta os erros direto no texto. O hover (renderizado fora) abre
+      // um balão com sugestões clicáveis.
+      InlineGrammar,
       Placeholder.configure({ placeholder: 'Comece a escrever... (a sugestão cinza aparece à direita — aperte → para aceitar)' }),
       TaskList,
       TaskItem.configure({ nested: true }),
@@ -139,6 +153,105 @@ export default function Editor({ store }) {
     try { predictiveEngine.learnFromAll(store.notes); } catch (_) { /* nunca quebrar a tela por isso */ }
   }, [store.notes]);
 
+  // === SPELL-CHECK INLINE: checagem com debounce ===
+  // Roda 1.5s depois que o usuário para de digitar. Usa o MESMO builder de
+  // texto plano que a extensão InlineGrammar — assim os offsets do
+  // LanguageTool batem com as posições do ProseMirror.
+  useEffect(() => {
+    if (!editor) return undefined;
+
+    const runCheck = async () => {
+      try {
+        const { text } = buildPlainTextMap(editor.state.doc);
+        if (!text || text.trim().length < 4) {
+          editor.commands.setGrammarIssues([]);
+          lastCheckedTextRef.current = '';
+          return;
+        }
+        if (text === lastCheckedTextRef.current) return; // nada mudou
+        lastCheckedTextRef.current = text;
+        const result = await grammarEngine.check(text);
+        // Filtra issues triviais (ex: ofensa por "0 length")
+        const issues = (result?.issues || []).filter(i => i && i.length > 0 && i.length < text.length);
+        editor.commands.setGrammarIssues(issues);
+      } catch (_) {
+        // ignora — o editor segue funcionando
+      }
+    };
+
+    const onUpdate = () => {
+      if (grammarCheckTimerRef.current) clearTimeout(grammarCheckTimerRef.current);
+      grammarCheckTimerRef.current = setTimeout(runCheck, 1500);
+    };
+
+    // Roda uma vez no mount/refresh do editor, com pequeno delay
+    grammarCheckTimerRef.current = setTimeout(runCheck, 800);
+    editor.on('update', onUpdate);
+    return () => {
+      editor.off('update', onUpdate);
+      if (grammarCheckTimerRef.current) clearTimeout(grammarCheckTimerRef.current);
+    };
+  }, [editor, selectedNote?.id]);
+
+  // === SPELL-CHECK INLINE: detecção de hover ===
+  // Escuta mouseover/mouseout no DOM do editor via event delegation.
+  // Quando o cursor está sobre uma .anotata-issue, agenda abertura do
+  // popover. Quando sai, agenda fechamento (com pequeno atraso pra não
+  // piscar quando o mouse atravessa o gap entre palavra e popover).
+  useEffect(() => {
+    if (!editor) return undefined;
+    const dom = editor.view && editor.view.dom;
+    if (!dom) return undefined;
+
+    const findIssueEl = (target) => {
+      if (!target || target.nodeType !== 1) return null;
+      return target.closest && target.closest('.anotata-issue');
+    };
+
+    const onOver = (e) => {
+      const el = findIssueEl(e.target);
+      if (!el) return;
+      const id = el.getAttribute('data-issue-id');
+      if (!id) return;
+      if (grammarLeaveTimerRef.current) {
+        clearTimeout(grammarLeaveTimerRef.current);
+        grammarLeaveTimerRef.current = null;
+      }
+      if (grammarHoverTimerRef.current) clearTimeout(grammarHoverTimerRef.current);
+      grammarHoverTimerRef.current = setTimeout(() => {
+        const issues = (editor.storage && editor.storage.inlineGrammar && editor.storage.inlineGrammar.issues) || [];
+        const issue = issues.find(i => String(i.id) === String(id));
+        if (!issue) return;
+        const rect = el.getBoundingClientRect();
+        setHoveredIssue(issue);
+        setHoveredRect(rect);
+      }, 150);
+    };
+
+    const onOut = (e) => {
+      const el = findIssueEl(e.target);
+      if (!el) return;
+      // Só fecha se realmente saiu da palavra (relatedTarget não é descendente da palavra nem do popover)
+      const to = e.relatedTarget;
+      if (to && (findIssueEl(to) === el || (to.closest && to.closest('[role="dialog"]')))) return;
+      if (grammarHoverTimerRef.current) clearTimeout(grammarHoverTimerRef.current);
+      if (grammarLeaveTimerRef.current) clearTimeout(grammarLeaveTimerRef.current);
+      grammarLeaveTimerRef.current = setTimeout(() => {
+        setHoveredIssue(null);
+        setHoveredRect(null);
+      }, 150);
+    };
+
+    dom.addEventListener('mouseover', onOver);
+    dom.addEventListener('mouseout', onOut);
+    return () => {
+      dom.removeEventListener('mouseover', onOver);
+      dom.removeEventListener('mouseout', onOut);
+      if (grammarHoverTimerRef.current) clearTimeout(grammarHoverTimerRef.current);
+      if (grammarLeaveTimerRef.current) clearTimeout(grammarLeaveTimerRef.current);
+    };
+  }, [editor]);
+
   // === ANÁLISE LOCAL EM TEMPO REAL ===
   const suggestions = useMemo(() => {
     if (!selectedNote) return null;
@@ -208,6 +321,45 @@ export default function Editor({ store }) {
   const handleAiRequest = async () => {
     alert('🤖 Porta de IA aberta!\n\nQuando sua IA estiver pronta, ela será conectada aqui.');
   };
+
+  // === HANDLERS DO POPOVER DE GRAMÁTICA INLINE ===
+  const closeGrammarPopover = useCallback(() => {
+    setHoveredIssue(null);
+    setHoveredRect(null);
+  }, []);
+
+  const handleApplyReplacement = useCallback((replacement) => {
+    if (!editor || !hoveredIssue) return;
+    try {
+      editor.commands.applyGrammarReplacement(hoveredIssue.id, replacement);
+    } catch (_) {}
+    closeGrammarPopover();
+    // Re-foca no editor pra continuar escrevendo
+    setTimeout(() => { try { editor.commands.focus(); } catch (_) {} }, 0);
+  }, [editor, hoveredIssue, closeGrammarPopover]);
+
+  const handleIgnoreIssueInline = useCallback(() => {
+    if (!editor || !hoveredIssue) return;
+    try {
+      editor.commands.ignoreGrammarIssue(hoveredIssue.id);
+    } catch (_) {}
+    closeGrammarPopover();
+  }, [editor, hoveredIssue, closeGrammarPopover]);
+
+  const handlePopoverMouseEnter = useCallback(() => {
+    if (grammarLeaveTimerRef.current) {
+      clearTimeout(grammarLeaveTimerRef.current);
+      grammarLeaveTimerRef.current = null;
+    }
+  }, []);
+
+  const handlePopoverMouseLeave = useCallback(() => {
+    if (grammarLeaveTimerRef.current) clearTimeout(grammarLeaveTimerRef.current);
+    grammarLeaveTimerRef.current = setTimeout(() => {
+      setHoveredIssue(null);
+      setHoveredRect(null);
+    }, 150);
+  }, []);
 
   if (!selectedNote) {
     return (
@@ -390,6 +542,19 @@ export default function Editor({ store }) {
           note={selectedNote}
           store={store}
           onClose={() => setShowConnectionMap(false)}
+        />
+      )}
+
+      {/* Popover de correção inline (spell-check / gramática) */}
+      {hoveredIssue && hoveredRect && (
+        <GrammarPopover
+          issue={hoveredIssue}
+          anchorRect={hoveredRect}
+          onApply={handleApplyReplacement}
+          onIgnore={handleIgnoreIssueInline}
+          onClose={closeGrammarPopover}
+          onMouseEnter={handlePopoverMouseEnter}
+          onMouseLeave={handlePopoverMouseLeave}
         />
       )}
     </div>

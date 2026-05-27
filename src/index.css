@@ -199,24 +199,49 @@ body {
   margin: 1.25rem 0;
 }
 
-/* Sublinhado de erros gramaticais */
-.ProseMirror .grammar-error {
-  text-decoration: underline wavy #E8637C;
+/* === SUBLINHADO ONDULADO DE ERROS DE ORTOGRAFIA / GRAMÁTICA === */
+/* Aplicado pelo plugin InlineGrammar como Decoration.inline.
+   Goiaba para erros de ortografia (mais "alarmante"), goiaba claro
+   para gramática (suave), lavanda escura para sugestões de estilo. */
+
+.ProseMirror .anotata-issue {
+  text-decoration: underline wavy currentColor;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
   text-decoration-skip-ink: none;
-  cursor: help;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: background-color 120ms ease;
 }
 
-.ProseMirror .spell-error {
-  text-decoration: underline wavy #C44862;
-  text-decoration-skip-ink: none;
-  cursor: help;
+.ProseMirror .anotata-issue.anotata-issue-misspelling {
+  color: #C44862; /* goiaba escuro — ortografia */
+}
+.ProseMirror .anotata-issue.anotata-issue-grammar {
+  color: #E8637C; /* goiaba — gramática */
+}
+.ProseMirror .anotata-issue.anotata-issue-style {
+  color: #5B2D8E; /* roxo — estilo / sugestão */
 }
 
-.ProseMirror .style-error {
-  text-decoration: underline wavy #5B2D8E;
-  text-decoration-skip-ink: none;
-  cursor: help;
+/* O cursor permanece preto/normal para o usuário continuar lendo o texto.
+   Forçamos a cor da palavra a voltar ao texto normal e deixamos a
+   decoração ondulada com a cor do tipo de erro. */
+.ProseMirror .anotata-issue {
+  /* a cor "color" acima vira a cor da decoração; o texto em si fica preto */
+  -webkit-text-fill-color: #2D1B4E;
+  text-shadow: none;
 }
+
+.ProseMirror .anotata-issue:hover,
+.ProseMirror .anotata-issue.anotata-issue-active {
+  background-color: rgba(232, 99, 124, 0.10);
+}
+
+/* Compatibilidade com classes antigas (se algum lugar ainda usa) */
+.ProseMirror .grammar-error  { text-decoration: underline wavy #E8637C; text-decoration-skip-ink: none; cursor: pointer; }
+.ProseMirror .spell-error    { text-decoration: underline wavy #C44862; text-decoration-skip-ink: none; cursor: pointer; }
+.ProseMirror .style-error    { text-decoration: underline wavy #5B2D8E; text-decoration-skip-ink: none; cursor: pointer; }
 
 /* Animações utilitárias */
 @keyframes pulseSoft {
