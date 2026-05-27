@@ -348,10 +348,20 @@ class RulesEngine {
   /**
    * Sugere conexões entre uma nota e outras.
    * Retorna ordenado por força da relação.
+   * Ignora notas que já estão conectadas manualmente OU que o usuário ignorou.
    */
   suggestConnections(note, allNotes, max = 5) {
     if (!note) return [];
-    const others = allNotes.filter(n => n.id !== note.id && !n.isTrash);
+    const ignoredIds = note.ignoredSuggestions || [];
+    const connectedIds = (note.manualConnections || []).map(c =>
+      typeof c === 'string' ? c : c.noteId
+    );
+    const others = allNotes.filter(n =>
+      n.id !== note.id &&
+      !n.isTrash &&
+      !connectedIds.includes(n.id) &&
+      !ignoredIds.includes(n.id)
+    );
     const noteTags = note.tags || [];
     const titleWords = (note.title || '').toLowerCase().split(/\s+/).filter(w => w.length > 3);
     const contentWords = stripHtml(note.content || '').toLowerCase().split(/\s+/).filter(w => w.length > 5);

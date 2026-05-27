@@ -15,12 +15,15 @@ import TagBar from './TagBar';
 import PredictiveBar from './PredictiveBar';
 import GrammarPanel from './GrammarPanel';
 import NoteMetaBar from './NoteMetaBar';
+import InsightPanel from './InsightPanel';
+import ConnectionModal from './ConnectionModal';
 import predictiveEngine from '../engine/PredictiveEngine';
 import grammarEngine from '../engine/GrammarEngine';
 import rulesEngine from '../engine/RulesEngine';
 import {
   Star, Trash2, BookOpen, Clock, Sparkles, SpellCheck,
-  Image as ImageIcon, CheckCircle, AlertCircle, Cloud, CloudOff
+  Image as ImageIcon, CheckCircle, AlertCircle, Cloud, CloudOff,
+  PanelRight, Link2
 } from 'lucide-react';
 
 export default function Editor({ store }) {
@@ -29,6 +32,8 @@ export default function Editor({ store }) {
   const [showGrammar, setShowGrammar] = useState(false);
   const [grammarIssues, setGrammarIssues] = useState([]);
   const [isCheckingGrammar, setIsCheckingGrammar] = useState(false);
+  const [showInsightPanel, setShowInsightPanel] = useState(true);
+  const [showConnectionModal, setShowConnectionModal] = useState(false);
 
   const editor = useEditor({
     extensions: [
@@ -232,6 +237,13 @@ export default function Editor({ store }) {
               <ImageIcon size={16} />
             </button>
             <button
+              onClick={() => setShowConnectionModal(true)}
+              className="p-1.5 rounded text-anotata-text-suave hover:bg-anotata-hover hover:text-anotata-roxo transition-colors"
+              title="Conectar com outra nota"
+            >
+              <Link2 size={16} />
+            </button>
+            <button
               onClick={checkGrammar}
               disabled={isCheckingGrammar}
               className={`p-1.5 rounded transition-colors ${
@@ -240,6 +252,15 @@ export default function Editor({ store }) {
               title="Verificar gramática"
             >
               <SpellCheck size={16} />
+            </button>
+            <button
+              onClick={() => setShowInsightPanel(!showInsightPanel)}
+              className={`p-1.5 rounded transition-colors ${
+                showInsightPanel ? 'bg-anotata-roxo text-white' : 'text-anotata-text-suave hover:bg-anotata-hover hover:text-anotata-roxo'
+              }`}
+              title="Painel de diagnóstico"
+            >
+              <PanelRight size={16} />
             </button>
             <button
               onClick={handleAiRequest}
@@ -292,7 +313,7 @@ export default function Editor({ store }) {
       <Toolbar editor={editor} />
       <PredictiveBar editor={editor} />
 
-      {/* Editor + painel de gramática */}
+      {/* Editor + painéis laterais */}
       <div className="flex-1 flex overflow-hidden">
         <div className="flex-1 overflow-y-auto">
           <EditorContent editor={editor} className="h-full" />
@@ -308,7 +329,34 @@ export default function Editor({ store }) {
             onRecheck={checkGrammar}
           />
         )}
+
+        {showInsightPanel && !showGrammar && (
+          <InsightPanel
+            note={selectedNote}
+            store={store}
+            suggestions={suggestions}
+            onClose={() => setShowInsightPanel(false)}
+            onAddConnection={() => setShowConnectionModal(true)}
+            onFocusTitle={() => {
+              const el = document.querySelector('input[placeholder="Título da nota..."]');
+              if (el) el.focus();
+            }}
+            onFocusTags={() => {
+              const el = document.querySelector('[data-tag-add-btn]');
+              if (el) el.click();
+            }}
+          />
+        )}
       </div>
+
+      {/* Modal de conexão */}
+      {showConnectionModal && (
+        <ConnectionModal
+          currentNote={selectedNote}
+          store={store}
+          onClose={() => setShowConnectionModal(false)}
+        />
+      )}
     </div>
   );
 }
@@ -370,32 +418,43 @@ function NextActionCard({ suggestion, onApply }) {
 
 function handleNextAction(suggestion, note, store) {
   switch (suggestion.action) {
-    case 'renomear':
-      // Foca o input de título
+    case 'renomear': {
       const titleInput = document.querySelector('input[placeholder="Título da nota..."]');
-      if (titleInput) titleInput.focus();
+      if (titleInput) {
+        titleInput.focus();
+        titleInput.select();
+      }
       break;
-    case 'tags':
-      // Abre o input de tag
+    }
+    case 'tags': {
       const tagBtn = document.querySelector('[data-tag-add-btn]');
       if (tagBtn) tagBtn.click();
-      else alert('Adicione tags na barra de tags abaixo do título');
       break;
+    }
     case 'arquivar':
       store.archiveNote(note.id);
       break;
     case 'revisar':
       store.markAsReviewed(note.id);
       break;
-    case 'definir-tipo':
-      alert('Clique no badge "Rascunho" no topo para escolher o tipo da nota');
+    case 'definir-tipo': {
+      // Abre o painel lateral pra deixar o usuário ver as sugestões
+      const panelBtn = document.querySelector('[title="Painel de diagnóstico"]');
+      if (panelBtn) panelBtn.click();
       break;
-    case 'prazo':
-      alert('Recurso de prazo será implementado na próxima sessão (Fase 10)');
+    }
+    case 'prazo': {
+      // Abre o painel lateral mostrando datas detectadas
+      const panelBtn = document.querySelector('[title="Painel de diagnóstico"]');
+      if (panelBtn) panelBtn.click();
       break;
-    case 'conectar':
-      alert('Recurso de conexões será implementado na próxima sessão (Fase 5)');
+    }
+    case 'conectar': {
+      // Abre o modal de conexões
+      const connBtn = document.querySelector('[title="Conectar com outra nota"]');
+      if (connBtn) connBtn.click();
       break;
+    }
     default:
       break;
   }

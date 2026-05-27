@@ -7,6 +7,16 @@ const SCHEMA_VERSION = 2;
 // === MIGRAÇÃO SUAVE ===
 // Adiciona campos novos sem quebrar notas antigas
 function migrateNote(note) {
+  // Migrar conexões: se eram só array de IDs, converte para objetos
+  let connections = note.manualConnections || [];
+  if (connections.length > 0 && typeof connections[0] === 'string') {
+    connections = connections.map(id => ({
+      noteId: id,
+      reason: 'Conexão antiga',
+      createdAt: note.updatedAt || new Date().toISOString(),
+    }));
+  }
+
   return {
     // Campos antigos (preservados)
     id: note.id,
@@ -25,7 +35,7 @@ function migrateNote(note) {
     status: note.status || 'ativo',
     priority: note.priority || 'normal',
     nextAction: note.nextAction || null,
-    manualConnections: note.manualConnections || [],
+    manualConnections: connections,
     dueDate: note.dueDate || null,
     isPinned: note.isPinned || false,
     isArchived: note.isArchived || false,
@@ -33,6 +43,10 @@ function migrateNote(note) {
     editCount: note.editCount || 0,
     versions: note.versions || [],
     source: note.source || 'manual',
+
+    // === FASE 2: campos adicionais ===
+    ignoredSuggestions: note.ignoredSuggestions || [],
+    customNextAction: note.customNextAction || null,
   };
 }
 
@@ -253,21 +267,23 @@ export function useStore() {
     setData(prev => ({ ...prev, notes: [newNote, ...prev.notes] }));
   }, [data.notes]);
 
-  // === CONEXÕES MANUAIS ===
-  const connectNotes = useCallback((noteAId, noteBId) => {
+  // === CONEXÕES MANUAIS (com motivo e data) ===
+  const connectNotes = useCallback((noteAId, noteBId, reason = '') => {
+    if (noteAId === noteBId) return;
+    const now = new Date().toISOString();
     setData(prev => ({
       ...prev,
       notes: prev.notes.map(n => {
         if (n.id === noteAId) {
           const conns = n.manualConnections || [];
-          if (!conns.includes(noteBId)) {
-            return { ...n, manualConnections: [...conns, noteBId] };
+          if (!conns.some(c => c.noteId === noteBId)) {
+            return { ...n, manualConnections: [...conns, { noteId: noteBId, reason, createdAt: now }] };
           }
         }
         if (n.id === noteBId) {
           const conns = n.manualConnections || [];
-          if (!conns.includes(noteAId)) {
-            return { ...n, manualConnections: [...conns, noteAId] };
+          if (!conns.some(c => c.noteId === noteAId)) {
+            return { ...n, manualConnections: [...conns, { noteId: noteAId, reason, createdAt: now }] };
           }
         }
         return n;
@@ -280,13 +296,36 @@ export function useStore() {
       ...prev,
       notes: prev.notes.map(n => {
         if (n.id === noteAId) {
-          return { ...n, manualConnections: (n.manualConnections || []).filter(id => id !== noteBId) };
+          return { ...n, manualConnections: (n.manualConnections || []).filter(c => c.noteId !== noteBId) };
         }
         if (n.id === noteBId) {
-          return { ...n, manualConnections: (n.manualConnections || []).filter(id => id !== noteAId) };
+          return { ...n, manualConnections: (n.manualConnections || []).filter(c => c.noteId !== noteAId) };
         }
         return n;
       })
+    }));
+  }, []);
+
+  // Marca uma sugestão de conexão como ignorada (não aparece mais)
+  const ignoreSuggestion = useCallback((noteId, otherNoteId) => {
+    setData(prev => ({
+      ...prev,
+      notes: prev.notes.map(n => {
+        if (n.id !== noteId) return n;
+        const ignored = n.ignoredSuggestions || [];
+        if (ignored.includes(otherNoteId)) return n;
+        return { ...n, ignoredSuggestions: [...ignored, otherNoteId] };
+      })
+    }));
+  }, []);
+
+  // Define a próxima ação personalizada da nota (texto livre)
+  const setCustomNextAction = useCallback((noteId, text) => {
+    setData(prev => ({
+      ...prev,
+      notes: prev.notes.map(n =>
+        n.id === noteId ? { ...n, customNextAction: text || null } : n
+      )
     }));
   }, []);
 
@@ -454,6 +493,8 @@ export function useStore() {
     duplicateNote,
     connectNotes,
     disconnectNotes,
+    ignoreSuggestion,
+    setCustomNextAction,
     getNoteById,
 
     createNotebook,

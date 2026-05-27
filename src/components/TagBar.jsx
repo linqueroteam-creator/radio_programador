@@ -49,6 +49,7 @@ export default function TagBar({ store, noteId, noteTags }) {
         </div>
       ) : (
         <button
+          data-tag-add-btn
           onClick={() => setShowInput(true)}
           className="inline-flex items-center gap-0.5 text-xs text-anotata-muted hover:text-anotata-roxo transition-colors"
         >
