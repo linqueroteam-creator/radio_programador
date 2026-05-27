@@ -53,6 +53,13 @@ ANOTATA é um **app web pessoal de anotações inteligentes sem IA**, hospedado 
 - **Polimento visual** premium
 - **Documento de retomada** (este arquivo)
 
+### Patch 5.1 — Correção de tela branca (27/05/2026)
+- **Bug:** App.jsx tinha `useCallback` declarados DEPOIS de um `if (!store.isLoaded) return ...`. Quando `isLoaded` ia de `false` → `true`, o número de hooks chamados mudava entre renders, e o React quebrava silenciosamente com `Rendered more hooks than during the previous render`. Resultado visível: tela branca total no GitHub Pages.
+- **Correção:** todos os `useCallback` (`handleNewNote`, `handlePaletteAction`) movidos para ANTES de qualquer early return, com comentário explícito alertando sobre as Rules of Hooks.
+- **Defesa em profundidade:** adicionado `ErrorBoundary` no `App` — se um próximo bug travar a renderização, em vez de tela branca o usuário verá uma mensagem com o detalhe do erro e um botão "Recarregar página".
+- **Login reativado** com a senha original.
+- **Lição:** sempre validar que TODOS os hooks são chamados ANTES de qualquer condicional/early return. Para apps deployados em GitHub Pages é crítico, porque a tela branca não dá nenhuma pista visual.
+
 ---
 
 ## 🗂️ Estrutura de arquivos
@@ -112,6 +119,8 @@ src/
 4. **Versões** são salvas a cada 10 edições, máx 10 versões por nota
 5. **Único motor que usa internet:** GrammarEngine (LanguageTool). Todo o resto é 100% local.
 6. **Login** com hash SHA-256 + salt no client-side (proteção visual, não criptográfica)
+7. **Deploy:** o site é servido pela branch `gh-pages` (não pela `main`). O fluxo é: build local → copiar `dist/` para a raiz da branch `gh-pages` → push. A `main` guarda o código-fonte; a `gh-pages` guarda só o build publicado.
+8. **Rules of Hooks são sagradas** — todo `useState`/`useEffect`/`useCallback`/`useMemo` precisa ser chamado ANTES de qualquer `return` condicional. Quebrar essa regra causa tela branca silenciosa em produção.
 
 ---
 
@@ -151,4 +160,4 @@ Seguimos:
 - Site público em GitHub Pages, repositório precisa ficar **público** pra Pages funcionar
 - Usuário escolheu liberdade técnica total e me chamou de "mestre" do projeto
 
-— última atualização: Pacote 5 Final entregue
+— última atualização: Pacote 5 Final + Patch 5.1 (correção de tela branca, 27/05/2026)
