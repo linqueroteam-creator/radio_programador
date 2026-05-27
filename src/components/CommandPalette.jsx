@@ -281,7 +281,7 @@ export default function CommandPalette({ store, isOpen, onClose, onAction }) {
 
   return (
     <div
-      className="fixed inset-0 bg-anotata-text/40 backdrop-blur-sm flex items-start justify-center z-[100] pt-[15vh] px-4 animate-fade-in"
+      className="fixed inset-0 bg-anotata-text/40 backdrop-blur-sm flex items-start justify-center z-[100] pt-[8vh] sm:pt-[15vh] px-4 animate-fade-in"
       onClick={onClose}
     >
       <div

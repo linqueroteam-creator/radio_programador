@@ -523,3 +523,90 @@ Restam apenas 3 ocorrências de `text-[8px]` (badges decorativos minúsculos no 
 32 testes vitest passando. Build OK 3.2s. Sem mudança comportamental em desktop.
 
 — última atualização: Mobile 1 (layout responsivo), 27/05/2026
+
+
+
+---
+
+### Mobile 2 + 3 + Polimento de modais (27/05/2026)
+> Pacote completo: touch confortável, app instalável, modais que cabem no celular.
+
+#### Mobile 2 — Touch + teclado virtual
+**CSS global (`src/index.css` + `index.html`):**
+- `viewport-fit=cover` + paddings `env(safe-area-inset-*)` no body — respeita o notch e a barra de gestos do iPhone (PWA standalone)
+- `100dvh` (com fallback `100vh`) — altura ajusta quando o teclado virtual abre/fecha
+- `-webkit-tap-highlight-color: transparent` — tira o cinza-azulado do toque
+- `touch-action: manipulation` — desativa double-tap zoom acidental (mantém pinch-zoom)
+- `font-size: 16px` em inputs/textarea em mobile — evita auto-zoom do iOS quando foca campo
+- ProseMirror em mobile: padding 1rem em vez de 2rem (mais largura útil)
+
+**IconButton** ganhou `data-touch="true"`:
+- Em mobile (CSS: `@media (max-width: 767px)`), botões com esse atributo viram `min-width: 44px; min-height: 44px` — mínimo recomendado pelas WCAG e pela Apple HIG
+- Em desktop: tamanho compacto via padding (sm/md/lg) como antes
+
+**Toolbar do editor** ganhou `data-toolbar="true"`:
+- Em mobile: `flex-wrap: nowrap` + `overflow-x: auto` + `-webkit-overflow-scrolling: touch` — os 18 botões rolam horizontalmente em vez de quebrar em 2 linhas (que rouba altura útil)
+- Scrollbar fina (3px) só aparece em mobile
+
+#### Mobile 3 — PWA (instalável no celular, funciona offline)
+**Arquivos novos:**
+- `public/icon.svg` — ícone mestre 512×512, gradiente roxo + caderno + estrela goiaba
+- `public/manifest.webmanifest` — declaração PWA: nome, ícones, tema #5B2D8E, display standalone, orientation any, lang pt-BR
+- `public/icon-192.png`, `public/icon-512.png`, `public/icon-maskable-512.png` — gerados a partir do SVG via `scripts/gen-icons.mjs` (sharp). O maskable tem 56px de padding pra Android cortar em adaptive icon sem comer o desenho
+- `public/sw.js` — Service Worker com estratégia híbrida:
+  - **Cache-first** pros bundles em `/assets/` (nome com hash, sempre seguro)
+  - **Network-first** pra navegação (HTML) com fallback ao cache
+  - **Cross-origin** passa direto sem cachear (LanguageTool não polui o cache)
+  - 2 caches versionados: `anotata-v1-shell` e `anotata-v1-assets`
+  - Limpa caches antigos no activate
+- `scripts/gen-icons.mjs` — script Node que regenera os PNGs a partir do SVG. Roda manual quando o ícone mudar
+
+**index.html ganhou:**
+- `<meta theme-color="#5B2D8E">` — barra do navegador roxa
+- `<meta apple-mobile-web-app-capable>` + status-bar-style + title — iOS instala como app sem barra
+- `<link rel="manifest" href="./manifest.webmanifest">`
+- `<link rel="apple-touch-icon" href="./icon-192.png">`
+- description meta pra SEO
+
+**main.jsx registra o SW**:
+- Só em produção (`import.meta.env.PROD`)
+- No `window.load` pra não competir com a primeira renderização
+- Falha graciosamente se o registro der erro (não trava o app)
+
+#### Polimento de modais mobile
+- **RephrasePanel**: as 2 colunas Original/Reescrito empilham em mobile (`flex-col md:flex-row`), border-r vira border-b. Adicionado `max-h-[88vh]` pra encolher quando o teclado abrir
+- **ConnectionMap**: idem `max-h-[90vh]`
+- **CommandPalette**: `pt-[15vh]` (15% do topo) → `pt-[8vh] sm:pt-[15vh]` em mobile (modal mais perto do topo, sobra altura útil)
+
+#### Como o usuário instala como app
+**Android (Chrome):**
+1. Abre o site → aparece banner "Instalar ANOTATA?"
+2. Confirma → ícone vai pra tela inicial
+3. Toca → abre como app fullscreen (sem barra do navegador)
+
+**iPhone (Safari):**
+1. Abre o site
+2. Toca no botão Compartilhar → "Adicionar à Tela de Início"
+3. Confirma → ícone na home screen
+
+#### Tests
+32 testes vitest passando. Build OK 3.11s. Zero mudança comportamental em desktop.
+
+#### Arquivos novos
+- `public/icon.svg`
+- `public/icon-192.png`, `public/icon-512.png`, `public/icon-maskable-512.png`
+- `public/manifest.webmanifest`
+- `public/sw.js`
+- `scripts/gen-icons.mjs`
+
+#### Arquivos modificados
+- `index.html` (meta tags PWA + viewport-fit)
+- `src/index.css` (safe-area + 100dvh + 16px inputs + data-touch + data-toolbar)
+- `src/main.jsx` (registra service worker)
+- `src/components/ui/IconButton.jsx` (data-touch="true")
+- `src/components/Toolbar.jsx` (data-toolbar="true" + scroll horizontal)
+- `src/components/RephrasePanel.jsx` (colunas empilhadas em mobile)
+- `src/components/ConnectionMap.jsx` (max-h responsivo)
+- `src/components/CommandPalette.jsx` (pt menor em mobile)
+
+— última atualização: Mobile 2 + PWA + polimento de modais, 27/05/2026

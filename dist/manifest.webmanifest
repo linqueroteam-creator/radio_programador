@@ -1,0 +1,39 @@
+{
+  "name": "ANOTATA — suas anotações, seu jeito",
+  "short_name": "ANOTATA",
+  "description": "App pessoal de anotações inteligentes sem IA — com correção, reescrita e mapa de conexões.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F2F1F4",
+  "theme_color": "#5B2D8E",
+  "lang": "pt-BR",
+  "categories": ["productivity", "education", "lifestyle"],
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

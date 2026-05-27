@@ -8,19 +8,101 @@
   box-sizing: border-box;
 }
 
+html, body {
+  /* === ALTURA DINÂMICA NO CELULAR ===
+     `100vh` no Safari/Chrome mobile não desconta a barra do navegador
+     nem o teclado virtual. `100dvh` (dynamic viewport height) ajusta
+     conforme o teclado abre/fecha. Fallback pra 100vh em browsers
+     antigos. */
+  height: 100vh;
+  height: 100dvh;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   overflow: hidden;
-  height: 100vh;
   background-color: #F2F1F4;
   color: #2D1B4E;
+
+  /* === SAFE AREA do iPhone (notch + home indicator) ===
+     Quando o app roda como PWA standalone, a barra do iPhone fica
+     escondida e o conteúdo encosta na borda física da tela. Estes
+     paddings garantem que nada é cortado pelo notch ou pela barra
+     inferior de gestos. Em browser comum os env() são 0px. */
+  padding-top: env(safe-area-inset-top, 0);
+  padding-right: env(safe-area-inset-right, 0);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  padding-left: env(safe-area-inset-left, 0);
+
+  /* === iOS — desativa o "tap highlight" azul cinza ao tocar links
+     e botões; o foco visível do app é o ring roxo do design system. */
+  -webkit-tap-highlight-color: transparent;
+
+  /* === iOS — evita que double-tap dê zoom acidental
+     (importante para um app com muitos botões pequenos) */
+  touch-action: manipulation;
 }
 
 #root {
-  height: 100vh;
+  height: 100%;
 }
 
-/* Scrollbar estilizada */
+/* === iOS — INPUT/TEXTAREA SEM AUTO-ZOOM ===
+   O Safari mobile dá zoom automático em qualquer input com font-size
+   menor que 16px quando ele recebe foco. Forçamos 16px nos campos
+   principais. No desktop o Tailwind sobrepõe via @media (e o usuário
+   nem vai sentir os 2px a mais em mobile, é confortável). */
+@media (max-width: 767px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="number"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+/* === Áreas de toque mínimas em mobile ===
+   Botões ícone-only com `data-touch="true"` ganham 44x44px no celular,
+   que é o mínimo recomendado pelas WCAG e Apple HIG. No desktop
+   continuam compactos como antes. */
+@media (max-width: 767px) {
+  [data-touch="true"] {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* === Toolbar com rolagem horizontal em mobile ===
+   A toolbar do editor tem 18 botões. Em vez de quebrar em duas linhas
+   (que rouba altura), em mobile rola horizontalmente. */
+[data-toolbar="true"] {
+  scrollbar-width: thin;
+}
+
+@media (max-width: 767px) {
+  [data-toolbar="true"] {
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+  [data-toolbar="true"]::-webkit-scrollbar {
+    height: 3px;
+  }
+}
+
+/* === Permite seleção de texto onde faz sentido ===
+   `touch-action: manipulation` no body desativa double-tap zoom. Mas
+   queremos manter seleção/copy/paste em zonas de leitura. */
+.ProseMirror, p, h1, h2, h3, h4, h5, h6, span:not([role="button"]) {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Scrollbar estilizada (desktop) */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -50,6 +132,14 @@ body {
   padding: 1.5rem 2rem;
   color: #2D1B4E;
   line-height: 1.7;
+  /* Em mobile: padding menor pra ganhar largura útil de escrita */
+  font-size: 16px; /* 16px em mobile evita zoom; em desktop também é confortável */
+}
+
+@media (max-width: 767px) {
+  .ProseMirror {
+    padding: 1rem 1rem;
+  }
 }
 
 .ProseMirror p.is-editor-empty:first-child::before {
@@ -202,8 +292,8 @@ body {
 }
 
 .ProseMirror ul[data-type="taskList"] li label input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   accent-color: #E8637C;
   cursor: pointer;
 }

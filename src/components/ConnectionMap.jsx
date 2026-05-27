@@ -170,7 +170,7 @@ export default function ConnectionMap({ note, store, onClose }) {
       aria-label="Mapa visual de conexões"
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col overflow-hidden border border-anotata-border"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl h-[90vh] max-h-[90vh] flex flex-col overflow-hidden border border-anotata-border"
         onClick={(e) => e.stopPropagation()}
       >
         {/* ===== HEADER ===== */}
