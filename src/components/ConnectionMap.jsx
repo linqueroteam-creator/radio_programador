@@ -2,14 +2,12 @@ import React, { useEffect, useMemo, useState, useCallback, useRef, useDeferredVa
 import {
   X, Plus, Sparkles, BookOpen, ArrowLeft, FileText, Camera, ZoomIn, ZoomOut, Maximize2,
   // Ícones para cada área da vida (Camada 2 — regra-de-cor.md / areas-da-vida.md)
-  Heart, Smile, Brain, Briefcase, Coins, Users, Home as HomeIcon, Palette, Compass, CircleDot, Layers,
+  Heart, Smile, Brain, Briefcase, Coins, Users, Home as HomeIcon, Palette, Compass, CircleDot,
 } from 'lucide-react';
 import { NOTE_TYPES } from '../engine/RulesEngine';
 import rulesEngine from '../engine/RulesEngine';
 import NotebookCover from './NotebookCover';
 import {
-  LIFE_AREAS,
-  getLifeArea,
   listLifeAreas,
   getAreaUsage,
   calculateAreaGravity,
@@ -30,10 +28,7 @@ const LIFE_AREA_ICON_MAP = {
   outros: CircleDot,
 };
 
-// Persistência da preferência de visão do mapa
-const MAP_VIEW_STORAGE_KEY = 'anotata-map-view';
-const MAP_VIEW_NOTEBOOKS = 'notebooks';
-const MAP_VIEW_LIFE_AREAS = 'lifeAreas';
+// (Toggle de visão removido — PR F: mapa unificado com 4 camadas hierárquicas)
 
 /**
  * ===== MAPA VISUAL — ECOSSISTEMA PESSOAL (v3 premium) =====
@@ -293,8 +288,6 @@ export default function ConnectionMap({ note, store, onClose }) {
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [avatarError, setAvatarError] = useState(null);
   const [avatarHover, setAvatarHover] = useState(false);
-  // Visão do mapa: 'notebooks' (padrão, comportamento atual) | 'lifeAreas' (núcleos das áreas da vida)
-  const [mapView, setMapView] = useState(MAP_VIEW_NOTEBOOKS);
   const fileInputRef = useRef(null);
   const svgRef = useRef(null);
   // Ref direta pro <g> que sofre o transform de pan/zoom — usada pra
@@ -326,23 +319,6 @@ export default function ConnectionMap({ note, store, onClose }) {
       if (saved && saved.startsWith('data:image/')) setAvatarUrl(saved);
     } catch (_) { /* defensivo */ }
   }, []);
-
-  // Carrega preferência de visão do mapa
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(MAP_VIEW_STORAGE_KEY);
-      if (saved === MAP_VIEW_LIFE_AREAS || saved === MAP_VIEW_NOTEBOOKS) {
-        setMapView(saved);
-      }
-    } catch (_) { /* defensivo */ }
-  }, []);
-
-  // Persiste preferência ao mudar
-  useEffect(() => {
-    try {
-      localStorage.setItem(MAP_VIEW_STORAGE_KEY, mapView);
-    } catch (_) { /* defensivo */ }
-  }, [mapView]);
 
   // Limpa frame pendente do pan ao desmontar (evita leak / set-state em ciclos finalizados)
   useEffect(() => {
@@ -408,144 +384,235 @@ export default function ConnectionMap({ note, store, onClose }) {
   }, [store.notes]);
 
 
-  // Layout
+  // Layout — mapa unificado com 4 camadas hierárquicas (PR F):
+  //   Camada 1: Áreas da Vida (anel interno)
+  //   Camada 2: Projetos (sub-anel, orbitam sua área)
+  //   Camada 3: Cadernos (sub-anel, orbitam seu projeto ou área se avulsos)
+  //   Camada 4: Notas (anel externo, orbitam seu caderno)
   const layout = useMemo(() => {
     const VIEW = 1000;
     const cx = VIEW / 2;
     const cy = VIEW / 2;
-    const RING1_BASE = 270;        // raio base dos cadernos/áreas
-    const GRAVITY_RANGE = 70;       // amplitude da gravidade
-    const RING2_OFFSET = 170;       // notas ficam X unidades além do núcleo-pai
+    const AREA_RING_BASE = 200;      // raio base das áreas da vida
+    const GRAVITY_RANGE = 50;         // amplitude da gravidade (áreas)
+    const PROJECT_OFFSET = 110;       // distância projetos→área
+    const NOTEBOOK_OFFSET = 100;      // distância cadernos→projeto (ou área se avulso)
+    const NOTE_OFFSET = 90;           // distância notas→caderno
 
-    const isLifeAreasView = mapView === MAP_VIEW_LIFE_AREAS;
-
-    // ============================================================
-    // Camada de núcleos (anel 1): cadernos OU áreas da vida
-    // ============================================================
-    let ringNodes = [];
-
-    if (isLifeAreasView) {
-      // === Visão por áreas da vida ===
-      // Calcula áreas ativas (com Pulsos) e suas gravidades
-      const activeNotes = (store.notes || []).filter(n => !n.isTrash && !n.isArchived);
-      const usage = getAreaUsage(activeNotes);
-      const gravity = calculateAreaGravity(activeNotes);
-      // Lista as áreas ativas em ordem canônica (saúde primeiro, outros por último)
-      const activeAreas = listLifeAreas()
-        .filter(a => (usage[a.id] || 0) > 0)
-        .map(a => ({ ...a, usage: usage[a.id] || 0 }));
-
-      const positions = placeLifeAreasWithGravity(activeAreas, gravity, cx, cy, RING1_BASE, GRAVITY_RANGE);
-      ringNodes = activeAreas.map((area, i) => ({
-        kind: 'lifeArea',
-        id: area.id,
-        type: 'lifeArea',
-        label: area.name,
-        shortName: area.shortName,
-        color: area.color,
-        colorDark: area.colorDark,
-        colorLight: area.colorLight,
-        colorGlow: area.colorGlow,
-        iconName: area.icon,
-        ...positions[i],
-      }));
-    } else {
-      // === Visão por cadernos (comportamento original) ===
-      const nbPositions = placeNotebooksWithGravity(notebooks, notesByNotebook, cx, cy, RING1_BASE, GRAVITY_RANGE);
-      ringNodes = notebooks.map((nb, i) => ({
-        kind: 'notebook',
-        id: nb.id,
-        type: 'notebook',
-        label: nb.name || 'Caderno',
-        color: nb.color || '#5B2D8E',
-        raw: nb, // pra passar pra NotebookCover
-        ...nbPositions[i],
-      }));
-    }
+    const activeNotes = (store.notes || []).filter(n => !n.isTrash && !n.isArchived);
+    const projects = (store.projects || []).filter(p => !p.archived);
 
     // ============================================================
-    // Camada de notas (anel 2): notas distribuídas em volta do núcleo-pai
+    // CAMADA 1: Áreas da Vida (sempre visíveis se têm conteúdo)
+    // ============================================================
+    const usage = getAreaUsage(activeNotes);
+    const gravity = calculateAreaGravity(activeNotes);
+
+    // Uma área está "ativa" se tem notas diretas, OU tem projetos com cadernos, OU tem cadernos avulsos
+    const areaHasProject = {};
+    projects.forEach(p => { areaHasProject[p.lifeArea] = true; });
+    notebooks.forEach(nb => {
+      if (!nb.projectId && nb.lifeArea) { areaHasProject[nb.lifeArea] = true; }
+    });
+
+    const activeAreas = listLifeAreas()
+      .filter(a => (usage[a.id] || 0) > 0 || areaHasProject[a.id])
+      .map(a => ({ ...a, usage: usage[a.id] || 0 }));
+
+    const areaPositions = placeLifeAreasWithGravity(activeAreas, gravity, cx, cy, AREA_RING_BASE, GRAVITY_RANGE);
+    const areaNodes = activeAreas.map((area, i) => ({
+      kind: 'lifeArea',
+      id: area.id,
+      type: 'lifeArea',
+      label: area.name,
+      shortName: area.shortName,
+      color: area.color,
+      colorDark: area.colorDark,
+      colorLight: area.colorLight,
+      colorGlow: area.colorGlow,
+      iconName: area.icon,
+      ...areaPositions[i],
+    }));
+
+    // Lookup rápido de posição de área por id
+    const areaPosMap = {};
+    areaNodes.forEach(a => { areaPosMap[a.id] = { x: a.x, y: a.y, angle: a.angle, radius: a.radius }; });
+
+    // ============================================================
+    // CAMADA 2: Projetos (orbitam sua área-mãe)
+    // ============================================================
+    const projectNodes = [];
+    // Agrupar projetos por área
+    const projectsByArea = {};
+    projects.forEach(p => {
+      const areaId = p.lifeArea || 'outros';
+      if (!projectsByArea[areaId]) projectsByArea[areaId] = [];
+      projectsByArea[areaId].push(p);
+    });
+
+    Object.entries(projectsByArea).forEach(([areaId, areaProjects]) => {
+      const areaPos = areaPosMap[areaId];
+      if (!areaPos) return; // área não está ativa — skip
+      const baseAngle = areaPos.angle;
+      const projR = (areaPos.radius || AREA_RING_BASE) + PROJECT_OFFSET;
+      const count = areaProjects.length;
+      const maxSpread = count === 1 ? 0 : Math.min(Math.PI / 3, (Math.PI * 2 / Math.max(activeAreas.length, 1)) * 0.5);
+      const step = count > 1 ? maxSpread / (count - 1) : 0;
+      const startA = baseAngle - maxSpread / 2;
+
+      areaProjects.forEach((proj, i) => {
+        const a = count === 1 ? baseAngle : startA + i * step;
+        projectNodes.push({
+          kind: 'project',
+          id: proj.id,
+          type: 'project',
+          label: proj.title,
+          color: proj.color || (areaPosMap[areaId] ? areaNodes.find(an => an.id === areaId)?.color : '#7B4DBA') || '#7B4DBA',
+          coverEmoji: proj.coverEmoji,
+          parentAreaId: areaId,
+          x: cx + Math.cos(a) * projR,
+          y: cy + Math.sin(a) * projR,
+          angle: a,
+          radius: projR,
+        });
+      });
+    });
+
+    // Lookup rápido de posição de projeto por id
+    const projectPosMap = {};
+    projectNodes.forEach(p => { projectPosMap[p.id] = { x: p.x, y: p.y, angle: p.angle, radius: p.radius }; });
+
+    // ============================================================
+    // CAMADA 3: Cadernos (orbitam seu projeto, ou área se avulsos)
+    // ============================================================
+    const notebookNodes = [];
+    // Agrupar cadernos: por projeto ou por área (avulsos)
+    const nbByProject = {};
+    const nbByAreaAvulso = {};
+    notebooks.forEach(nb => {
+      if (nb.projectId && projectPosMap[nb.projectId]) {
+        if (!nbByProject[nb.projectId]) nbByProject[nb.projectId] = [];
+        nbByProject[nb.projectId].push(nb);
+      } else {
+        const areaId = nb.lifeArea || 'outros';
+        if (!nbByAreaAvulso[areaId]) nbByAreaAvulso[areaId] = [];
+        nbByAreaAvulso[areaId].push(nb);
+      }
+    });
+
+    // Cadernos dentro de projetos
+    Object.entries(nbByProject).forEach(([projId, nbs]) => {
+      const projPos = projectPosMap[projId];
+      if (!projPos) return;
+      const baseAngle = projPos.angle;
+      const nbR = (projPos.radius || (AREA_RING_BASE + PROJECT_OFFSET)) + NOTEBOOK_OFFSET;
+      const count = nbs.length;
+      const maxSpread = count === 1 ? 0 : Math.min(Math.PI / 4, 0.4);
+      const step = count > 1 ? maxSpread / (count - 1) : 0;
+      const startA = baseAngle - maxSpread / 2;
+
+      nbs.forEach((nb, i) => {
+        const a = count === 1 ? baseAngle : startA + i * step;
+        const noteCount = (notesByNotebook[nb.id] || []).length;
+        notebookNodes.push({
+          kind: 'notebook',
+          id: nb.id,
+          type: 'notebook',
+          label: nb.name || 'Caderno',
+          color: nb.color || '#5B2D8E',
+          raw: nb,
+          parentId: projId,
+          parentType: 'project',
+          x: cx + Math.cos(a) * nbR,
+          y: cy + Math.sin(a) * nbR,
+          angle: a,
+          radius: nbR,
+          noteCount,
+          gravityFactor: 0,
+        });
+      });
+    });
+
+    // Cadernos avulsos (sem projeto) — orbitam a área
+    Object.entries(nbByAreaAvulso).forEach(([areaId, nbs]) => {
+      const areaPos = areaPosMap[areaId];
+      if (!areaPos) {
+        // Área não ativa — coloca em posição default (topo)
+        return;
+      }
+      const baseAngle = areaPos.angle;
+      // Avulsos ficam no mesmo raio que cadernos de projetos, mas deslocados angularmente
+      const nbR = (areaPos.radius || AREA_RING_BASE) + PROJECT_OFFSET + NOTEBOOK_OFFSET;
+      const count = nbs.length;
+      const maxSpread = count === 1 ? 0 : Math.min(Math.PI / 4, 0.4);
+      const step = count > 1 ? maxSpread / (count - 1) : 0;
+      // Offset angular para não sobrepor projetos (deslocamos um pouco)
+      const angularOffset = (projectsByArea[areaId]?.length || 0) > 0 ? 0.25 : 0;
+      const startA = baseAngle + angularOffset - maxSpread / 2;
+
+      nbs.forEach((nb, i) => {
+        const a = count === 1 ? baseAngle + angularOffset : startA + i * step;
+        const noteCount = (notesByNotebook[nb.id] || []).length;
+        notebookNodes.push({
+          kind: 'notebook',
+          id: nb.id,
+          type: 'notebook',
+          label: nb.name || 'Caderno',
+          color: nb.color || '#5B2D8E',
+          raw: nb,
+          parentId: areaId,
+          parentType: 'lifeArea',
+          x: cx + Math.cos(a) * nbR,
+          y: cy + Math.sin(a) * nbR,
+          angle: a,
+          radius: nbR,
+          noteCount,
+          gravityFactor: 0,
+        });
+      });
+    });
+
+    // Lookup rápido de posição de caderno
+    const nbPosMap = {};
+    notebookNodes.forEach(nb => { nbPosMap[nb.id] = { x: nb.x, y: nb.y, angle: nb.angle, radius: nb.radius }; });
+
+    // ============================================================
+    // CAMADA 4: Notas (orbitam seu caderno)
     // ============================================================
     const noteNodes = [];
 
-    if (isLifeAreasView) {
-      // Agrupar notas por área da vida
-      const notesByArea = {};
-      (store.notes || []).forEach(n => {
-        if (n.isTrash || n.isArchived) return;
-        const areaId = (n.lifeArea && LIFE_AREAS[n.lifeArea]) ? n.lifeArea : 'outros';
-        if (!notesByArea[areaId]) notesByArea[areaId] = [];
-        notesByArea[areaId].push(n);
-      });
+    notebookNodes.forEach((nbNode) => {
+      const notes = notesByNotebook[nbNode.id] || [];
+      if (notes.length === 0) return;
+      const baseAngle = nbNode.angle;
+      const noteR = (nbNode.radius || (AREA_RING_BASE + PROJECT_OFFSET + NOTEBOOK_OFFSET)) + NOTE_OFFSET;
+      const count = notes.length;
+      const maxSpread = count === 1 ? 0 : Math.min(Math.PI / 4.5, 0.35);
+      const step = count > 1 ? maxSpread / (count - 1) : 0;
+      const startA = baseAngle - maxSpread / 2;
 
-      ringNodes.forEach((areaNode, areaIdx) => {
-        const notes = notesByArea[areaNode.id] || [];
-        if (notes.length === 0) return;
-        const baseAngle = areaNode.angle ?? -Math.PI / 2;
-        const nbR = areaNode.radius ?? RING1_BASE;
-        const notesR = nbR + RING2_OFFSET;
-
-        let maxSpread;
-        if (ringNodes.length === 1) maxSpread = Math.PI * 1.5;
-        else if (ringNodes.length === 2) maxSpread = Math.PI * 0.9;
-        else maxSpread = Math.min(Math.PI / 2.4, (Math.PI * 2 / ringNodes.length) * 0.78);
-
-        const step = notes.length > 1 ? maxSpread / (notes.length - 1) : 0;
-        const startA = baseAngle - maxSpread / 2;
-
-        notes.forEach((nt, nIdx) => {
-          const a = notes.length === 1 ? baseAngle : startA + nIdx * step;
-          noteNodes.push({
-            id: nt.id,
-            type: 'note',
-            label: nt.title || 'Sem título',
-            noteType: nt.type || 'rascunho',
-            // notebookId mantido pra retrocompat de hover/highlight
-            notebookId: areaNode.id,
-            isFavorite: nt.isFavorite,
-            x: cx + Math.cos(a) * notesR,
-            y: cy + Math.sin(a) * notesR,
-            angle: a,
-          });
+      notes.forEach((nt, nIdx) => {
+        const a = count === 1 ? baseAngle : startA + nIdx * step;
+        noteNodes.push({
+          id: nt.id,
+          type: 'note',
+          label: nt.title || 'Sem título',
+          noteType: nt.type || 'rascunho',
+          notebookId: nbNode.id,
+          isFavorite: nt.isFavorite,
+          x: cx + Math.cos(a) * noteR,
+          y: cy + Math.sin(a) * noteR,
+          angle: a,
         });
       });
-    } else {
-      // === Visão por cadernos: notas em volta do caderno-pai (original) ===
-      notebooks.forEach((nb, nbIdx) => {
-        const notes = notesByNotebook[nb.id] || [];
-        if (notes.length === 0) return;
-        const ringNode = ringNodes[nbIdx];
-        const baseAngle = ringNode?.angle ?? -Math.PI / 2;
-        const nbR = ringNode?.radius ?? RING1_BASE;
-        const notesR = nbR + RING2_OFFSET;
+    });
 
-        let maxSpread;
-        if (notebooks.length === 1) maxSpread = Math.PI * 1.5;
-        else if (notebooks.length === 2) maxSpread = Math.PI * 0.9;
-        else maxSpread = Math.min(Math.PI / 2.4, (Math.PI * 2 / notebooks.length) * 0.78);
+    // Combinar todas as camadas "pai" num array unificado (para as linhas estruturais e o highlight)
+    // notebookNodes mantém o nome por retrocompatibilidade com EcosystemSvg/EcosystemDetailPanel
+    const allRingNodes = [...areaNodes, ...projectNodes, ...notebookNodes];
 
-        const step = notes.length > 1 ? maxSpread / (notes.length - 1) : 0;
-        const startA = baseAngle - maxSpread / 2;
-
-        notes.forEach((nt, nIdx) => {
-          const a = notes.length === 1 ? baseAngle : startA + nIdx * step;
-          noteNodes.push({
-            id: nt.id,
-            type: 'note',
-            label: nt.title || 'Sem título',
-            noteType: nt.type || 'rascunho',
-            notebookId: nb.id,
-            isFavorite: nt.isFavorite,
-            x: cx + Math.cos(a) * notesR,
-            y: cy + Math.sin(a) * notesR,
-            angle: a,
-          });
-        });
-      });
-    }
-
-    return { cx, cy, view: VIEW, notebookNodes: ringNodes, noteNodes, mapView };
-  }, [notebooks, notesByNotebook, mapView, store.notes]);
+    return { cx, cy, view: VIEW, areaNodes, projectNodes, notebookNodes: allRingNodes, noteNodes };
+  }, [notebooks, notesByNotebook, store.notes, store.projects]);
 
   // === HANDLERS ===
   const handleOpenNote = useCallback((noteId) => {
@@ -689,13 +756,41 @@ export default function ConnectionMap({ note, store, onClose }) {
   const zoomOut = useCallback(() => setZoom(z => Math.max(ZOOM_MIN, z - ZOOM_STEP * 2)), []);
 
   // Highlight de subconjunto — usa o hover deferido pra não travar a UI
+  // Com 4 camadas: hover em área ilumina projetos/cadernos/notas descendentes;
+  // hover em projeto ilumina cadernos/notas descendentes; etc.
   const highlightSet = useMemo(() => {
     if (!deferredHoveredId) return null;
     const set = new Set([deferredHoveredId]);
+
     if (deferredHoveredType === 'notebook') {
-      layout.noteNodes.forEach(nn => {
-        if (nn.notebookId === deferredHoveredId) set.add(nn.id);
-      });
+      // Pode ser área, projeto ou caderno — determinar pelo layout
+      const node = layout.notebookNodes.find(n => n.id === deferredHoveredId);
+      if (node) {
+        if (node.kind === 'lifeArea') {
+          // Ilumina projetos dessa área + cadernos + notas
+          layout.notebookNodes.forEach(n => {
+            if (n.kind === 'project' && n.parentAreaId === deferredHoveredId) {
+              set.add(n.id);
+            }
+            if (n.kind === 'notebook' && (n.parentId === deferredHoveredId || 
+                layout.notebookNodes.some(p => p.kind === 'project' && p.id === n.parentId && p.parentAreaId === deferredHoveredId))) {
+              set.add(n.id);
+            }
+          });
+          layout.noteNodes.forEach(nn => { if (set.has(nn.notebookId)) set.add(nn.id); });
+        } else if (node.kind === 'project') {
+          // Ilumina cadernos desse projeto + notas
+          layout.notebookNodes.forEach(n => {
+            if (n.kind === 'notebook' && n.parentId === deferredHoveredId) set.add(n.id);
+          });
+          layout.noteNodes.forEach(nn => { if (set.has(nn.notebookId)) set.add(nn.id); });
+        } else {
+          // Caderno: ilumina notas dentro
+          layout.noteNodes.forEach(nn => {
+            if (nn.notebookId === deferredHoveredId) set.add(nn.id);
+          });
+        }
+      }
     } else if (deferredHoveredType === 'note') {
       const nt = layout.noteNodes.find(nn => nn.id === deferredHoveredId);
       if (nt) set.add(nt.notebookId);
@@ -705,7 +800,7 @@ export default function ConnectionMap({ note, store, onClose }) {
       });
     }
     return set;
-  }, [deferredHoveredId, deferredHoveredType, layout.noteNodes, interNoteConnections]);
+  }, [deferredHoveredId, deferredHoveredType, layout.noteNodes, layout.notebookNodes, interNoteConnections]);
 
   // ====== SEM HOOKS NOVOS A PARTIR DAQUI ======
   const totalNotes = layout.noteNodes.length;
@@ -798,37 +893,8 @@ export default function ConnectionMap({ note, store, onClose }) {
         <div className="flex flex-col items-center text-center">
           <h2 className="text-sm font-semibold text-white tracking-wide">Meu Ecossistema</h2>
           <p className="text-2xs text-white/60">
-            {totalNotebooks} {totalNotebooks === 1 ? (mapView === MAP_VIEW_LIFE_AREAS ? 'área ativa' : 'caderno') : (mapView === MAP_VIEW_LIFE_AREAS ? 'áreas ativas' : 'cadernos')} · {totalNotes} {totalNotes === 1 ? 'anotação' : 'anotações'} · {totalConnections} {totalConnections === 1 ? 'conexão' : 'conexões'}
+            {totalNotes} {totalNotes === 1 ? 'anotação' : 'anotações'} · {totalConnections} {totalConnections === 1 ? 'conexão' : 'conexões'}
           </p>
-          {/* Toggle de visão (segmented control) */}
-          <div className="mt-1.5 inline-flex items-center bg-white/10 rounded-full p-0.5 border border-white/15">
-            <button
-              onClick={() => setMapView(MAP_VIEW_NOTEBOOKS)}
-              className={`text-2xs font-medium px-2.5 py-1 rounded-full transition-colors flex items-center gap-1 ${
-                mapView === MAP_VIEW_NOTEBOOKS
-                  ? 'bg-white text-anotata-roxo-escuro shadow-sm'
-                  : 'text-white/75 hover:text-white'
-              }`}
-              aria-pressed={mapView === MAP_VIEW_NOTEBOOKS}
-              title="Ver mapa por cadernos"
-            >
-              <BookOpen size={11} />
-              <span>Cadernos</span>
-            </button>
-            <button
-              onClick={() => setMapView(MAP_VIEW_LIFE_AREAS)}
-              className={`text-2xs font-medium px-2.5 py-1 rounded-full transition-colors flex items-center gap-1 ${
-                mapView === MAP_VIEW_LIFE_AREAS
-                  ? 'bg-white text-anotata-roxo-escuro shadow-sm'
-                  : 'text-white/75 hover:text-white'
-              }`}
-              aria-pressed={mapView === MAP_VIEW_LIFE_AREAS}
-              title="Ver mapa por áreas da vida"
-            >
-              <Layers size={11} />
-              <span>Áreas da vida</span>
-            </button>
-          </div>
         </div>
         <button
           onClick={onClose}
@@ -1129,6 +1195,7 @@ const NotebookNode = React.memo(function NotebookNode({
   onHoverEnter, onHoverLeave,
 }) {
   const isLifeArea = nb.kind === 'lifeArea';
+  const isProject = nb.kind === 'project';
   let innerContent;
 
   if (isLifeArea) {
@@ -1190,6 +1257,59 @@ const NotebookNode = React.memo(function NotebookNode({
         </div>
       </foreignObject>
     );
+  } else if (isProject) {
+    // Projeto: cápsula arredondada com emoji + título
+    const PROJ_W = 100;
+    const PROJ_H = 100;
+    innerContent = (
+      <foreignObject
+        x={nb.x - PROJ_W / 2}
+        y={nb.y - PROJ_H / 2}
+        width={PROJ_W}
+        height={PROJ_H}
+        style={{ overflow: 'visible' }}
+      >
+        <div
+          xmlns="http://www.w3.org/1999/xhtml"
+          style={{
+            width: PROJ_W,
+            height: PROJ_H,
+            cursor: 'pointer',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 4,
+            background: `linear-gradient(135deg, ${nb.color}CC, ${nb.color}88)`,
+            borderRadius: '20%',
+            boxShadow: `inset 0 0 0 1.5px rgba(255,255,255,0.2), 0 6px 18px rgba(0,0,0,0.35)`,
+            color: '#FFFFFF',
+            fontFamily: SVG_FONT,
+            border: `1.5px solid rgba(255,255,255,0.25)`,
+            backdropFilter: 'blur(4px)',
+          }}
+        >
+          {nb.coverEmoji && (
+            <span style={{ fontSize: 22 }}>{nb.coverEmoji}</span>
+          )}
+          <div style={{
+            fontSize: 10,
+            fontWeight: 600,
+            letterSpacing: '0.02em',
+            textAlign: 'center',
+            lineHeight: 1.2,
+            padding: '0 6px',
+            textShadow: '0 1px 3px rgba(0,0,0,0.4)',
+            overflow: 'hidden',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+          }}>
+            {nb.label}
+          </div>
+        </div>
+      </foreignObject>
+    );
   } else {
     const enrichedNb = { ...nb.raw, _noteCount: noteCount };
     innerContent = (
@@ -1223,6 +1343,8 @@ const NotebookNode = React.memo(function NotebookNode({
       aria-label={
         isLifeArea
           ? `Área ${nb.label}, ${noteCount} ${noteCount === 1 ? 'anotação' : 'anotações'}`
+          : isProject
+          ? `Projeto ${nb.label}`
           : `Caderno ${nb.label}, ${noteCount} ${noteCount === 1 ? 'nota' : 'notas'}`
       }
     >
@@ -1264,15 +1386,31 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
     return m;
   }, [notebookNodes]);
 
-  // Mapa de notebookId -> noteCount — calculado uma vez por mudança de layout.
-  // Evita o .filter() em cada render do caderno.
+  // Mapa de id -> noteCount — calculado uma vez por mudança de layout.
+  // Para cadernos: conta notas diretas.
+  // Para projetos: soma notas de todos os cadernos filhos.
+  // Para áreas: soma notas de todos os projetos + cadernos avulsos daquela área.
   const noteCountByNbId = useMemo(() => {
     const m = {};
+    // Contagem direta por caderno
     noteNodes.forEach(n => {
       m[n.notebookId] = (m[n.notebookId] || 0) + 1;
     });
+    // Projetos: soma dos cadernos filhos
+    notebookNodes.filter(nb => nb.kind === 'project').forEach(proj => {
+      const childNbs = notebookNodes.filter(nb => nb.kind === 'notebook' && nb.parentId === proj.id);
+      m[proj.id] = childNbs.reduce((sum, nb) => sum + (m[nb.id] || 0), 0);
+    });
+    // Áreas: soma dos projetos + cadernos avulsos filhos
+    notebookNodes.filter(nb => nb.kind === 'lifeArea').forEach(area => {
+      const childProjects = notebookNodes.filter(nb => nb.kind === 'project' && nb.parentAreaId === area.id);
+      const childAvulsos = notebookNodes.filter(nb => nb.kind === 'notebook' && nb.parentId === area.id && nb.parentType === 'lifeArea');
+      const projCount = childProjects.reduce((sum, p) => sum + (m[p.id] || 0), 0);
+      const avulsoCount = childAvulsos.reduce((sum, nb) => sum + (m[nb.id] || 0), 0);
+      m[area.id] = projCount + avulsoCount;
+    });
     return m;
-  }, [noteNodes]);
+  }, [noteNodes, notebookNodes]);
 
   // Handlers de hover estáveis — permitem que o React.memo do NoteNode
   // funcione (props de função não mudam de referência entre renders).
@@ -1430,12 +1568,13 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
           );
         })}
 
-        {/* === Linhas centro → cadernos === */}
-        {notebookNodes.map((nb, idx) => {
+        {/* === Linhas estruturais hierárquicas (4 camadas) === */}
+        {/* Centro → Áreas da Vida */}
+        {notebookNodes.filter(nb => nb.kind === 'lifeArea').map((nb, idx) => {
           const dim = highlightSet && !highlightSet.has(nb.id);
           const lit = hoveredId === nb.id;
           const path = curvedPath(cx, cy, nb.x, nb.y, 0.12);
-          const pathId = `path-c2nb-${nb.id}`;
+          const pathId = `path-c2area-${nb.id}`;
           return (
             <g key={`struct-c-${nb.id}`} style={{ animationDelay: `${delayNotebookBase + idx * 90}ms` }} className={idx % 2 === 0 ? 'a-organic-line-1' : 'a-organic-line-2'}>
               <path id={pathId} d={path} fill="none" stroke="none" />
@@ -1453,6 +1592,66 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
                   <mpath href={`#${pathId}`} />
                 </animateMotion>
               </circle>
+            </g>
+          );
+        })}
+        {/* Área → Projetos */}
+        {notebookNodes.filter(nb => nb.kind === 'project').map((proj, idx) => {
+          const parentPos = posById[proj.parentAreaId];
+          if (!parentPos) return null;
+          const dim = highlightSet && !highlightSet.has(proj.id);
+          const lit = hoveredId === proj.id;
+          const path = curvedPath(parentPos.x, parentPos.y, proj.x, proj.y, 0.15);
+          const pathId = `path-a2p-${proj.id}`;
+          return (
+            <g key={`struct-a2p-${proj.id}`} style={{ animationDelay: `${delayNotebookBase + 200 + idx * 70}ms` }} className={idx % 2 === 0 ? 'a-organic-line-2' : 'a-organic-line-1'}>
+              <path id={pathId} d={path} fill="none" stroke="none" />
+              <use
+                href={`#${pathId}`}
+                fill="none"
+                stroke={proj.color || '#FFFFFF'}
+                strokeWidth={lit ? 1.8 : 1}
+                strokeLinecap="round"
+                opacity={dim ? 0.08 : (lit ? 0.6 : 0.28)}
+                style={{ transition: 'all 250ms ease' }}
+              />
+              {lit && (
+                <circle r="2" fill={proj.color || '#A07BD6'} filter="url(#lineGlow)">
+                  <animateMotion dur="2s" repeatCount="indefinite">
+                    <mpath href={`#${pathId}`} />
+                  </animateMotion>
+                </circle>
+              )}
+            </g>
+          );
+        })}
+        {/* Projeto/Área → Cadernos */}
+        {notebookNodes.filter(nb => nb.kind === 'notebook').map((nb, idx) => {
+          const parentPos = posById[nb.parentId];
+          if (!parentPos) return null;
+          const dim = highlightSet && !highlightSet.has(nb.id);
+          const lit = hoveredId === nb.id;
+          const path = curvedPath(parentPos.x, parentPos.y, nb.x, nb.y, 0.15);
+          const pathId = `path-p2nb-${nb.id}`;
+          return (
+            <g key={`struct-p2nb-${nb.id}`} style={{ animationDelay: `${delayNotebookBase + 400 + idx * 60}ms` }} className={idx % 2 === 0 ? 'a-organic-line-1' : 'a-organic-line-2'}>
+              <path id={pathId} d={path} fill="none" stroke="none" />
+              <use
+                href={`#${pathId}`}
+                fill="none"
+                stroke={nb.color || '#FFFFFF'}
+                strokeWidth={lit ? 1.8 : 1}
+                strokeLinecap="round"
+                opacity={dim ? 0.08 : (lit ? 0.55 : 0.25)}
+                style={{ transition: 'all 250ms ease' }}
+              />
+              {lit && (
+                <circle r="2" fill={nb.color || '#A07BD6'} filter="url(#lineGlow)">
+                  <animateMotion dur="2.2s" repeatCount="indefinite">
+                    <mpath href={`#${pathId}`} />
+                  </animateMotion>
+                </circle>
+              )}
             </g>
           );
         })}
@@ -1669,6 +1868,7 @@ function EcosystemDetailPanel({ hoveredId, hoveredType, layout, onOpen }) {
     const nb = layout.notebookNodes.find(n => n.id === hoveredId);
     if (!nb) return null;
     const noteCount = layout.noteNodes.filter(n => n.notebookId === nb.id).length;
+    const kindLabel = nb.kind === 'lifeArea' ? 'Área da vida' : nb.kind === 'project' ? 'Projeto' : 'Caderno';
     return (
       <div className="px-5 py-3 backdrop-blur-md bg-white/8 border-t border-white/10 flex items-center gap-3">
         <div
@@ -1680,7 +1880,7 @@ function EcosystemDetailPanel({ hoveredId, hoveredType, layout, onOpen }) {
         <div className="flex-1 min-w-0">
           <div className="text-sm font-semibold text-white truncate">{nb.label}</div>
           <div className="text-xs text-white/60">
-            Caderno · {noteCount} {noteCount === 1 ? 'anotação' : 'anotações'}
+            {kindLabel}{noteCount > 0 ? ` · ${noteCount} ${noteCount === 1 ? 'anotação' : 'anotações'}` : ''}
           </div>
         </div>
       </div>
