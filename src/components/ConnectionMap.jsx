@@ -147,6 +147,18 @@ const SVG_STYLE = `
   .a-avatar-remove { opacity: 0; transition: opacity 200ms ease; }
   .a-avatar-wrap:hover .a-avatar-remove { opacity: 1; }
 
+  /* Performance: durante o drag (pan), pausar animações infinitas
+     para liberar CPU/GPU pro movimento ficar fluido. As animações
+     retomam exatamente de onde pararam quando o drag termina. */
+  .is-panning .a-organic-line-1,
+  .is-panning .a-organic-line-2,
+  .is-panning .a-emanate,
+  .is-panning .a-notebook-pulse,
+  .is-panning .a-pulse-book,
+  .is-panning [style*="a-pulse-core"] {
+    animation-play-state: paused !important;
+  }
+
   /* === Paralaxe estelar (fundo "universo") === */
   @keyframes a-starfield-slow {
     0% { background-position: 0% 0%; }
@@ -1023,6 +1035,122 @@ const NoteNode = React.memo(function NoteNode({
   );
 });
 
+// Componente do Caderno/Área — memoizado pelo mesmo motivo do NoteNode.
+// Recebe noteCount, dim, isHover, delays e handlers estáveis já calculados
+// pelo pai. Cadernos param de re-renderizar à toa quando o mapa atualiza.
+const NotebookNode = React.memo(function NotebookNode({
+  nb, noteCount, isHover, dim, delayMs, pulseDelay,
+  onHoverEnter, onHoverLeave,
+}) {
+  const isLifeArea = nb.kind === 'lifeArea';
+  let innerContent;
+
+  if (isLifeArea) {
+    const IconComp = LIFE_AREA_ICON_MAP[nb.id] || CircleDot;
+    innerContent = (
+      <foreignObject
+        x={nb.x - NB_W / 2}
+        y={nb.y - NB_H / 2}
+        width={NB_W}
+        height={NB_H}
+        style={{ overflow: 'visible' }}
+      >
+        <div
+          xmlns="http://www.w3.org/1999/xhtml"
+          style={{
+            width: NB_W,
+            height: NB_H,
+            cursor: 'pointer',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+            background: `radial-gradient(circle at 30% 30%, ${nb.colorGlow || nb.color}, ${nb.color} 65%, ${nb.colorDark || nb.color})`,
+            borderRadius: '50%',
+            boxShadow: `inset 0 0 0 2px rgba(255,255,255,0.18), 0 8px 24px rgba(0,0,0,0.35), 0 0 28px ${nb.color}40`,
+            color: '#FFFFFF',
+            fontFamily: SVG_FONT,
+            border: `2px solid rgba(255,255,255,0.3)`,
+            aspectRatio: '1 / 1',
+          }}
+        >
+          <IconComp size={28} strokeWidth={1.8} />
+          <div style={{
+            fontSize: 11,
+            fontWeight: 600,
+            letterSpacing: '0.04em',
+            textAlign: 'center',
+            lineHeight: 1.2,
+            padding: '0 8px',
+            textShadow: '0 1px 4px rgba(0,0,0,0.4)',
+          }}>
+            {nb.shortName || nb.label}
+          </div>
+          <div style={{
+            position: 'absolute',
+            bottom: -6,
+            background: nb.colorDark || nb.color,
+            color: '#FFFFFF',
+            fontSize: 10,
+            fontWeight: 700,
+            padding: '2px 9px',
+            borderRadius: 999,
+            border: '2px solid rgba(255,255,255,0.55)',
+            boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
+          }}>
+            {noteCount}
+          </div>
+        </div>
+      </foreignObject>
+    );
+  } else {
+    const enrichedNb = { ...nb.raw, _noteCount: noteCount };
+    innerContent = (
+      <foreignObject
+        x={nb.x - NB_W / 2}
+        y={nb.y - NB_H / 2}
+        width={NB_W}
+        height={NB_H}
+        style={{ overflow: 'visible' }}
+      >
+        <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: NB_W, height: NB_H, cursor: 'pointer' }}>
+          <NotebookCover
+            notebook={enrichedNb}
+            size="sm"
+            showSpine={true}
+            style={{ width: NB_W, height: NB_H }}
+          />
+        </div>
+      </foreignObject>
+    );
+  }
+
+  return (
+    <g
+      className={`a-notebook ${dim ? 'a-ghost' : ''} ${isHover ? 'a-spotlight' : ''}`}
+      style={{ animationDelay: `${delayMs}ms` }}
+      onMouseEnter={() => onHoverEnter(nb.id)}
+      onMouseLeave={onHoverLeave}
+      tabIndex={0}
+      role="button"
+      aria-label={
+        isLifeArea
+          ? `Área ${nb.label}, ${noteCount} ${noteCount === 1 ? 'anotação' : 'anotações'}`
+          : `Caderno ${nb.label}, ${noteCount} ${noteCount === 1 ? 'nota' : 'notas'}`
+      }
+    >
+      <title>{nb.label} — {noteCount} {noteCount === 1 ? 'anotação' : 'anotações'}</title>
+      <g
+        className="a-notebook-pulse"
+        style={{ animationDelay: `${-pulseDelay}s` }}
+      >
+        {innerContent}
+      </g>
+    </g>
+  );
+});
+
 const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
   layout, connections, hoveredId, hoveredType, highlightSet,
   setHoveredId, setHoveredType, onOpenNote,
@@ -1049,6 +1177,16 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
     return m;
   }, [notebookNodes]);
 
+  // Mapa de notebookId -> noteCount — calculado uma vez por mudança de layout.
+  // Evita o .filter() em cada render do caderno.
+  const noteCountByNbId = useMemo(() => {
+    const m = {};
+    noteNodes.forEach(n => {
+      m[n.notebookId] = (m[n.notebookId] || 0) + 1;
+    });
+    return m;
+  }, [noteNodes]);
+
   // Handlers de hover estáveis — permitem que o React.memo do NoteNode
   // funcione (props de função não mudam de referência entre renders).
   const handleNoteHoverEnter = useCallback((id) => {
@@ -1056,6 +1194,16 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
     setHoveredType('note');
   }, [setHoveredId, setHoveredType]);
   const handleNoteHoverLeave = useCallback(() => {
+    setHoveredId(null);
+    setHoveredType(null);
+  }, [setHoveredId, setHoveredType]);
+
+  // Handlers de hover estáveis pro NotebookNode (mesmo princípio).
+  const handleNotebookHoverEnter = useCallback((id) => {
+    setHoveredId(id);
+    setHoveredType('notebook');
+  }, [setHoveredId, setHoveredType]);
+  const handleNotebookHoverLeave = useCallback(() => {
     setHoveredId(null);
     setHoveredType(null);
   }, [setHoveredId, setHoveredType]);
@@ -1074,7 +1222,7 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
       ref={ref}
       viewBox={`0 0 ${view} ${view}`}
       preserveAspectRatio="xMidYMid meet"
-      className="w-full h-full"
+      className={`w-full h-full ${isPanning ? 'is-panning' : ''}`}
       style={{
         fontFamily: SVG_FONT,
         cursor: isPanning ? 'grabbing' : 'grab',
@@ -1377,125 +1525,23 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
         {/* === NÍVEL 2: Cadernos PREMIUM (NotebookCover) ou Áreas da Vida === */}
         {notebookNodes.map((nb, idx) => {
           const isHover = hoveredId === nb.id && hoveredType === 'notebook';
-          const dim = highlightSet && !highlightSet.has(nb.id);
-          const noteCount = noteNodes.filter(n => n.notebookId === nb.id).length;
-          const isLifeArea = nb.kind === 'lifeArea';
-
-          // Pulso defasado
+          const dim = !!(highlightSet && !highlightSet.has(nb.id));
+          const noteCount = noteCountByNbId[nb.id] || 0;
           const pulseDelay = (idx * 0.7) % 5.5;
-
-          // Renderização condicional do conteúdo (NotebookCover OU Disco da Área)
-          let innerContent;
-          if (isLifeArea) {
-            // === ÁREA DA VIDA: disco premium com cor + ícone Lucide ===
-            const IconComp = LIFE_AREA_ICON_MAP[nb.id] || CircleDot;
-            innerContent = (
-              <foreignObject
-                x={nb.x - NB_W / 2}
-                y={nb.y - NB_H / 2}
-                width={NB_W}
-                height={NB_H}
-                style={{ overflow: 'visible' }}
-              >
-                <div
-                  xmlns="http://www.w3.org/1999/xhtml"
-                  style={{
-                    width: NB_W,
-                    height: NB_H,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 6,
-                    background: `radial-gradient(circle at 30% 30%, ${nb.colorGlow || nb.color}, ${nb.color} 65%, ${nb.colorDark || nb.color})`,
-                    borderRadius: '50%',
-                    boxShadow: `inset 0 0 0 2px rgba(255,255,255,0.18), 0 8px 24px rgba(0,0,0,0.35), 0 0 28px ${nb.color}40`,
-                    color: '#FFFFFF',
-                    fontFamily: SVG_FONT,
-                    border: `2px solid rgba(255,255,255,0.3)`,
-                    aspectRatio: '1 / 1',
-                    width: NB_W,
-                    height: NB_W, // disco circular
-                  }}
-                >
-                  <IconComp size={28} strokeWidth={1.8} />
-                  <div style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    letterSpacing: '0.04em',
-                    textAlign: 'center',
-                    lineHeight: 1.2,
-                    padding: '0 8px',
-                    textShadow: '0 1px 4px rgba(0,0,0,0.4)',
-                  }}>
-                    {nb.shortName || nb.label}
-                  </div>
-                  <div style={{
-                    position: 'absolute',
-                    bottom: -6,
-                    background: nb.colorDark || nb.color,
-                    color: '#FFFFFF',
-                    fontSize: 10,
-                    fontWeight: 700,
-                    padding: '2px 9px',
-                    borderRadius: 999,
-                    border: '2px solid rgba(255,255,255,0.55)',
-                    boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
-                  }}>
-                    {noteCount}
-                  </div>
-                </div>
-              </foreignObject>
-            );
-          } else {
-            // === CADERNO: NotebookCover original ===
-            const enrichedNb = { ...nb.raw, _noteCount: noteCount };
-            innerContent = (
-              <foreignObject
-                x={nb.x - NB_W / 2}
-                y={nb.y - NB_H / 2}
-                width={NB_W}
-                height={NB_H}
-                style={{ overflow: 'visible' }}
-              >
-                <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: NB_W, height: NB_H, cursor: 'pointer' }}>
-                  <NotebookCover
-                    notebook={enrichedNb}
-                    size="sm"
-                    showSpine={true}
-                    style={{ width: NB_W, height: NB_H }}
-                  />
-                </div>
-              </foreignObject>
-            );
-          }
+          const delayMs = delayNotebookBase + idx * 90;
 
           return (
-            <g
+            <NotebookNode
               key={`nb-${nb.id}`}
-              className={`a-notebook ${dim ? 'a-ghost' : ''} ${isHover ? 'a-spotlight' : ''}`}
-              style={{ animationDelay: `${delayNotebookBase + idx * 90}ms` }}
-              onMouseEnter={() => { setHoveredId(nb.id); setHoveredType('notebook'); }}
-              onMouseLeave={() => { setHoveredId(null); setHoveredType(null); }}
-              tabIndex={0}
-              role="button"
-              aria-label={
-                isLifeArea
-                  ? `Área ${nb.label}, ${noteCount} ${noteCount === 1 ? 'anotação' : 'anotações'}`
-                  : `Caderno ${nb.label}, ${noteCount} ${noteCount === 1 ? 'nota' : 'notas'}`
-              }
-            >
-              <title>{nb.label} — {noteCount} {noteCount === 1 ? 'anotação' : 'anotações'}</title>
-
-              {/* Wrapper que pulsa sutilmente, com delay próprio */}
-              <g
-                className="a-notebook-pulse"
-                style={{ animationDelay: `${-pulseDelay}s` }}
-              >
-                {innerContent}
-              </g>
-            </g>
+              nb={nb}
+              noteCount={noteCount}
+              isHover={isHover}
+              dim={dim}
+              delayMs={delayMs}
+              pulseDelay={pulseDelay}
+              onHoverEnter={handleNotebookHoverEnter}
+              onHoverLeave={handleNotebookHoverLeave}
+            />
           );
         })}
 
