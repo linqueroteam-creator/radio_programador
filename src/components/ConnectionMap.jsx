@@ -155,6 +155,28 @@ const SVG_STYLE = `
   .a-organic-line-1 { animation: a-organic-1 7s ease-in-out infinite, a-fade-in 800ms ease-out both; }
   .a-organic-line-2 { animation: a-organic-2 8s ease-in-out infinite, a-fade-in 800ms ease-out both; }
 
+  /* === Notas órfãs (PR H) — pulso suave + drift orbital lento === */
+  @keyframes a-orphan-pulse {
+    0%, 100% { transform: scale(1); opacity: 0.5; }
+    50%      { transform: scale(1.18); opacity: 0.78; }
+  }
+  @keyframes a-orphan-pulse-limbo {
+    0%, 100% { transform: scale(1); opacity: 0.35; }
+    50%      { transform: scale(1.15); opacity: 0.6; }
+  }
+  .a-orphan {
+    transform-origin: center;
+    transform-box: fill-box;
+    animation: a-orphan-pulse 3.8s ease-in-out infinite, a-fade-in 1.2s ease-out both;
+    transition: filter 220ms ease;
+    cursor: pointer;
+  }
+  .a-orphan-limbo {
+    animation: a-orphan-pulse-limbo 4.4s ease-in-out infinite, a-fade-in 1.2s ease-out both;
+  }
+  .a-orphan:hover { filter: drop-shadow(0 0 10px rgba(255,255,255,0.6)); }
+  .is-panning .a-orphan { animation-play-state: paused !important; }
+
   .a-ghost { opacity: 0.18 !important; filter: saturate(0.4); }
   .a-spotlight { filter: drop-shadow(0 8px 24px rgba(160,123,214,0.5)); }
 
@@ -353,16 +375,30 @@ export default function ConnectionMap({ note, store, onClose }) {
     return (store.notebooks || []).filter(nb => nb && nb.id);
   }, [store.notebooks]);
 
-  // Notas por caderno
+  // Notas por caderno (apenas notas com caderno válido)
   const notesByNotebook = useMemo(() => {
+    const validNbIds = new Set(notebooks.map(nb => nb.id));
     const map = {};
     (store.notes || []).forEach(n => {
       if (n.isTrash || n.isArchived) return;
-      const nbId = n.notebookId || (notebooks[0]?.id) || 'default';
-      if (!map[nbId]) map[nbId] = [];
-      map[nbId].push(n);
+      // Notas órfãs (sem caderno ou com caderno inexistente) NÃO entram aqui.
+      // Elas são tratadas separadamente em `orphanNotes`.
+      if (!n.notebookId || !validNbIds.has(n.notebookId)) return;
+      if (!map[n.notebookId]) map[n.notebookId] = [];
+      map[n.notebookId].push(n);
     });
     return map;
+  }, [store.notes, notebooks]);
+
+  // Notas órfãs — sem caderno válido (PR H)
+  // Spec: docs/HIERARQUIA-AREAS-PROJETOS-CADERNOS-NOTAS.md (3.2)
+  // Visual: bolinha translúcida + pulso suave + órbita lenta no anel mais externo
+  const orphanNotes = useMemo(() => {
+    const validNbIds = new Set(notebooks.map(nb => nb.id));
+    return (store.notes || []).filter(n =>
+      !n.isTrash && !n.isArchived &&
+      (!n.notebookId || !validNbIds.has(n.notebookId))
+    );
   }, [store.notes, notebooks]);
 
   // Conexões inter-notas
@@ -625,12 +661,87 @@ export default function ConnectionMap({ note, store, onClose }) {
       });
     });
 
+    // ============================================================
+    // CAMADA 5 (extra): Notas órfãs (PR H)
+    // Spec 3.2: estado transitório, orbita externa, pulso suave.
+    // - Com lifeArea ativa no mapa → orbita a área (raio +50 além das notas)
+    // - Sem lifeArea OU área inativa → "anel limbo" externo ao redor de tudo
+    // ============================================================
+    const ORPHAN_AREA_OFFSET = 60;     // distância extra além das notas formais
+    const ORPHAN_LIMBO_RADIUS = 580;   // raio do anel limbo
+    const orphanNoteNodes = [];
+
+    // Separar órfãs por destino: área-âncora ou limbo
+    const orphansByArea = {};
+    const orphansLimbo = [];
+    orphanNotes.forEach(nt => {
+      const areaId = nt.lifeArea && areaPosMap[nt.lifeArea] ? nt.lifeArea : null;
+      if (areaId) {
+        if (!orphansByArea[areaId]) orphansByArea[areaId] = [];
+        orphansByArea[areaId].push(nt);
+      } else {
+        orphansLimbo.push(nt);
+      }
+    });
+
+    // Órfãs ancoradas em área — orbita o setor angular da área no anel mais externo
+    Object.entries(orphansByArea).forEach(([areaId, notes]) => {
+      const areaPos = areaPosMap[areaId];
+      const areaNode = areaNodes.find(an => an.id === areaId);
+      if (!areaPos || !areaNode) return;
+      const baseAngle = areaPos.angle;
+      const orphanR = (areaPos.radius || AREA_RING_BASE) + PROJECT_OFFSET + NOTEBOOK_OFFSET + NOTE_OFFSET + ORPHAN_AREA_OFFSET;
+      const count = notes.length;
+      const maxSpread = count === 1 ? 0 : Math.min(Math.PI / 4, 0.4);
+      const step = count > 1 ? maxSpread / (count - 1) : 0;
+      const startA = baseAngle - maxSpread / 2;
+
+      notes.forEach((nt, i) => {
+        const a = count === 1 ? baseAngle : startA + i * step;
+        orphanNoteNodes.push({
+          id: nt.id,
+          type: 'orphanNote',
+          label: nt.title || 'Sem título',
+          noteType: nt.type || 'rascunho',
+          isFavorite: nt.isFavorite,
+          color: areaNode.color,
+          areaId,
+          isLimbo: false,
+          x: cx + Math.cos(a) * orphanR,
+          y: cy + Math.sin(a) * orphanR,
+          angle: a,
+        });
+      });
+    });
+
+    // Órfãs no limbo — distribuídas em todo o círculo externo do mapa
+    if (orphansLimbo.length > 0) {
+      const count = orphansLimbo.length;
+      const angleStep = (Math.PI * 2) / count;
+      orphansLimbo.forEach((nt, i) => {
+        const a = -Math.PI / 2 + i * angleStep;
+        orphanNoteNodes.push({
+          id: nt.id,
+          type: 'orphanNote',
+          label: nt.title || 'Sem título',
+          noteType: nt.type || 'rascunho',
+          isFavorite: nt.isFavorite,
+          color: '#A07BD6', // lavanda neutra (zona limbo)
+          areaId: null,
+          isLimbo: true,
+          x: cx + Math.cos(a) * ORPHAN_LIMBO_RADIUS,
+          y: cy + Math.sin(a) * ORPHAN_LIMBO_RADIUS,
+          angle: a,
+        });
+      });
+    }
+
     // Combinar todas as camadas "pai" num array unificado (para as linhas estruturais e o highlight)
     // notebookNodes mantém o nome por retrocompatibilidade com EcosystemSvg/EcosystemDetailPanel
     const allRingNodes = [...areaNodes, ...projectNodes, ...notebookNodes];
 
-    return { cx, cy, view: VIEW, areaNodes, projectNodes, notebookNodes: allRingNodes, noteNodes };
-  }, [notebooks, notesByNotebook, store.notes, store.projects]);
+    return { cx, cy, view: VIEW, areaNodes, projectNodes, notebookNodes: allRingNodes, noteNodes, orphanNoteNodes };
+  }, [notebooks, notesByNotebook, orphanNotes, store.notes, store.projects]);
 
   // === HANDLERS ===
   const handleOpenNote = useCallback((noteId) => {
@@ -824,8 +935,9 @@ export default function ConnectionMap({ note, store, onClose }) {
   const totalNotes = layout.noteNodes.length;
   const totalNotebooks = layout.notebookNodes.length;
   const totalConnections = interNoteConnections.length;
-  const isEmpty = totalNotebooks === 0 && totalNotes === 0;
-  const onlyNotebooksNoNotes = totalNotebooks > 0 && totalNotes === 0;
+  const totalOrphans = (layout.orphanNoteNodes || []).length;
+  const isEmpty = totalNotebooks === 0 && totalNotes === 0 && totalOrphans === 0;
+  const onlyNotebooksNoNotes = totalNotebooks > 0 && totalNotes === 0 && totalOrphans === 0;
 
 
   return (
@@ -1214,6 +1326,42 @@ const InterNoteConnection = React.memo(function InterNoteConnection({
   );
 });
 
+// Nota órfã (PR H) — memoizada. Bolinha translúcida com pulso suave próprio.
+// Spec docs/HIERARQUIA-AREAS-PROJETOS-CADERNOS-NOTAS.md (3.2):
+// "estado transitório, orbita externa, pulso suave, opacidade ~0.5"
+const OrphanNoteNode = React.memo(function OrphanNoteNode({
+  nn, isHover, dim, delayMs, pulseDelay,
+  onHoverEnter, onHoverLeave, onOpen,
+}) {
+  const r = nn.isLimbo ? 6 : 7;
+  const glowR = r + 4;
+
+  return (
+    <g
+      className={`a-orphan ${nn.isLimbo ? 'a-orphan-limbo' : ''} ${dim ? 'a-ghost' : ''} ${isHover ? 'a-spotlight' : ''}`}
+      style={{ animationDelay: `${delayMs}ms, ${pulseDelay}ms`, animationDuration: `${nn.isLimbo ? 4.4 : 3.8}s, 1.2s` }}
+      onMouseEnter={() => onHoverEnter(nn.id)}
+      onMouseLeave={onHoverLeave}
+      onClick={() => onOpen(nn.id)}
+      tabIndex={0}
+      role="button"
+      aria-label={`Anotação solta ${nn.label}, abrir`}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(nn.id); } }}
+    >
+      <title>
+        {nn.label}
+        {nn.isLimbo ? ' — sem caderno (limbo)' : ` — sem caderno (na área ${nn.areaId})`}
+      </title>
+      {/* Halo externo translúcido */}
+      <circle cx={nn.x} cy={nn.y} r={glowR} fill={nn.color} opacity="0.18" />
+      {/* Bolinha principal — translúcida */}
+      <circle cx={nn.x} cy={nn.y} r={r} fill={nn.color} opacity={nn.isLimbo ? 0.5 : 0.7} stroke="#FFFFFF" strokeWidth="0.8" strokeOpacity="0.35" />
+      {/* Núcleo branco minúsculo (para legibilidade) */}
+      <circle cx={nn.x} cy={nn.y} r={r * 0.35} fill="#FFFFFF" opacity="0.7" />
+    </g>
+  );
+});
+
 // Componente do Caderno/Área — memoizado pelo mesmo motivo do NoteNode.
 const NotebookNode = React.memo(function NotebookNode({
   nb, noteCount, isHover, dim, delayMs, pulseDelay,
@@ -1392,7 +1540,7 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
   notesByNotebook,
   panLayerRef,
 }, ref) {
-  const { cx, cy, view, notebookNodes, noteNodes } = layout;
+  const { cx, cy, view, notebookNodes, noteNodes, orphanNoteNodes = [] } = layout;
 
   const posById = useMemo(() => {
     const m = {};
@@ -1454,6 +1602,16 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
     setHoveredType('notebook');
   }, [setHoveredId, setHoveredType]);
   const handleNotebookHoverLeave = useCallback(() => {
+    setHoveredId(null);
+    setHoveredType(null);
+  }, [setHoveredId, setHoveredType]);
+
+  // Handlers de hover estáveis pra OrphanNoteNode (PR H).
+  const handleOrphanHoverEnter = useCallback((id) => {
+    setHoveredId(id);
+    setHoveredType('orphanNote');
+  }, [setHoveredId, setHoveredType]);
+  const handleOrphanHoverLeave = useCallback(() => {
     setHoveredId(null);
     setHoveredType(null);
   }, [setHoveredId, setHoveredType]);
@@ -1933,6 +2091,31 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
         </g>
         {/* Fim do grupo LOD de notas */}
 
+        {/* === NÍVEL 4: Notas órfãs (PR H) — anel mais externo, pulso próprio === */}
+        {/* Seguem o mesmo LOD das notas — aparecem quando você se aproxima */}
+        <g style={{ opacity: lodNoteOpacity, transition: 'opacity 350ms ease', pointerEvents: lodNoteOpacity < 0.05 ? 'none' : 'auto' }}>
+        {orphanNoteNodes.map((nn, idx) => {
+          const isHover = hoveredId === nn.id && hoveredType === 'orphanNote';
+          const dim = !!(highlightSet && !highlightSet.has(nn.id));
+          const delayMs = delayNoteBase + 200 + idx * 50;
+          const pulseDelay = (idx * 0.4) % 3.8;
+          return (
+            <OrphanNoteNode
+              key={`orphan-${nn.id}`}
+              nn={nn}
+              isHover={isHover}
+              dim={dim}
+              delayMs={delayMs}
+              pulseDelay={pulseDelay}
+              onHoverEnter={handleOrphanHoverEnter}
+              onHoverLeave={handleOrphanHoverLeave}
+              onOpen={onOpenNote}
+            />
+          );
+        })}
+        </g>
+        {/* Fim do grupo LOD de órfãs */}
+
       </g>
       {/* Fim da camada com pan/zoom */}
     </svg>
@@ -2005,6 +2188,42 @@ function EcosystemDetailPanel({ hoveredId, hoveredType, layout, onOpen }) {
               {parentNb.label}
             </div>
           )}
+        </div>
+        <button
+          onClick={() => onOpen(nn.id)}
+          className="px-3 py-1.5 text-xs font-medium bg-white text-anotata-roxo-escuro rounded-md hover:bg-white/90 transition-colors focus-visible:ring-2 focus-visible:ring-white/50 shrink-0"
+        >
+          Abrir nota
+        </button>
+      </div>
+    );
+  }
+
+  if (hoveredType === 'orphanNote') {
+    const nn = layout.orphanNoteNodes?.find(n => n.id === hoveredId);
+    if (!nn) return null;
+    const tType = NOTE_TYPES[nn.noteType] || NOTE_TYPES.rascunho;
+    return (
+      <div className="px-5 py-3 backdrop-blur-md bg-white/8 border-t border-white/10 flex items-center gap-3">
+        <div
+          className="w-10 h-10 rounded-full shadow-lg shrink-0 flex items-center justify-center"
+          style={{ background: nn.color, opacity: 0.7 }}
+        >
+          <Sparkles size={16} className="text-white" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+            <span className="text-sm font-semibold text-white truncate max-w-md">{nn.label}</span>
+            <span className="text-2xs uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-white/15 text-white/90">
+              {tType.label || nn.noteType}
+            </span>
+            {nn.isFavorite && (
+              <span className="text-2xs font-semibold text-anotata-favorite">★ favorita</span>
+            )}
+          </div>
+          <div className="text-xs text-white/60 italic">
+            Nota solta {nn.isLimbo ? '· no limbo (sem área inferida)' : `· orbitando ${nn.areaId}`}
+          </div>
         </div>
         <button
           onClick={() => onOpen(nn.id)}
