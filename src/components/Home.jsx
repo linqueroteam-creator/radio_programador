@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import {
   Plus, BookOpen, Star, Clock, TrendingUp, Sparkles,
-  Search, ChevronRight, Edit3, X, Trash2, MoreVertical
+  Search, ChevronRight, Edit3, X, Trash2, MoreVertical, Download, Package
 } from 'lucide-react';
 import NotebookCover from './NotebookCover';
 import NotebookDeleteModal from './NotebookDeleteModal';
+import ExportNotebookModal from './ExportNotebookModal';
 
 const NOTEBOOK_COLORS = [
   '#5B2D8E', // roxo profundo
@@ -43,9 +44,14 @@ export default function Home({ store, onOpenInsights, onCreateNote, onOpenMobile
   const [newNotebookName, setNewNotebookName] = useState('');
   const [newNotebookColor, setNewNotebookColor] = useState(NOTEBOOK_COLORS[0]);
   const [notebookToDelete, setNotebookToDelete] = useState(null);
+  // Pacote C — exporta um caderno (ou todas as notas se = 'all')
+  const [notebookToExport, setNotebookToExport] = useState(null);
 
   const handleDeleteNotebook = (nb) => {
     setNotebookToDelete(nb);
+  };
+  const handleExportNotebook = (nb) => {
+    setNotebookToExport(nb);
   };
   const handleConfirmDelete = () => {
     if (!notebookToDelete) return;
@@ -167,6 +173,16 @@ export default function Home({ store, onOpenInsights, onCreateNote, onOpenMobile
               <span>Insights</span>
             </button>
 
+            {/* Pacote C — exportar todas as notas em lote */}
+            <button
+              onClick={() => setNotebookToExport('all')}
+              className="hidden sm:flex items-center gap-2 px-3 sm:px-4 py-2 bg-white border border-anotata-border rounded-xl text-sm text-anotata-text-suave hover:border-anotata-roxo hover:text-anotata-roxo transition-all shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-anotata-roxo/50"
+              title="Exportar todas as notas como pacote ZIP"
+            >
+              <Package size={14} />
+              <span>Exportar tudo</span>
+            </button>
+
             {/* Busca rápida */}
             <div className="relative flex-1 sm:flex-none">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-anotata-muted" />
@@ -235,6 +251,7 @@ export default function Home({ store, onOpenInsights, onCreateNote, onOpenMobile
               notebook={nb}
               onClick={() => openNotebook(nb)}
               onDelete={() => handleDeleteNotebook(nb)}
+              onExport={() => handleExportNotebook(nb)}
             />
           ))}
 
@@ -359,11 +376,20 @@ export default function Home({ store, onOpenInsights, onCreateNote, onOpenMobile
           onCancel={() => setNotebookToDelete(null)}
         />
       )}
+
+      {/* Modal: exportar em lote (Pacote C) */}
+      {notebookToExport && (
+        <ExportNotebookModal
+          store={store}
+          notebook={notebookToExport === 'all' ? null : notebookToExport}
+          onClose={() => setNotebookToExport(null)}
+        />
+      )}
     </div>
   );
 }
 
-function NotebookCard({ notebook, onClick, onDelete }) {
+function NotebookCard({ notebook, onClick, onDelete, onExport }) {
   const [showMenu, setShowMenu] = useState(false);
   const isDefault = notebook.id === 'default';
 
@@ -394,15 +420,25 @@ function NotebookCard({ notebook, onClick, onDelete }) {
       {showMenu && (
         <>
           <div className="fixed inset-0 z-30" onClick={() => setShowMenu(false)} />
-          <div className="absolute top-10 right-2 z-40 bg-white border border-anotata-border rounded-lg shadow-xl py-1 min-w-[180px]">
+          <div className="absolute top-10 right-2 z-40 bg-white border border-anotata-border rounded-lg shadow-xl py-1 min-w-[200px]">
+            {/* Pacote C — exportação em lote */}
+            {onExport && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowMenu(false); onExport(); }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-anotata-text hover:bg-anotata-hover"
+              >
+                <Download size={14} className="text-anotata-roxo" />
+                Exportar caderno...
+              </button>
+            )}
             {isDefault ? (
-              <div className="px-3 py-2 text-xs text-anotata-muted italic">
+              <div className="px-3 py-2 text-xs text-anotata-muted italic border-t border-anotata-border">
                 Caderno principal — não pode ser excluído
               </div>
             ) : (
               <button
                 onClick={(e) => { e.stopPropagation(); setShowMenu(false); onDelete && onDelete(); }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-anotata-goiaba hover:bg-anotata-hover"
+                className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-anotata-goiaba hover:bg-anotata-hover ${onExport ? 'border-t border-anotata-border' : ''}`}
               >
                 <Trash2 size={14} />
                 Excluir caderno

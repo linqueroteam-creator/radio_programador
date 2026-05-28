@@ -7,6 +7,7 @@ import {
   Clock, Command, LogOut
 } from 'lucide-react';
 import { COLLECTION_LIST, countCollections } from '../engine/CollectionsEngine';
+import NotificationsBell from './NotificationsBell';
 
 /**
  * ============================================================================
@@ -30,7 +31,7 @@ import { COLLECTION_LIST, countCollections } from '../engine/CollectionsEngine';
 export default function Sidebar({
   store, isCollapsed, onToggle,
   isMobile = false, isOpenMobile = false, onCloseMobile,
-  onLogout, onOpenCommandPalette,
+  onLogout, onOpenCommandPalette, onOpenNote,
 }) {
   const [notebooksOpen, setNotebooksOpen] = useState(true);
   const [tagsOpen, setTagsOpen] = useState(false);
@@ -129,6 +130,7 @@ export default function Sidebar({
             onCloseMobile={onCloseMobile}
             onLogout={onLogout}
             onOpenCommandPalette={onOpenCommandPalette}
+            onOpenNote={onOpenNote}
           />
         </aside>
       </>
@@ -148,6 +150,11 @@ export default function Sidebar({
           >
             <Menu size={16} aria-hidden="true" />
           </button>
+        </div>
+
+        {/* Sino de lembretes — também visível com a sidebar recolhida (Pacote B) */}
+        <div className="px-2 py-2 border-b border-anotata-border flex justify-center">
+          <NotificationsBell store={store} onOpenNote={onOpenNote} />
         </div>
 
         <nav className="flex-1 py-3 flex flex-col items-center gap-1 overflow-y-auto">
@@ -236,6 +243,7 @@ export default function Sidebar({
         archivedCount={archivedCount}
         isMobile={false}
         onToggle={onToggle}
+        onOpenNote={onOpenNote}
       />
     </aside>
   );
@@ -258,20 +266,27 @@ function ExpandedSidebar(props) {
     newTagName, setNewTagName, handleCreateTag,
     totalNotes, favCount, trashCount, archivedCount,
     isMobile, onCloseMobile, onLogout, onOpenCommandPalette,
-    onToggle,
+    onToggle, onOpenNote,
   } = props;
 
   return (
     <>
-      <div className="p-4 border-b border-anotata-border flex items-start justify-between">
-        <div>
+      <div className="p-4 border-b border-anotata-border flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
           <h1 className="text-xl font-bold text-anotata-roxo tracking-wide">ANOTATA</h1>
           <p className="text-xs text-anotata-muted mt-0.5">Suas anotações, seu jeito</p>
+        </div>
+        {/* Sino de lembretes — sempre visível no topo da sidebar (Pacote B) */}
+        <div className="shrink-0 -mr-1">
+          <NotificationsBell store={store} onOpenNote={(noteId) => {
+            if (onOpenNote) onOpenNote(noteId);
+            if (isMobile && onCloseMobile) onCloseMobile();
+          }} />
         </div>
         {isMobile ? (
           <button
             onClick={onCloseMobile}
-            className="p-1.5 rounded-lg hover:bg-anotata-hover text-anotata-text-suave transition-colors -mr-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-anotata-roxo/50"
+            className="p-1.5 rounded-lg hover:bg-anotata-hover text-anotata-text-suave transition-colors -mr-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-anotata-roxo/50 shrink-0"
             aria-label="Fechar menu"
             title="Fechar"
           >
@@ -280,7 +295,7 @@ function ExpandedSidebar(props) {
         ) : (
           <button
             onClick={onToggle}
-            className="p-1.5 rounded-lg hover:bg-anotata-hover text-anotata-text-suave transition-colors -mr-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-anotata-roxo/50"
+            className="p-1.5 rounded-lg hover:bg-anotata-hover text-anotata-text-suave transition-colors -mr-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-anotata-roxo/50 shrink-0"
             aria-label="Recolher menu"
             title="Recolher menu"
           >

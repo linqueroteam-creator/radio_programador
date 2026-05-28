@@ -99,6 +99,22 @@ export default function CommandPalette({ store, isOpen, onClose, onAction }) {
       label: 'Ver insights e estatísticas',
       action: () => { store.setCurrentView('insights'); store.setSelectedNoteId(null); onAction?.('go-insights'); },
     });
+
+    // Pacote C — exportar caderno inteiro / todas as notas
+    cmds.push({
+      id: 'export-all-zip', group: 'Navegar', icon: Download,
+      label: 'Exportar todas as notas em lote (.zip)',
+      desc: 'Pacote com todas as notas em Markdown',
+      action: () => onAction?.('export-all-zip'),
+    });
+    store.notebooks.forEach((nb) => {
+      cmds.push({
+        id: `export-nb-${nb.id}`, group: 'Coleções', icon: Download,
+        label: `Exportar caderno "${nb.name}" em lote`,
+        desc: 'Pacote ZIP com todas as notas deste caderno',
+        action: () => onAction?.(`export-notebook:${nb.id}`),
+      });
+    });
     cmds.push({
       id: 'clear-filters', group: 'Navegar', icon: X,
       label: 'Limpar filtros e busca',

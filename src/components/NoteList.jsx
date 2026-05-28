@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   Plus, Star, Trash2, RotateCcw, Copy, MoreVertical, Sparkles, Pin,
-  PanelLeftClose, PanelLeftOpen, FileText, X
+  PanelLeftClose, PanelLeftOpen, FileText, X, Archive
 } from 'lucide-react';
 import searchEngine from '../engine/SearchEngine';
 import { runCollection, COLLECTIONS } from '../engine/CollectionsEngine';
@@ -10,6 +10,7 @@ import { countChecklistItems } from '../engine/ChecklistEngine';
 import EmptyState from './EmptyState';
 import DueDateBadge from './DueDateBadge';
 import ChecklistProgress from './ChecklistProgress';
+import useSwipeableCard from '../hooks/useSwipeableCard';
 
 function stripHtml(html) {
   if (!html) return '';
@@ -31,22 +32,87 @@ function formatDate(isoStr) {
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
 }
 
-function NoteCard({ note, isSelected, store, reason }) {
+function NoteCard({ note, isSelected, store, reason, isMobile = false }) {
   const [showMenu, setShowMenu] = useState(false);
   const typeMeta = NOTE_TYPES[note.type] || NOTE_TYPES.rascunho;
 
   // Pacote 4 Pro: progresso de checklist e prazo nos cards
   const checklistStats = useMemo(() => countChecklistItems(note.content), [note.content]);
 
+  // === Pacote D — gestos no card (mobile) ===
+  // - Arrastar o card pra esquerda → arquivar (ou desarquivar se já estiver na view)
+  // - Arrastar o card pra direita → favoritar/desfavoritar
+  // O hook devolve: ref pra plugar no elemento; dragX pro transform; phase
+  // ('idle' | 'dragging' | 'snapping' | 'committing') pra ajustar transição.
+  const isInTrash = !!note.isTrash;
+  const isInArchived = !!note.isArchived;
+  const swipeEnabled = isMobile && !isInTrash; // não permite swipe em notas da lixeira
+
+  const swipe = useSwipeableCard({
+    enabled: swipeEnabled,
+    onSwipeLeftCommit: () => {
+      if (isInArchived) store.unarchiveNote(note.id);
+      else store.archiveNote(note.id);
+    },
+    onSwipeRightCommit: () => {
+      store.toggleFavorite(note.id);
+    },
+  });
+
+  const dragX = swipe.dragX;
+  const phase = swipe.phase;
+
+  // Em qual direção está o gesto agora? Usado pra mostrar o background certo
+  const direction = dragX < -4 ? 'left' : dragX > 4 ? 'right' : 'none';
+  const intensity = Math.min(Math.abs(dragX) / 180, 1);
+
+  // Transição: durante o drag, sem transição (responde direto). Durante snap/commit, com.
+  const cardTransition = phase === 'dragging' ? 'none' : 'transform 220ms cubic-bezier(0.4, 0, 0.2, 1)';
+
   return (
-    <div
-      onClick={() => store.setSelectedNoteId(note.id)}
-      className={`relative p-3 rounded-lg cursor-pointer border transition-all group ${
-        isSelected
-          ? 'border-anotata-roxo bg-anotata-lavanda-clara shadow-sm'
-          : 'border-transparent hover:border-anotata-border hover:bg-white'
-      }`}
-    >
+    <div className="relative" ref={swipe.ref}>
+      {/* === Camada de revelação (background visível atrás do card) === */}
+      {swipeEnabled && direction !== 'none' && (
+        <div
+          aria-hidden="true"
+          className={`absolute inset-0 rounded-lg flex items-center px-4 pointer-events-none ${
+            direction === 'left'
+              ? 'justify-end bg-anotata-goiaba'
+              : 'justify-start bg-anotata-favorite'
+          }`}
+          style={{ opacity: 0.85 + intensity * 0.15 }}
+        >
+          {direction === 'left' ? (
+            <div className="flex items-center gap-1.5 text-white text-xs font-semibold">
+              <Archive size={14} />
+              <span>{isInArchived ? 'Desarquivar' : 'Arquivar'}</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 text-white text-xs font-semibold">
+              <Star size={14} className="fill-white" />
+              <span>{note.isFavorite ? 'Desfavoritar' : 'Favoritar'}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* === Card propriamente dito (move via translateX) === */}
+      <div
+        onClick={() => store.setSelectedNoteId(note.id)}
+        className={`relative p-3 rounded-lg cursor-pointer border transition-all group ${
+          isSelected
+            ? 'border-anotata-roxo bg-anotata-lavanda-clara shadow-sm'
+            : 'border-transparent hover:border-anotata-border hover:bg-white'
+        }`}
+        style={{
+          transform: dragX !== 0 ? `translateX(${dragX}px)` : undefined,
+          transition: cardTransition,
+          // Quando o card não está sendo arrastado, garante fundo opaco —
+          // assim a camada de revelação não vaza.
+          backgroundColor: !isSelected && dragX !== 0 ? '#FFFFFF' : undefined,
+          touchAction: swipeEnabled ? 'pan-y' : undefined,
+        }}
+      >
       <button
         onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
         className={`absolute top-2 right-2 p-1 rounded text-anotata-muted hover:text-anotata-roxo transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-anotata-roxo/50 ${
@@ -157,6 +223,7 @@ function NoteCard({ note, isSelected, store, reason }) {
         )}
       </div>
     </div>
+    </div>
   );
 }
 
@@ -260,6 +327,7 @@ export default function NoteList({
             isSelected={store.selectedNoteId === note.id}
             store={store}
             reason={note._collectionReason}
+            isMobile={isMobile}
           />
         ))
       )}

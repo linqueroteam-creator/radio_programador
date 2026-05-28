@@ -69,7 +69,30 @@ const defaultData = {
   ],
   tags: ['boas-vindas', 'importante', 'ideia', 'tarefa', 'projeto'],
   categories: [],
+  // === Configurações do app (Pacote B — Notificações de Prazo) ===
+  // Ficam aqui dentro do mesmo blob salvo em localStorage. Migração suave
+  // adiciona o objeto pra usuários antigos.
+  settings: {
+    notifications: {
+      enabled: false,         // usuário ativou lembretes do navegador?
+      lastNotifiedKeys: [],   // chaves "noteId-status-yyyymmdd" pra não repetir
+    },
+  },
 };
+
+// Garante que `settings.notifications` existe e tem todos os campos.
+// Roda no carregamento, sempre — protege contra esquemas antigos.
+function migrateSettings(settings) {
+  const s = settings || {};
+  const n = s.notifications || {};
+  return {
+    ...s,
+    notifications: {
+      enabled: typeof n.enabled === 'boolean' ? n.enabled : false,
+      lastNotifiedKeys: Array.isArray(n.lastNotifiedKeys) ? n.lastNotifiedKeys : [],
+    },
+  };
+}
 
 function saveToStorage(data) {
   try {
@@ -89,6 +112,7 @@ function loadFromStorage() {
       parsed.notes = parsed.notes.map(migrateNote);
     }
     if (!parsed.categories) parsed.categories = [];
+    parsed.settings = migrateSettings(parsed.settings);
     parsed.schemaVersion = SCHEMA_VERSION;
     return parsed;
   } catch (e) {
@@ -337,6 +361,68 @@ export function useStore() {
       notes: prev.notes.map(n =>
         n.id === noteId ? { ...n, dueDate: dueDateIso || null } : n
       )
+    }));
+  }, []);
+
+  // === NOTIFICAÇÕES (Pacote B) ===
+  // Liga/desliga lembretes do navegador. A permissão real (Notification.requestPermission)
+  // é cuidada no componente (precisa rodar dentro de um gesto do usuário); aqui só
+  // persistimos a preferência.
+  const setNotificationsEnabled = useCallback((enabled) => {
+    setData(prev => ({
+      ...prev,
+      settings: {
+        ...(prev.settings || {}),
+        notifications: {
+          ...((prev.settings && prev.settings.notifications) || {}),
+          enabled: !!enabled,
+          lastNotifiedKeys: ((prev.settings && prev.settings.notifications && prev.settings.notifications.lastNotifiedKeys) || []),
+        },
+      },
+    }));
+  }, []);
+
+  // Marca que já notificamos uma nota com um certo status num certo dia.
+  // Evita disparar a mesma notificação várias vezes (a checagem roda a cada 5min).
+  const recordNotificationKey = useCallback((key) => {
+    if (!key) return;
+    setData(prev => {
+      const existing = (prev.settings && prev.settings.notifications && prev.settings.notifications.lastNotifiedKeys) || [];
+      if (existing.includes(key)) return prev;
+      // Mantém só os últimos 7 dias de chaves (limpa as antigas pra não inchar localStorage)
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - 7);
+      const cutoffStamp = cutoff.toISOString().slice(0, 10).replace(/-/g, '');
+      const cleaned = existing.filter(k => {
+        const m = k.match(/-(\d{8})$/);
+        return !m || m[1] >= cutoffStamp;
+      });
+      return {
+        ...prev,
+        settings: {
+          ...(prev.settings || {}),
+          notifications: {
+            ...((prev.settings && prev.settings.notifications) || {}),
+            enabled: !!(prev.settings && prev.settings.notifications && prev.settings.notifications.enabled),
+            lastNotifiedKeys: [...cleaned, key],
+          },
+        },
+      };
+    });
+  }, []);
+
+  // Esquece todas as chaves (usado em "Tocar agora" pra forçar re-notificação imediata)
+  const clearNotificationKeys = useCallback(() => {
+    setData(prev => ({
+      ...prev,
+      settings: {
+        ...(prev.settings || {}),
+        notifications: {
+          ...((prev.settings && prev.settings.notifications) || {}),
+          enabled: !!(prev.settings && prev.settings.notifications && prev.settings.notifications.enabled),
+          lastNotifiedKeys: [],
+        },
+      },
     }));
   }, []);
 
@@ -611,6 +697,10 @@ export function useStore() {
     ignoreSuggestion,
     setCustomNextAction,
     setDueDate,
+    setNotificationsEnabled,
+    recordNotificationKey,
+    clearNotificationKeys,
+    settings: data.settings || { notifications: { enabled: false, lastNotifiedKeys: [] } },
     exportNoteAsText,
     exportNoteAsMarkdown,
     getNoteById,

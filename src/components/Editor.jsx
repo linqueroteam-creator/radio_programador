@@ -13,6 +13,8 @@ import ResizableImage from '../extensions/ResizableImage';
 import InlinePredictive from '../extensions/InlinePredictive';
 import InlineGrammar, { buildPlainTextMap } from '../extensions/InlineGrammar';
 import InternalLink from '../extensions/InternalLink';
+import SlashCommand from '../extensions/SlashCommand';
+import SlashMenu from './SlashMenu';
 import Toolbar from './Toolbar';
 import TagBar from './TagBar';
 import PredictiveBar from './PredictiveBar';
@@ -63,6 +65,34 @@ export default function Editor({ store, onOpenMobileMenu, onOpenMobileNoteList }
   const [rephraseState, setRephraseState] = useState(null);
   // rephraseState quando aberto: { open: true, originalText: string, scope: 'selection'|'full', range: {from,to}|null }
 
+  // === Slash commands (Pacote E) ===
+  // Estado do menu de comandos rápidos invocado ao digitar "/".
+  // { active, query, range: {from,to} } — atualizado pela extensão SlashCommand
+  // via callback onChange. O componente <SlashMenu> lê esse estado e renderiza.
+  const [slashState, setSlashState] = useState({ active: false, query: '', range: null });
+  // Handler de teclas registrado pelo <SlashMenu> (setas/Enter/Tab). Quando o
+  // menu está aberto, ele consome esses eventos antes do ProseMirror, pra não
+  // mover o cursor enquanto o usuário escolhe um comando.
+  const slashKeyHandlerRef = React.useRef(null);
+  const handleSlashChange = useCallback((newState) => {
+    setSlashState({
+      active: !!newState.active,
+      query: newState.query || '',
+      range: newState.range || null,
+    });
+  }, []);
+  const handleSlashKeyDown = useCallback((event) => {
+    const handler = slashKeyHandlerRef.current;
+    if (handler) return handler(event);
+    return false;
+  }, []);
+  const registerSlashKeyHandler = useCallback((handler) => {
+    slashKeyHandlerRef.current = handler;
+  }, []);
+  const closeSlashMenu = useCallback(() => {
+    setSlashState({ active: false, query: '', range: null });
+  }, []);
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
@@ -81,6 +111,14 @@ export default function Editor({ store, onOpenMobileMenu, onOpenMobileNoteList }
       // Mark que transforma um trecho de texto em link clicável pra outra
       // nota ou caderno. Usado pelo bubble menu de seleção (botão "Ligar a...").
       InternalLink,
+      // === Slash commands (Pacote E) ===
+      // Detecta "/" digitado no início de linha ou após espaço e abre o
+      // <SlashMenu>. Cada item executa um comando do Tiptap (heading, lista,
+      // checklist, citação, divisor, data, imagem...).
+      SlashCommand.configure({
+        onChange: handleSlashChange,
+        onKeyDown: handleSlashKeyDown,
+      }),
       Placeholder.configure({ placeholder: 'Comece a escrever... (a sugestão cinza aparece à direita — aperte → para aceitar)' }),
       TaskList,
       TaskItem.configure({ nested: true }),
@@ -746,6 +784,17 @@ export default function Editor({ store, onOpenMobileMenu, onOpenMobileNoteList }
         editor={editor}
         store={store}
         currentNoteId={selectedNote?.id}
+      />
+
+      {/* === MENU DE COMANDOS / (Pacote E) === */}
+      {/* Aparece quando o usuário digita "/" no editor. Permite inserir
+          rapidamente cabeçalhos, listas, checklist, citação, divisor,
+          data atual etc. sem tirar as mãos do teclado. */}
+      <SlashMenu
+        state={slashState}
+        editor={editor}
+        onClose={closeSlashMenu}
+        onRegisterKeyHandler={registerSlashKeyHandler}
       />
 
       {/* Popover de correção inline (spell-check / gramática) */}
