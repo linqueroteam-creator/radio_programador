@@ -62,6 +62,11 @@ const MANUAL_PALETTE = { stroke: '#E5DBF2', glow: '#FFFFFF', label: 'manual' };
 
 const SVG_FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Helvetica Neue", Arial, sans-serif';
 
+// Tamanho do caderno/área no mapa (escopo de módulo pra ser acessível
+// pelo NotebookNode memoizado, definido fora do EcosystemSvg).
+const NB_W = 130;
+const NB_H = 168;
+
 // Pan/zoom limites
 const ZOOM_MIN = 0.4;
 const ZOOM_MAX = 2.5;
@@ -1213,9 +1218,8 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
   const delayNoteBase = 250 + notebookNodes.length * 90 + 100;
   const delayConnections = delayNoteBase + noteNodes.length * 35 + 100;
 
-  // Tamanho dos cadernos
-  const NB_W = 130;
-  const NB_H = 168;
+  // (NB_W e NB_H movidos pro escopo de módulo — necessário pelo NotebookNode
+  // memoizado declarado fora deste componente)
 
   return (
     <svg
