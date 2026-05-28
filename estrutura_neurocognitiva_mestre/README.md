@@ -55,6 +55,11 @@ Como o cérebro **percebe** e **processa** uma interface viva.
 - [30 — NeuroSemiótica](./30-neurosemiotica.md)
 - [Camada 2 — Resumo](./CAMADA-2-RESUMO.md)
 
+### 🎨 Decisões fundacionais (NOVAS)
+
+- [🎨 Regra de Cor](./regra-de-cor.md) — sistema cromático semântico em 4 camadas (identidade, áreas da vida, estados, relações). Hex completo, acessibilidade WCAG, daltonismo, dark mode, tokens Tailwind sugeridos.
+- [🌳 Áreas da Vida](./areas-da-vida.md) — as 10 dimensões fundamentais que viram núcleos no mapa. Pesquisa de 4 modelos consolidados (8 Dimensions of Wellness, Wheel of Life, etc.). Cor + ícone + descrição cognitiva por área. Lei da gravidade. Comportamento adaptativo.
+
 ### 📋 Roadmap pendente
 
 - [Feedback do usuário pós R3](./FEEDBACK-USUARIO-R3.md) — pontos específicos a tratar nas próximas iterações do mapa
