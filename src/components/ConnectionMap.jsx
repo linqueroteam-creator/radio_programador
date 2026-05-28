@@ -907,6 +907,122 @@ export default function ConnectionMap({ note, store, onClose }) {
 
 // ================== SVG PRINCIPAL ==================
 
+// Componente da Nota — memoizado para evitar re-render quando outras notas
+// mudam de hover/highlight. Recebe todas as derivações já calculadas pelo pai
+// (accentColor, isHover, dim, delayMs) — assim a comparação shallow do
+// React.memo funciona perfeitamente: nota que não mudou, não re-renderiza.
+const NoteNode = React.memo(function NoteNode({
+  nn, accentColor, parentLabel,
+  isHover, dim, delayMs,
+  onHoverEnter, onHoverLeave, onOpen,
+}) {
+  // Dimensões da folha
+  const PW = 64;
+  const PH = 78;
+  const px = nn.x - PW / 2;
+  const py = nn.y - PH / 2;
+
+  return (
+    <g
+      className={`a-note ${dim ? 'a-ghost' : ''} ${isHover ? 'a-spotlight' : ''}`}
+      style={{ cursor: 'pointer', animationDelay: `${delayMs}ms` }}
+      onMouseEnter={() => onHoverEnter(nn.id)}
+      onMouseLeave={onHoverLeave}
+      onClick={() => onOpen(nn.id)}
+      tabIndex={0}
+      role="button"
+      aria-label={`Anotação ${nn.label}, abrir`}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(nn.id); } }}
+    >
+      <title>{nn.label}{parentLabel ? ` — ${parentLabel}` : ''}</title>
+
+      {/* Sombra projetada da folha (suave) */}
+      <rect
+        x={px + 2} y={py + 4}
+        width={PW} height={PH}
+        rx="16"
+        fill="#000000" opacity="0.25"
+      />
+
+      {/* Folha branca pura — borda branca delicada separa do fundo escuro;
+          borda colorida só no hover (feedback de interação) */}
+      <rect
+        x={px} y={py}
+        width={PW} height={PH}
+        rx="16"
+        fill="#FFFFFF"
+        stroke={isHover ? accentColor : 'rgba(255,255,255,0.55)'}
+        strokeWidth={isHover ? 1.8 : 1}
+      />
+
+      {/* Tag colorida (etiqueta) — DENTRO da folha, canto superior esquerdo:
+          marcador discreto da área/caderno-pai, sem invadir a página */}
+      <rect
+        x={px + 8} y={py + 8}
+        width={22} height={5}
+        rx="2.5"
+        fill={accentColor}
+      />
+
+      {/* Linhas simulando texto — começam logo abaixo da tag */}
+      <line x1={px + 8} y1={py + 22} x2={px + PW - 8} y2={py + 22} stroke="#5B4A7A" strokeWidth="1" opacity="0.55" strokeLinecap="round" />
+      <line x1={px + 8} y1={py + 30} x2={px + PW - 14} y2={py + 30} stroke="#5B4A7A" strokeWidth="0.9" opacity="0.4" strokeLinecap="round" />
+      <line x1={px + 8} y1={py + 38} x2={px + PW - 10} y2={py + 38} stroke="#5B4A7A" strokeWidth="0.9" opacity="0.4" strokeLinecap="round" />
+      <line x1={px + 8} y1={py + 46} x2={px + PW - 20} y2={py + 46} stroke="#5B4A7A" strokeWidth="0.9" opacity="0.4" strokeLinecap="round" />
+      <line x1={px + 8} y1={py + 54} x2={px + PW - 16} y2={py + 54} stroke="#5B4A7A" strokeWidth="0.9" opacity="0.4" strokeLinecap="round" />
+
+      {/* Estrela de favorito — canto superior direito, sem conflitar com a tag */}
+      {nn.isFavorite && (
+        <g transform={`translate(${px + PW - 9}, ${py + 10})`}>
+          <path
+            d="M 0 -2.8 L 0.8 -0.8 L 2.8 -0.8 L 1.2 0.5 L 1.8 2.5 L 0 1.3 L -1.8 2.5 L -1.2 0.5 L -2.8 -0.8 L -0.8 -0.8 Z"
+            fill="#F0B400"
+            stroke="#F0B400"
+            strokeWidth="0.6"
+            strokeLinejoin="round"
+          />
+        </g>
+      )}
+
+      {/* Dobra de canto (efeito de papel dobrado) — canto inferior direito */}
+      <path
+        d={`M ${px + PW - 8} ${py + PH} L ${px + PW} ${py + PH - 8} L ${px + PW} ${py + PH} Z`}
+        fill={accentColor}
+        opacity="0.18"
+      />
+      <path
+        d={`M ${px + PW - 8} ${py + PH} L ${px + PW} ${py + PH - 8}`}
+        stroke={accentColor}
+        strokeWidth="0.6"
+        opacity="0.4"
+      />
+
+      {/* Título da nota abaixo da folha (legível sobre fundo escuro) */}
+      <foreignObject x={nn.x - 70} y={py + PH + 6} width="140" height="32">
+        <div
+          xmlns="http://www.w3.org/1999/xhtml"
+          style={{
+            width: '100%',
+            textAlign: 'center',
+            fontSize: '10.5px',
+            lineHeight: 1.3,
+            fontWeight: 500,
+            color: '#FFFFFF',
+            fontFamily: SVG_FONT,
+            textShadow: '0 1px 4px rgba(0,0,0,0.7)',
+            overflow: 'hidden',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+          }}
+        >
+          {truncate(nn.label, 38)}
+        </div>
+      </foreignObject>
+    </g>
+  );
+});
+
 const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
   layout, connections, hoveredId, hoveredType, highlightSet,
   setHoveredId, setHoveredType, onOpenNote,
@@ -922,6 +1038,27 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
     notebookNodes.forEach(nb => { m[nb.id] = { x: nb.x, y: nb.y }; });
     return m;
   }, [noteNodes, notebookNodes]);
+
+  // Mapa de notebookId -> { color, label } — calculado uma vez por mudança
+  // de layout. Evita o .find() por nota a cada render.
+  const notebookMeta = useMemo(() => {
+    const m = {};
+    notebookNodes.forEach(nb => {
+      m[nb.id] = { color: nb.color || '#7B4DBA', label: nb.label };
+    });
+    return m;
+  }, [notebookNodes]);
+
+  // Handlers de hover estáveis — permitem que o React.memo do NoteNode
+  // funcione (props de função não mudam de referência entre renders).
+  const handleNoteHoverEnter = useCallback((id) => {
+    setHoveredId(id);
+    setHoveredType('note');
+  }, [setHoveredId, setHoveredType]);
+  const handleNoteHoverLeave = useCallback(() => {
+    setHoveredId(null);
+    setHoveredType(null);
+  }, [setHoveredId, setHoveredType]);
 
   const delayCenter = 0;
   const delayNotebookBase = 250;
@@ -1365,116 +1502,26 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
 
         {/* === NÍVEL 3: Anotações como FOLHAS de papel === */}
         {noteNodes.map((nn, idx) => {
+          const meta = notebookMeta[nn.notebookId];
+          const accentColor = meta?.color || '#7B4DBA';
+          const parentLabel = meta?.label || '';
           const isHover = hoveredId === nn.id && hoveredType === 'note';
-          const dim = highlightSet && !highlightSet.has(nn.id);
-          const parentNb = notebookNodes.find(nb => nb.id === nn.notebookId);
-          const accentColor = parentNb?.color || '#7B4DBA';
-
-          // Dimensões da folha
-          const PW = 64;  // largura
-          const PH = 78;  // altura
-          const px = nn.x - PW / 2;
-          const py = nn.y - PH / 2;
+          const dim = !!(highlightSet && !highlightSet.has(nn.id));
+          const delayMs = delayNoteBase + idx * 35;
 
           return (
-            <g
+            <NoteNode
               key={`note-${nn.id}`}
-              className={`a-note ${dim ? 'a-ghost' : ''} ${isHover ? 'a-spotlight' : ''}`}
-              style={{ cursor: 'pointer', animationDelay: `${delayNoteBase + idx * 35}ms` }}
-              onMouseEnter={() => { setHoveredId(nn.id); setHoveredType('note'); }}
-              onMouseLeave={() => { setHoveredId(null); setHoveredType(null); }}
-              onClick={() => onOpenNote(nn.id)}
-              tabIndex={0}
-              role="button"
-              aria-label={`Anotação ${nn.label}, abrir`}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenNote(nn.id); } }}
-            >
-              <title>{nn.label}{parentNb ? ` — ${parentNb.label}` : ''}</title>
-
-              {/* Sombra projetada da folha (suave) */}
-              <rect
-                x={px + 2} y={py + 4}
-                width={PW} height={PH}
-                rx="16"
-                fill="#000000" opacity="0.25"
-              />
-
-              {/* Folha branca pura — borda branca delicada separa do fundo escuro;
-                  borda colorida só no hover (feedback de interação) */}
-              <rect
-                x={px} y={py}
-                width={PW} height={PH}
-                rx="16"
-                fill="#FFFFFF"
-                stroke={isHover ? accentColor : 'rgba(255,255,255,0.55)'}
-                strokeWidth={isHover ? 1.8 : 1}
-              />
-
-              {/* Tag colorida (etiqueta) — DENTRO da folha, canto superior esquerdo:
-                  marcador discreto da área/caderno-pai, sem invadir a página */}
-              <rect
-                x={px + 8} y={py + 8}
-                width={22} height={5}
-                rx="2.5"
-                fill={accentColor}
-              />
-
-              {/* Linhas simulando texto — começam logo abaixo da tag */}
-              <line x1={px + 8} y1={py + 22} x2={px + PW - 8} y2={py + 22} stroke="#5B4A7A" strokeWidth="1" opacity="0.55" strokeLinecap="round" />
-              <line x1={px + 8} y1={py + 30} x2={px + PW - 14} y2={py + 30} stroke="#5B4A7A" strokeWidth="0.9" opacity="0.4" strokeLinecap="round" />
-              <line x1={px + 8} y1={py + 38} x2={px + PW - 10} y2={py + 38} stroke="#5B4A7A" strokeWidth="0.9" opacity="0.4" strokeLinecap="round" />
-              <line x1={px + 8} y1={py + 46} x2={px + PW - 20} y2={py + 46} stroke="#5B4A7A" strokeWidth="0.9" opacity="0.4" strokeLinecap="round" />
-              <line x1={px + 8} y1={py + 54} x2={px + PW - 16} y2={py + 54} stroke="#5B4A7A" strokeWidth="0.9" opacity="0.4" strokeLinecap="round" />
-
-              {/* Estrela de favorito — agora no canto superior direito, sem conflitar com a tag */}
-              {nn.isFavorite && (
-                <g transform={`translate(${px + PW - 9}, ${py + 10})`}>
-                  <path
-                    d="M 0 -2.8 L 0.8 -0.8 L 2.8 -0.8 L 1.2 0.5 L 1.8 2.5 L 0 1.3 L -1.8 2.5 L -1.2 0.5 L -2.8 -0.8 L -0.8 -0.8 Z"
-                    fill="#F0B400"
-                    stroke="#F0B400"
-                    strokeWidth="0.6"
-                    strokeLinejoin="round"
-                  />
-                </g>
-              )}
-
-              {/* Dobra de canto (efeito de papel dobrado) — canto inferior direito */}
-              <path
-                d={`M ${px + PW - 8} ${py + PH} L ${px + PW} ${py + PH - 8} L ${px + PW} ${py + PH} Z`}
-                fill={accentColor}
-                opacity="0.18"
-              />
-              <path
-                d={`M ${px + PW - 8} ${py + PH} L ${px + PW} ${py + PH - 8}`}
-                stroke={accentColor}
-                strokeWidth="0.6"
-                opacity="0.4"
-              />
-
-              {/* Título da nota abaixo da folha (legível sobre fundo escuro) */}
-              <foreignObject x={nn.x - 70} y={py + PH + 6} width="140" height="32">
-                <div
-                  xmlns="http://www.w3.org/1999/xhtml"
-                  style={{
-                    width: '100%',
-                    textAlign: 'center',
-                    fontSize: '10.5px',
-                    lineHeight: 1.3,
-                    fontWeight: 500,
-                    color: '#FFFFFF',
-                    fontFamily: SVG_FONT,
-                    textShadow: '0 1px 4px rgba(0,0,0,0.7)',
-                    overflow: 'hidden',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical',
-                  }}
-                >
-                  {truncate(nn.label, 38)}
-                </div>
-              </foreignObject>
-            </g>
+              nn={nn}
+              accentColor={accentColor}
+              parentLabel={parentLabel}
+              isHover={isHover}
+              dim={dim}
+              delayMs={delayMs}
+              onHoverEnter={handleNoteHoverEnter}
+              onHoverLeave={handleNoteHoverLeave}
+              onOpen={onOpenNote}
+            />
           );
         })}
 
