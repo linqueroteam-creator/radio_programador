@@ -1354,7 +1354,7 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
               {/* Máscara: faixa colorida do topo respeita o arredondamento da folha */}
               <defs>
                 <clipPath id={`note-clip-${nn.id}`}>
-                  <rect x={px} y={py} width={PW} height={PH} rx="12" />
+                  <rect x={px} y={py} width={PW} height={PH} rx="16" />
                 </clipPath>
               </defs>
 
@@ -1362,7 +1362,7 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
               <rect
                 x={px + 2} y={py + 4}
                 width={PW} height={PH}
-                rx="12"
+                rx="16"
                 fill="#000000" opacity="0.3"
               />
 
@@ -1370,29 +1370,29 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
               <rect
                 x={px} y={py}
                 width={PW} height={PH}
-                rx="12"
+                rx="16"
                 fill="#FFFFFF"
                 stroke={accentColor}
                 strokeWidth={isHover ? 2.2 : 1.2}
               />
 
-              {/* Faixa colorida no topo (cor do caderno-pai / área) — recortada pelo contorno da folha */}
+              {/* Faixa colorida no topo (capa do caderninho) — altura = rx para cobrir todo o arco */}
               <rect
                 x={px} y={py}
-                width={PW} height={8}
+                width={PW} height={16}
                 fill={accentColor}
                 clipPath={`url(#note-clip-${nn.id})`}
               />
 
               {/* Linhas simulando texto */}
-              <line x1={px + 8} y1={py + 18} x2={px + PW - 8} y2={py + 18} stroke="#5B4A7A" strokeWidth="1" opacity="0.55" strokeLinecap="round" />
-              <line x1={px + 8} y1={py + 26} x2={px + PW - 14} y2={py + 26} stroke="#5B4A7A" strokeWidth="0.9" opacity="0.4" strokeLinecap="round" />
-              <line x1={px + 8} y1={py + 34} x2={px + PW - 10} y2={py + 34} stroke="#5B4A7A" strokeWidth="0.9" opacity="0.4" strokeLinecap="round" />
-              <line x1={px + 8} y1={py + 42} x2={px + PW - 20} y2={py + 42} stroke="#5B4A7A" strokeWidth="0.9" opacity="0.4" strokeLinecap="round" />
+              <line x1={px + 8} y1={py + 24} x2={px + PW - 8} y2={py + 24} stroke="#5B4A7A" strokeWidth="1" opacity="0.55" strokeLinecap="round" />
+              <line x1={px + 8} y1={py + 32} x2={px + PW - 14} y2={py + 32} stroke="#5B4A7A" strokeWidth="0.9" opacity="0.4" strokeLinecap="round" />
+              <line x1={px + 8} y1={py + 40} x2={px + PW - 10} y2={py + 40} stroke="#5B4A7A" strokeWidth="0.9" opacity="0.4" strokeLinecap="round" />
+              <line x1={px + 8} y1={py + 48} x2={px + PW - 20} y2={py + 48} stroke="#5B4A7A" strokeWidth="0.9" opacity="0.4" strokeLinecap="round" />
 
-              {/* Estrela de favorito (canto superior esquerdo, dentro da faixa colorida) */}
+              {/* Estrela de favorito (canto superior esquerdo, centralizada na faixa) */}
               {nn.isFavorite && (
-                <g transform={`translate(${px + 9}, ${py + 3})`}>
+                <g transform={`translate(${px + 11}, ${py + 8})`}>
                   <path
                     d="M 0 -2.5 L 0.7 -0.7 L 2.5 -0.7 L 1.1 0.4 L 1.6 2.2 L 0 1.1 L -1.6 2.2 L -1.1 0.4 L -2.5 -0.7 L -0.7 -0.7 Z"
                     fill="#F0B400"
