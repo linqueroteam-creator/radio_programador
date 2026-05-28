@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Flag, Activity, Pin, Archive, Eye, Sparkles } from 'lucide-react';
 import { NOTE_TYPES, NOTE_STATUS, NOTE_PRIORITY } from '../engine/RulesEngine';
 import IconButton from './ui/IconButton';
+import LifeAreaPicker from './LifeAreaPicker';
 
 /**
  * Barra de metadados da nota — badges clicáveis para
@@ -74,6 +75,17 @@ export default function NoteMetaBar({ note, store, suggestions }) {
 
   return (
     <div className="flex items-center gap-2 flex-wrap mt-2">
+      {/* ÁREA DA VIDA (chip com cor da área) */}
+      <LifeAreaPicker
+        currentArea={note.lifeArea || 'outros'}
+        onChange={(newArea) => {
+          if (typeof store.updateNote === 'function') {
+            store.updateNote(note.id, { lifeArea: newArea });
+          }
+        }}
+        size="sm"
+      />
+
       {/* TIPO */}
       <Dropdown
         trigger={

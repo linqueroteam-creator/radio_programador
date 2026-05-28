@@ -47,6 +47,11 @@ function migrateNote(note) {
     // === FASE 2: campos adicionais ===
     ignoredSuggestions: note.ignoredSuggestions || [],
     customNextAction: note.customNextAction || null,
+
+    // === ÁREAS DA VIDA (estrutura_neurocognitiva_mestre/areas-da-vida.md) ===
+    // Campo que associa a nota a uma das 10 áreas + 'outros' (default).
+    // Migração suave: notas antigas que não têm o campo ganham 'outros'.
+    lifeArea: note.lifeArea || 'outros',
   };
 }
 
