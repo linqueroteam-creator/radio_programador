@@ -678,6 +678,84 @@ export function useStore() {
     return { ok: true, archivedCount };
   }, []);
 
+  // === PROJETOS (PR C — spec docs/HIERARQUIA-AREAS-PROJETOS-CADERNOS-NOTAS.md) ===
+  //
+  // Regras:
+  //   - Projeto PRECISA de título e lifeArea (obrigatórios).
+  //   - Projeto vazio (sem cadernos) pode existir no store, mas NÃO aparece no mapa.
+  //   - Projeto pertence a UMA área da vida (sem multi-área nesta versão).
+  //   - Excluir projeto NÃO exclui cadernos — os cadernos viram avulsos (projectId = null).
+
+  const createProject = useCallback((title, lifeArea, extra = {}) => {
+    if (!title || !title.trim()) return null;
+    if (!lifeArea) return null;
+    const newProject = {
+      id: uuidv4(),
+      title: title.trim(),
+      lifeArea,
+      description: extra.description || '',
+      color: extra.color || null,  // null = herda da área
+      coverEmoji: extra.coverEmoji || null,
+      archived: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setData(prev => ({ ...prev, projects: [...(prev.projects || []), newProject] }));
+    return newProject.id;
+  }, []);
+
+  const updateProject = useCallback((projectId, updates) => {
+    if (!projectId) return;
+    setData(prev => ({
+      ...prev,
+      projects: (prev.projects || []).map(p =>
+        p.id === projectId
+          ? { ...p, ...updates, updatedAt: new Date().toISOString() }
+          : p
+      ),
+    }));
+  }, []);
+
+  const archiveProject = useCallback((projectId) => {
+    updateProject(projectId, { archived: true });
+  }, [updateProject]);
+
+  const unarchiveProject = useCallback((projectId) => {
+    updateProject(projectId, { archived: false });
+  }, [updateProject]);
+
+  const deleteProject = useCallback((projectId) => {
+    if (!projectId) return;
+    // Regra: cadernos do projeto viram avulsos (projectId = null). Nada é excluído.
+    setData(prev => ({
+      ...prev,
+      projects: (prev.projects || []).filter(p => p.id !== projectId),
+      notebooks: prev.notebooks.map(nb =>
+        nb.projectId === projectId ? { ...nb, projectId: null } : nb
+      ),
+    }));
+  }, []);
+
+  const getProjectById = useCallback((id) =>
+    (data.projects || []).find(p => p.id === id), [data.projects]);
+
+  const getProjectNotebooks = useCallback((projectId) =>
+    data.notebooks.filter(nb => nb.projectId === projectId), [data.notebooks]);
+
+  const getProjectNoteCount = useCallback((projectId) => {
+    const nbIds = new Set(data.notebooks.filter(nb => nb.projectId === projectId).map(nb => nb.id));
+    return data.notes.filter(n => nbIds.has(n.notebookId) && !n.isTrash).length;
+  }, [data.notebooks, data.notes]);
+
+  const assignNotebookToProject = useCallback((notebookId, projectId) => {
+    setData(prev => ({
+      ...prev,
+      notebooks: prev.notebooks.map(nb =>
+        nb.id === notebookId ? { ...nb, projectId: projectId || null } : nb
+      ),
+    }));
+  }, []);
+
   // === CATEGORIAS ===
   const addCategory = useCallback((name) => {
     const cat = name.trim();
@@ -839,6 +917,18 @@ export function useStore() {
     deleteNotebookSafely,
     getNotebookById,
     getNoteCount,
+
+    // Projetos (PR C)
+    projects: data.projects || [],
+    createProject,
+    updateProject,
+    archiveProject,
+    unarchiveProject,
+    deleteProject,
+    getProjectById,
+    getProjectNotebooks,
+    getProjectNoteCount,
+    assignNotebookToProject,
 
     addCategory,
     addTag,
