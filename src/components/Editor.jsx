@@ -13,6 +13,7 @@ import ResizableImage from '../extensions/ResizableImage';
 import InlinePredictive from '../extensions/InlinePredictive';
 import InlineGrammar, { buildPlainTextMap } from '../extensions/InlineGrammar';
 import InternalLink from '../extensions/InternalLink';
+import SlashCommand from '../extensions/SlashCommand';
 import Toolbar from './Toolbar';
 import TagBar from './TagBar';
 import PredictiveBar from './PredictiveBar';
@@ -81,6 +82,12 @@ export default function Editor({ store, onOpenMobileMenu, onOpenMobileNoteList }
       // Mark que transforma um trecho de texto em link clicável pra outra
       // nota ou caderno. Usado pelo bubble menu de seleção (botão "Ligar a...").
       InternalLink,
+      // === Comandos de barra (/) ===
+      // Quando o usuário digita "/" no editor, abre menu flutuante com a lista
+      // de blocos pra inserir (Título 1/2/3, Lista, Checklist, Citação, etc).
+      // Ele continua digitando filtra (ex: "/lis" → só Lista). Setas/Enter pra
+      // confirmar, Esc pra cancelar.
+      SlashCommand,
       Placeholder.configure({ placeholder: 'Comece a escrever... (a sugestão cinza aparece à direita — aperte → para aceitar)' }),
       TaskList,
       TaskItem.configure({ nested: true }),
