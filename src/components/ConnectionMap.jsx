@@ -1351,50 +1351,46 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
             >
               <title>{nn.label}{parentNb ? ` — ${parentNb.label}` : ''}</title>
 
-              {/* Máscara: faixa colorida do topo respeita o arredondamento da folha */}
-              <defs>
-                <clipPath id={`note-clip-${nn.id}`}>
-                  <rect x={px} y={py} width={PW} height={PH} rx="16" />
-                </clipPath>
-              </defs>
-
-              {/* Sombra projetada da folha (arredondada — branding) */}
+              {/* Sombra projetada da folha (suave) */}
               <rect
                 x={px + 2} y={py + 4}
                 width={PW} height={PH}
                 rx="16"
-                fill="#000000" opacity="0.3"
+                fill="#000000" opacity="0.25"
               />
 
-              {/* Folha branca (papel arredondado — branding premium) */}
+              {/* Folha branca pura — borda branca delicada separa do fundo escuro;
+                  borda colorida só no hover (feedback de interação) */}
               <rect
                 x={px} y={py}
                 width={PW} height={PH}
                 rx="16"
                 fill="#FFFFFF"
-                stroke={accentColor}
-                strokeWidth={isHover ? 2.2 : 1.2}
+                stroke={isHover ? accentColor : 'rgba(255,255,255,0.55)'}
+                strokeWidth={isHover ? 1.8 : 1}
               />
 
-              {/* Faixa colorida no topo (capa do caderninho) — altura = rx para cobrir todo o arco */}
+              {/* Tag colorida (etiqueta) — DENTRO da folha, canto superior esquerdo:
+                  marcador discreto da área/caderno-pai, sem invadir a página */}
               <rect
-                x={px} y={py}
-                width={PW} height={16}
+                x={px + 8} y={py + 8}
+                width={22} height={5}
+                rx="2.5"
                 fill={accentColor}
-                clipPath={`url(#note-clip-${nn.id})`}
               />
 
-              {/* Linhas simulando texto */}
-              <line x1={px + 8} y1={py + 24} x2={px + PW - 8} y2={py + 24} stroke="#5B4A7A" strokeWidth="1" opacity="0.55" strokeLinecap="round" />
-              <line x1={px + 8} y1={py + 32} x2={px + PW - 14} y2={py + 32} stroke="#5B4A7A" strokeWidth="0.9" opacity="0.4" strokeLinecap="round" />
-              <line x1={px + 8} y1={py + 40} x2={px + PW - 10} y2={py + 40} stroke="#5B4A7A" strokeWidth="0.9" opacity="0.4" strokeLinecap="round" />
-              <line x1={px + 8} y1={py + 48} x2={px + PW - 20} y2={py + 48} stroke="#5B4A7A" strokeWidth="0.9" opacity="0.4" strokeLinecap="round" />
+              {/* Linhas simulando texto — começam logo abaixo da tag */}
+              <line x1={px + 8} y1={py + 22} x2={px + PW - 8} y2={py + 22} stroke="#5B4A7A" strokeWidth="1" opacity="0.55" strokeLinecap="round" />
+              <line x1={px + 8} y1={py + 30} x2={px + PW - 14} y2={py + 30} stroke="#5B4A7A" strokeWidth="0.9" opacity="0.4" strokeLinecap="round" />
+              <line x1={px + 8} y1={py + 38} x2={px + PW - 10} y2={py + 38} stroke="#5B4A7A" strokeWidth="0.9" opacity="0.4" strokeLinecap="round" />
+              <line x1={px + 8} y1={py + 46} x2={px + PW - 20} y2={py + 46} stroke="#5B4A7A" strokeWidth="0.9" opacity="0.4" strokeLinecap="round" />
+              <line x1={px + 8} y1={py + 54} x2={px + PW - 16} y2={py + 54} stroke="#5B4A7A" strokeWidth="0.9" opacity="0.4" strokeLinecap="round" />
 
-              {/* Estrela de favorito (canto superior esquerdo, centralizada na faixa) */}
+              {/* Estrela de favorito — agora no canto superior direito, sem conflitar com a tag */}
               {nn.isFavorite && (
-                <g transform={`translate(${px + 11}, ${py + 8})`}>
+                <g transform={`translate(${px + PW - 9}, ${py + 10})`}>
                   <path
-                    d="M 0 -2.5 L 0.7 -0.7 L 2.5 -0.7 L 1.1 0.4 L 1.6 2.2 L 0 1.1 L -1.6 2.2 L -1.1 0.4 L -2.5 -0.7 L -0.7 -0.7 Z"
+                    d="M 0 -2.8 L 0.8 -0.8 L 2.8 -0.8 L 1.2 0.5 L 1.8 2.5 L 0 1.3 L -1.8 2.5 L -1.2 0.5 L -2.8 -0.8 L -0.8 -0.8 Z"
                     fill="#F0B400"
                     stroke="#F0B400"
                     strokeWidth="0.6"
@@ -1403,7 +1399,7 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
                 </g>
               )}
 
-              {/* Dobra de canto (efeito de papel dobrado) - canto inferior direito */}
+              {/* Dobra de canto (efeito de papel dobrado) — canto inferior direito */}
               <path
                 d={`M ${px + PW - 8} ${py + PH} L ${px + PW} ${py + PH - 8} L ${px + PW} ${py + PH} Z`}
                 fill={accentColor}
