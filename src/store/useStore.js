@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { analyzeNote, analyzeNotesBatch, onAnalyzed } from '../agent/agentClient';
 
 const STORAGE_KEY = 'anotata-data';
 const BACKUP_PRE_V3_KEY = 'np_backup_pre_v3';
@@ -53,6 +54,16 @@ function migrateNote(note) {
     // Campo que associa a nota a uma das 10 áreas + 'outros' (default).
     // Migração suave: notas antigas que não têm o campo ganham 'outros'.
     lifeArea: note.lifeArea || 'outros',
+
+    // === AGENTE INTELIGENTE LOCAL (PR I) ===
+    // Campos preenchidos pelo Web Worker em background.
+    // - inferredLifeArea: área da vida sugerida (não substitui lifeArea manual)
+    // - confidenceScore: 0..1, confiança da inferência (>=0.6 vincula automaticamente
+    //   no PR J; < 0.6 fica como sugestão silenciosa)
+    // - lastAgentRun: ISO timestamp da última análise (pra evitar reprocessar)
+    inferredLifeArea: note.inferredLifeArea || null,
+    confidenceScore: typeof note.confidenceScore === 'number' ? note.confidenceScore : 0,
+    lastAgentRun: note.lastAgentRun || null,
   };
 }
 
@@ -284,6 +295,64 @@ export function useStore() {
     }, 600);
     return () => clearTimeout(t);
   }, [data, isLoaded]);
+
+  // === AGENTE INTELIGENTE LOCAL (PR I) ===
+  // Escuta resultados do worker e persiste nos campos derivados.
+  // O agente NUNCA muda lifeArea (manual). Só preenche inferredLifeArea +
+  // confidenceScore + lastAgentRun. No PR J, com confidence >= 0.6, vai
+  // usar isso pra vincular caderno automaticamente.
+  useEffect(() => {
+    const off = onAnalyzed(({ noteId, result }) => {
+      if (!noteId || !result) return;
+      setData(prev => ({
+        ...prev,
+        notes: prev.notes.map(n => {
+          if (n.id !== noteId) return n;
+          // SEMPRE atualiza lastAgentRun (mesmo se nada mudou) — assim o
+          // efeito disparador para de filtrar essa nota como "pendente"
+          // e não cria loop infinito.
+          return {
+            ...n,
+            inferredLifeArea: result.inferredLifeArea,
+            confidenceScore: result.confidenceScore,
+            lastAgentRun: new Date().toISOString(),
+          };
+        }),
+      }));
+    });
+    return off;
+  }, []);
+
+  // Dispara análise quando o conjunto de notas muda (com debounce interno
+  // do agentClient — várias edições rápidas viram 1 análise no fim).
+  // Filtra: só notas vivas que ainda não foram analisadas OU foram editadas
+  // depois da última análise.
+  useEffect(() => {
+    if (!isLoaded) return;
+    const candidates = data.notes.filter(n => {
+      if (n.isTrash || n.isArchived) return false;
+      if (!n.lastAgentRun) return true;
+      // Reprocessa se a nota foi atualizada depois da última análise
+      return new Date(n.updatedAt) > new Date(n.lastAgentRun);
+    });
+    candidates.forEach(n => analyzeNote(n));
+  }, [data.notes, isLoaded]);
+
+  // Idle: a cada 3 minutos, reanalisa notas que nunca foram processadas.
+  // Pega gente que abriu o app e não editou nada — útil pra notas antigas
+  // pré-existentes ao agente.
+  useEffect(() => {
+    if (!isLoaded) return;
+    const interval = setInterval(() => {
+      const stale = data.notes.filter(n =>
+        !n.isTrash && !n.isArchived && !n.lastAgentRun
+      );
+      if (stale.length > 0) {
+        analyzeNotesBatch(stale.slice(0, 10)); // máx 10 por ciclo
+      }
+    }, 3 * 60 * 1000); // 3 minutos
+    return () => clearInterval(interval);
+  }, [data.notes, isLoaded]);
 
   // === NOTAS ===
   const createNote = useCallback((notebookId = 'default', overrides = {}) => {
