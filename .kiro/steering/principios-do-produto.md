@@ -84,6 +84,40 @@ A nota visual (página branca pura + tag colorida discreta dentro + borda branca
 
 Esse modelo é a base do "pulso" — qualquer mudança visual nas notas precisa de aprovação direta.
 
+## 8. Pasta `estrutura_neurocognitiva_mestre/` é bússola conceitual obrigatória
+
+Antes de qualquer decisão visual, de UX, de comportamento, de animação ou de identidade, **CONSULTAR** a pasta `estrutura_neurocognitiva_mestre/`.
+
+Esta pasta contém 30+ arquivos com a base teórica e prática do produto, organizados em camadas:
+- **Camada 1 — Fundamentos perceptivos** (NeuroDesign, NeuroVisual, NeuroUX, NeuroCognição, NeuroArquitetura, etc.)
+- **Camada 2 — Áreas avançadas** (NeuroProdutividade, NeuroRetomada, NeuroOrquestração, NeuroDecisão, etc.)
+- **Decisões fundacionais** (Regra de Cor, Áreas da Vida)
+- **Roadmap** (FEEDBACK-USUARIO-R3)
+
+### Processo obrigatório antes de implementar:
+
+1. **Identificar** quais camadas a feature toca (ex: hover de uma nota → NeuroInteração + NeuroEnergia + NeuroFeedback)
+2. **Ler** os arquivos relevantes (começar pelo `README.md` da pasta para o índice)
+3. **Aplicar** as decisões respeitando o que cada camada governa
+4. **Evitar** o que cada arquivo lista como "o que evitar"
+
+### Quando NÃO se aplica:
+
+- PRs puramente técnicos sem impacto visual/UX (ex: refator de modelo de dados, otimização de performance interna, migração de schema)
+- Hotfixes de bugs que não envolvem decisão de design
+
+### Referência rápida das camadas mais usadas:
+
+| Tipo de decisão | Camadas a consultar |
+|---|---|
+| Cor de qualquer elemento | `regra-de-cor.md`, `02-neurovisual.md`, `10-neuroestetica.md` |
+| Animação de elemento | `09-neurointeracao.md`, `13-neuroenergia.md`, `11-neurotemporal.md` |
+| Hover/feedback | `09-neurointeracao.md`, `06-neurociencia-atencao.md` |
+| Posicionamento espacial | `16-neuropercepcao-espacial.md`, `05-neuroarquitetura.md` |
+| Comportamento do agente | `19-neurocomportamento.md`, `27-neuroorquestracao.md`, `28-neurodecisao.md` |
+| Retomada/continuidade | `26-neuroretomada.md`, `14-neurofluxo.md`, `12-neuromemoria.md` |
+| Áreas da vida | `areas-da-vida.md` |
+
 ---
 
 ## Quando essa regra vira "exceção"
@@ -92,4 +126,4 @@ Só quando o usuário pede explicitamente: "deixa um botão pra isso, não autom
 
 ---
 
-**Última atualização:** 28/05/2026 — primeira versão, gerada após diálogo com o usuário sobre hierarquia + agente inteligente + manter modelo visual da nota.
+**Última atualização:** 28/05/2026 — adição da Regra 8 (consultar pasta `estrutura_neurocognitiva_mestre/` antes de decisões visuais/UX). Versão inicial gerada após diálogo com o usuário sobre hierarquia + agente inteligente + manter modelo visual da nota.
