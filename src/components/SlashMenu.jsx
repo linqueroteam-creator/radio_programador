@@ -43,6 +43,8 @@ export default function SlashMenu({ state, editor, onClose, onRegisterKeyHandler
   const [activeIndex, setActiveIndex] = useState(0);
   const [coords, setCoords] = useState(null);
   const listRef = useRef(null);
+  // Ref no container do popover — usado pra detectar clique fora
+  const popoverRef = useRef(null);
 
   // Lista completa de comandos disponíveis. Cada um tem:
   //  - id           identificador único
@@ -279,10 +281,43 @@ export default function SlashMenu({ state, editor, onClose, onRegisterKeyHandler
     }
   }, [activeIndex]);
 
+  // === Fechar ao clicar fora (UX) ===
+  // Sem isso o usuário ficava obrigado a usar Esc ou achar uma opção pra
+  // dispensar o popover. Adiciona um listener global de mousedown que fecha
+  // o menu se o clique não for dentro do popover.
+  // Usamos `mousedown` (não `click`) pra fechar ANTES do clique propagar pro
+  // editor — assim, clicar em outro ponto do texto fecha o menu sem o cursor
+  // dar dois pulos.
+  // Pequeno delay (timer 0) garante que o gesto que abriu o menu não conta
+  // como "clique fora" no mesmo tick.
+  useEffect(() => {
+    if (!active) return undefined;
+    const onPointerDown = (e) => {
+      const popover = popoverRef.current;
+      if (!popover) return;
+      // Se clicou DENTRO do popover, ignora (vai cair no onClick de algum item)
+      if (popover.contains(e.target)) return;
+      onClose();
+    };
+    // setTimeout(0) impede que o gesto que disparou a abertura (ex: digitar
+    // "/" e o navegador soltar um mousemove residual em alguns browsers)
+    // feche o popover logo de cara.
+    const id = setTimeout(() => {
+      document.addEventListener('mousedown', onPointerDown, true);
+      document.addEventListener('touchstart', onPointerDown, true);
+    }, 0);
+    return () => {
+      clearTimeout(id);
+      document.removeEventListener('mousedown', onPointerDown, true);
+      document.removeEventListener('touchstart', onPointerDown, true);
+    };
+  }, [active, onClose]);
+
   if (!active || !coords) return null;
 
   return createPortal(
     <div
+      ref={popoverRef}
       role="listbox"
       aria-label="Comandos rápidos"
       className="fixed z-[200] bg-white border border-anotata-border rounded-xl shadow-popover overflow-hidden flex flex-col animate-fade-in"
@@ -293,7 +328,9 @@ export default function SlashMenu({ state, editor, onClose, onRegisterKeyHandler
         maxHeight: POPOVER_MAX_HEIGHT,
       }}
       onMouseDown={(e) => {
-        // Evita que o clique tire o foco do editor antes do onClick rodar
+        // Evita que o clique tire o foco do editor antes do onClick rodar.
+        // Importante: não conflita com o handler de "click outside" porque
+        // este handler só roda em cliques DENTRO do popover.
         e.preventDefault();
       }}
     >
