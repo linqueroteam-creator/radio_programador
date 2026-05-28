@@ -10,8 +10,11 @@ import Timeline from './components/Timeline';
 import AuthGate from './components/AuthGate';
 import TemplatePicker from './components/TemplatePicker';
 import CommandPalette from './components/CommandPalette';
+import ExportNotebookModal from './components/ExportNotebookModal';
 import useKeyboardShortcuts from './hooks/useKeyboardShortcuts';
 import useIsMobile from './hooks/useIsMobile';
+import useDueDateReminders from './hooks/useDueDateReminders';
+import useEdgeSwipe from './hooks/useEdgeSwipe';
 import { LogOut, Command, AlertTriangle, Menu } from 'lucide-react';
 
 // === Error Boundary ===
@@ -72,6 +75,8 @@ function MainApp({ logout }) {
 
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
+  // Pacote C — modal de exportação em lote: 'all' | { id, name } notebook | null
+  const [exportTarget, setExportTarget] = useState(null);
 
   // === ATALHOS DE TECLADO GLOBAIS ===
   useKeyboardShortcuts({
@@ -170,7 +175,17 @@ function MainApp({ logout }) {
           if (txt && navigator.clipboard) navigator.clipboard.writeText(txt);
         }
         break;
+      case 'export-all-zip':
+        // Pacote C — abre modal de exportação com todas as notas
+        setExportTarget('all');
+        break;
       default:
+        // Pacote C — exportar caderno específico vem como "export-notebook:{id}"
+        if (typeof actionId === 'string' && actionId.startsWith('export-notebook:')) {
+          const nbId = actionId.split(':')[1];
+          const nb = (store.notebooks || []).find(n => n.id === nbId);
+          if (nb) setExportTarget(nb);
+        }
         break;
     }
   }, [store]);
@@ -178,6 +193,39 @@ function MainApp({ logout }) {
   // Handlers compartilhados (passados pra Editor / Home)
   const openSidebarMobile = useCallback(() => setSidebarOpenMobile(true), []);
   const openNoteListMobile = useCallback(() => setNoteListOpenMobile(true), []);
+
+  // Handler usado pelo sino de lembretes — abre uma nota específica
+  // (vinda da lista de prazos) ou de um clique na notificação do navegador.
+  const handleOpenNoteFromReminder = useCallback((noteId) => {
+    if (!noteId) return;
+    store.setSearchQuery('');
+    store.setCurrentView('all');
+    store.setSelectedNoteId(noteId);
+  }, [store]);
+
+  // === Lembretes de prazo via Web Notifications (Pacote B) ===
+  // Hook único que cuida de: checar prazos a cada 5min, escutar visibilitychange,
+  // disparar Notification do navegador, marcar quem já foi notificado pra não
+  // repetir no mesmo dia. Hook fica AQUI, antes de qualquer return condicional,
+  // pra preservar Rules of Hooks.
+  useDueDateReminders({
+    enabled: !!(store.settings && store.settings.notifications && store.settings.notifications.enabled),
+    notes: store.notes,
+    lastNotifiedKeys: (store.settings && store.settings.notifications && store.settings.notifications.lastNotifiedKeys) || [],
+    onNotified: store.recordNotificationKey,
+    onClickNote: handleOpenNoteFromReminder,
+  });
+
+  // === Mobile 4: gestos (Pacote D) ===
+  // Edge swipe da borda esquerda → abre a Sidebar como gaveta. Só ativa quando
+  // a gaveta NÃO está aberta (evita que o gesto reapareça em cima do drawer).
+  useEdgeSwipe({
+    enabled: isMobile && !sidebarOpenMobile && !noteListOpenMobile,
+    edge: 'left',
+    edgeWidth: 24,
+    threshold: 60,
+    onSwipe: () => setSidebarOpenMobile(true),
+  });
 
   // === A PARTIR DAQUI, NENHUM HOOK NOVO === (early return é seguro só depois de todos os hooks)
 
@@ -249,6 +297,7 @@ function MainApp({ logout }) {
         onCloseMobile={() => setSidebarOpenMobile(false)}
         onLogout={handleLogout}
         onOpenCommandPalette={() => setShowCommandPalette(true)}
+        onOpenNote={handleOpenNoteFromReminder}
       />
       <div className="flex-1 flex overflow-hidden">
         {renderMainArea()}
@@ -270,6 +319,15 @@ function MainApp({ logout }) {
         onClose={() => setShowCommandPalette(false)}
         onAction={handlePaletteAction}
       />
+
+      {/* Pacote C — modal de exportação em lote */}
+      {exportTarget && (
+        <ExportNotebookModal
+          store={store}
+          notebook={exportTarget === 'all' ? null : exportTarget}
+          onClose={() => setExportTarget(null)}
+        />
+      )}
 
       {/* === BOTÕES FIXOS DO RODAPÉ ===
           Em desktop: ficam no canto inferior esquerdo (Ctrl+K, Logout).

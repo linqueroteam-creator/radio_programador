@@ -610,3 +610,134 @@ Restam apenas 3 ocorrências de `text-[8px]` (badges decorativos minúsculos no 
 - `src/components/CommandPalette.jsx` (pt menor em mobile)
 
 — última atualização: Mobile 2 + PWA + polimento de modais, 27/05/2026
+
+
+
+---
+
+### Pacote Quatro-em-Um: Slash + Notificações + Exportação em lote + Gestos Mobile (28/05/2026)
+> Quatro funcionalidades novas entregues juntas, em fases com checkpoint, build e teste entre cada.
+
+**Resultado:** ANOTATA ganhou comandos rápidos no editor, lembretes do navegador, backup em ZIP e gestos mobile completos. Total **44 testes vitest passando** (12 novos do encoder ZIP).
+
+#### Pacote E — Comandos `/` no editor
+
+Digitar `/` em qualquer parágrafo abre um popover flutuante com 13 comandos:
+- Cabeçalho 1/2/3, Texto normal
+- Lista, Lista numerada, Lista de tarefas
+- Citação, Bloco de código, Divisor
+- Data de hoje, Data e hora
+- Inserir imagem (abre seletor de arquivo)
+
+**Implementação:**
+- `src/extensions/SlashCommand.js` — Plugin do ProseMirror (sem dependência `@tiptap/suggestion`). Mantém um state interno `{active, query, range}` e dispara callback `onChange` toda vez que o usuário digita ou apaga.
+- `src/components/SlashMenu.jsx` — Popover renderizado via `createPortal`, posicionado por `editor.view.coordsAtPos(range.from)`. Auto-flip vertical, navegação por setas/Enter/Tab/Esc, busca por keywords PT-BR.
+- Cada comando executa `editor.chain().focus().deleteRange(range).[ação]().run()` — apaga o "/foo" digitado e aplica o comando do Tiptap.
+- Editor.jsx ganhou `slashState` + `slashKeyHandlerRef` (ANTES de qualquer early return — Rules of Hooks).
+
+#### Pacote B — Notificações de prazo (Web Notifications API)
+
+Sino 🔔 no topo da Sidebar (visível tanto expandida quanto recolhida). Badge numérico mostra quantos prazos urgentes existem (vencidos / hoje / amanhã), com cor por severidade. Clicar abre popover com:
+- Status da permissão (concedida / negada / não suportado)
+- Toggle "Ativar / Desativar lembretes"
+- Botão "Tocar agora" (notificação de teste)
+- Lista de prazos próximos (clicáveis → abrem a nota)
+
+**Comportamento:**
+- Permissão real (`Notification.requestPermission`) só é pedida quando o usuário clica em "Ativar" pela primeira vez (gesto do usuário — exigência dos browsers).
+- Verifica prazos a cada 5 minutos + sempre que a aba fica invisível (`visibilitychange`).
+- **Não notifica** quando a aba está visível e em foco — UX: o usuário já está vendo o app.
+- Dedup por `noteId-status-yyyymmdd` em `store.settings.notifications.lastNotifiedKeys` (auto-cleanup das chaves > 7 dias).
+- Click na notificação foca a aba e abre a nota correspondente.
+
+**Arquivos novos:**
+- `src/hooks/useDueDateReminders.js` (~180 linhas) — hook com `requestNotificationPermission`, `fireNotification`, `fireTestNotification`, e o hook principal com checagem periódica + visibilitychange.
+- `src/components/NotificationsBell.jsx` (~250 linhas) — botão do sino + popover via portal.
+
+**Arquivos modificados:**
+- `src/store/useStore.js` — campo `settings.notifications` com migração suave (`migrateSettings`), 3 setters: `setNotificationsEnabled`, `recordNotificationKey`, `clearNotificationKeys`.
+- `src/components/Sidebar.jsx` — sino no header expandido + entre Menu e nav no recolhido.
+- `src/App.jsx` — chama `useDueDateReminders(...)` (ANTES de qualquer early return) + `handleOpenNoteFromReminder`.
+
+#### Pacote C — Exportação em lote (ZIP nativo, sem dependências)
+
+Cada caderno na home ganhou opção "Exportar caderno..." no menu de "...". O cabeçalho da Home tem botão "Exportar tudo" (todas as notas do app). A Central de Comandos (`Ctrl+K`) tem entrada pra cada caderno + uma genérica.
+
+**Modal de exportação** oferece escolha de:
+- **Escopo:** todas as notas ou só favoritas
+- **Formato:** `.md` (Markdown), `.txt` (texto puro), ou os dois
+- Resumo prévio com contagem de notas e palavras
+- Estado de "Gerando..." → "Pronto ✓" pra evitar duplo-clique
+
+**O ZIP gerado contém:**
+- Cada nota como arquivo separado, nome derivado do título (sanitizado, com unicidade `(2)`, `(3)`...)
+- Markdown com cabeçalho de metadados (tipo, status, prioridade, tags, prazo, datas)
+- Um `LEIA-ME.md` explicando o pacote, com lista numerada de todas as notas
+
+**Encoder ZIP do zero (~280 linhas):**
+- `src/engine/ZipEncoder.js` — encoder STORE (sem compressão DEFLATE), CRC32 com tabela pré-computada, suporte UTF-8 nativo (general purpose flag bit 11), datetime DOS, helpers `safeFilename` e `uniqueNames`.
+- Por que não usar JSZip? Texto markdown comprime mal mesmo com DEFLATE, e a engine do ANOTATA tem policy de zero dependências externas pra funcionalidade local. STORE serve perfeitamente e o código é auditável.
+
+**Testes:**
+- `src/engine/__tests__/ZipEncoder.test.js` — 12 testes cobrindo: assinaturas válidas (PK\3\4, PK\1\2, PK\5\6), múltiplos arquivos com nomes UTF-8 e emojis, validação de erros, sanitização de nomes (caracteres proibidos, limite 80 chars, fallback de vazio), unicidade com sufixos numerados.
+
+**Arquivos novos:**
+- `src/engine/ZipEncoder.js`
+- `src/engine/__tests__/ZipEncoder.test.js`
+- `src/components/ExportNotebookModal.jsx`
+
+**Arquivos modificados:**
+- `src/components/Home.jsx` — botão "Exportar tudo" no header + opção "Exportar caderno..." no menu "..." de cada NotebookCard + state `notebookToExport`.
+- `src/components/CommandPalette.jsx` — comando `export-all-zip` + um por caderno (`export-notebook:{id}`).
+- `src/App.jsx` — `exportTarget` state + handlers no `handlePaletteAction`.
+
+#### Pacote D — Mobile 4: Gestos
+
+Dois gestos novos, ambos nativos no mobile:
+
+**1. Edge swipe da borda esquerda → abre Sidebar**
+- Arraste o dedo de fora pra dentro a partir do canto esquerdo da tela (zona de 24px) → a Sidebar desliza como gaveta.
+- Cancela automaticamente se houver muito movimento vertical (sinal de scroll, não swipe).
+- Cancela se o gesto durar mais de 700ms.
+
+**2. Swipe nos cards de nota**
+- Arrastar o card pra **esquerda** (≥ 180px) → arquiva a nota (ou desarquiva se já estiver arquivada).
+- Arrastar o card pra **direita** (≥ 80px) → favorita/desfavorita.
+- Background revelado durante o gesto: goiaba com ícone de Arquivo à esquerda, dourado com Estrela à direita.
+- Resistência elástica nos extremos (sensação de borracha).
+- Ao soltar antes do gatilho, snap-back animado.
+- Após arquivar, o card sai voando pra fora da tela (animação de 220ms).
+
+**Por que cada um vive em seu hook:**
+- Edge swipe é GLOBAL — listener em `document`. Útil em qualquer tela mobile.
+- Card swipe é LOCAL — listener no elemento específico. Cada card tem seu próprio estado de gesto, sem interferência entre cards.
+
+**Detecção de scroll vs swipe:**
+- O hook `useSwipeableCard` trava a direção dominante no início do gesto. Se ady > adx + dead-zone, abandona o gesto (deixa o scroll vertical acontecer normal).
+- Quando trava em horizontal, `preventDefault()` no `touchmove` (listener não-passivo) impede a página de rolar enquanto o card desliza.
+
+**Arquivos novos:**
+- `src/hooks/useEdgeSwipe.js` (~85 linhas)
+- `src/hooks/useSwipeableCard.js` (~170 linhas)
+
+**Arquivos modificados:**
+- `src/App.jsx` — chama `useEdgeSwipe` (apenas em mobile e quando nenhuma gaveta está aberta).
+- `src/components/NoteList.jsx` — `NoteCard` virou wrapper com 2 camadas: background revelado + card que move via `translateX`. `touchAction: pan-y` permite rolagem vertical normal mas reserva horizontal pro nosso gesto.
+
+#### Tests
+- 32 testes antigos (Reescritor F3, smoke, RephrasePopover, LinkPicker)
+- 12 testes novos (ZipEncoder)
+- **Total: 44 testes vitest passando** (`npm test`)
+
+#### Build final
+- 912 KB / 268 KB gzip (CSS 43 KB / 8 KB gzip)
+- Build em 3.34s
+- Zero warning além do "chunk maior que 500 KB" que já existia
+
+#### Lições da entrega
+1. **Encoder ZIP em puro JS é viável e barato** quando o conteúdo é só texto. STORE+CRC32 = ~150 linhas de código estável.
+2. **Web Notifications precisa de gesto do usuário** pra pedir permissão. Tentar dentro de um useEffect = browser ignora. Botão clicável é obrigatório.
+3. **Gestos no mobile + scroll + swipe = brigam fácil**. A solução é travar a direção dominante na "dead zone" inicial e nunca mais soltar. Sem isso, o app fica intratável.
+4. **Slash commands sem `@tiptap/suggestion`** funcionam perfeitamente: um Plugin de ~100 linhas com `appendTransaction` + regex no texto antes do cursor faz o trabalho, sem dep externa.
+
+— última atualização: Slash + Notificações + Exportação ZIP + Gestos Mobile, 28/05/2026
