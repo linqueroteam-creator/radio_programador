@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 const STORAGE_KEY = 'anotata-data';
-const SCHEMA_VERSION = 2;
+const BACKUP_PRE_V3_KEY = 'np_backup_pre_v3';
+const SCHEMA_VERSION = 3;
 
 // === MIGRAÇÃO SUAVE ===
 // Adiciona campos novos sem quebrar notas antigas
@@ -58,8 +59,16 @@ function migrateNote(note) {
 const defaultData = {
   schemaVersion: SCHEMA_VERSION,
   notebooks: [
-    { id: 'default', name: 'Meu Caderno', color: '#5B2D8E', createdAt: new Date().toISOString() }
+    {
+      id: 'default',
+      name: 'Meu Caderno',
+      color: '#5B2D8E',
+      lifeArea: 'outros',  // v3: área da vida do caderno (dedução automática na migração)
+      projectId: null,     // v3: caderno avulso (sem projeto)
+      createdAt: new Date().toISOString(),
+    }
   ],
+  projects: [],            // v3: entidade Projeto (peça da hierarquia)
   notes: [
     migrateNote({
       id: uuidv4(),
@@ -99,6 +108,89 @@ function migrateSettings(settings) {
   };
 }
 
+// === MIGRAÇÃO v2 → v3: Hierarquia Áreas/Projetos/Cadernos/Notas ===
+//
+// Spec: docs/HIERARQUIA-AREAS-PROJETOS-CADERNOS-NOTAS.md (PR #25, mesclado)
+//
+// Adiciona:
+//   - projects: []                         (entidade Projeto, opcional)
+//   - notebook.lifeArea (string)           (deduzido pela maioria das notas)
+//   - notebook.projectId (string | null)   (null = caderno avulso)
+//
+// Princípios:
+//   - Silenciosa: usuário não percebe.
+//   - Idempotente: roda quantas vezes for, resultado igual.
+//   - Reversível: backup completo do estado pré-migração em
+//     localStorage[BACKUP_PRE_V3_KEY] antes da primeira migração.
+//   - Não destrutiva: nenhum dado existente é apagado.
+function migrateNotebook(notebook, allNotes) {
+  // Já migrado? Mantém intacto (idempotência).
+  if (notebook && typeof notebook.lifeArea === 'string' && 'projectId' in notebook) {
+    return notebook;
+  }
+
+  // Inferir lifeArea pela maioria das notas dentro do caderno.
+  // Se não houver maioria clara, default 'outros'.
+  const inferLifeArea = () => {
+    if (!Array.isArray(allNotes) || allNotes.length === 0) return 'outros';
+    const counts = {};
+    allNotes.forEach(n => {
+      if (n && n.notebookId === notebook.id) {
+        const area = (n.lifeArea && typeof n.lifeArea === 'string') ? n.lifeArea : 'outros';
+        counts[area] = (counts[area] || 0) + 1;
+      }
+    });
+    const entries = Object.entries(counts);
+    if (entries.length === 0) return 'outros';
+    entries.sort((a, b) => b[1] - a[1]);
+    return entries[0][0];
+  };
+
+  return {
+    ...notebook,
+    lifeArea: notebook.lifeArea || inferLifeArea(),
+    projectId: 'projectId' in notebook ? notebook.projectId : null,
+  };
+}
+
+// Detecta se o estado precisa migrar pra v3.
+// Critério: schemaVersion < 3, OU falta `projects`, OU algum caderno sem lifeArea.
+function needsMigrationToV3(parsed) {
+  if (!parsed) return false;
+  if ((parsed.schemaVersion || 0) < 3) return true;
+  if (!Array.isArray(parsed.projects)) return true;
+  if (Array.isArray(parsed.notebooks)) {
+    for (const nb of parsed.notebooks) {
+      if (!nb || typeof nb.lifeArea !== 'string' || !('projectId' in nb)) return true;
+    }
+  }
+  return false;
+}
+
+// Salva backup completo do estado pré-v3 (uma vez só).
+// Se já existe backup, não sobrescreve — preserva a versão mais antiga.
+function saveBackupPreV3IfNeeded(rawJson) {
+  try {
+    const existing = localStorage.getItem(BACKUP_PRE_V3_KEY);
+    if (existing) return; // backup já feito numa migração anterior, não sobrescrever
+    localStorage.setItem(BACKUP_PRE_V3_KEY, rawJson);
+  } catch (_) { /* defensivo: storage cheio, etc. */ }
+}
+
+// Aplica a migração v2→v3 num objeto de estado já parseado.
+// Retorna novo objeto (não muta entrada).
+function applyMigrationV3(parsed) {
+  const notebooks = Array.isArray(parsed.notebooks) ? parsed.notebooks : [];
+  const notes = Array.isArray(parsed.notes) ? parsed.notes : [];
+  const migratedNotebooks = notebooks.map(nb => migrateNotebook(nb, notes));
+  return {
+    ...parsed,
+    notebooks: migratedNotebooks,
+    projects: Array.isArray(parsed.projects) ? parsed.projects : [],
+    schemaVersion: 3,
+  };
+}
+
 function saveToStorage(data) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -112,12 +204,22 @@ function loadFromStorage() {
   if (!saved) return null;
   try {
     const parsed = JSON.parse(saved);
-    // Aplicar migração nas notas se vierem do schema antigo
+
+    // Migração v1 → v2: notas (já existente)
     if (parsed.notes && Array.isArray(parsed.notes)) {
       parsed.notes = parsed.notes.map(migrateNote);
     }
     if (!parsed.categories) parsed.categories = [];
     parsed.settings = migrateSettings(parsed.settings);
+
+    // Migração v2 → v3: Projetos + lifeArea/projectId em cadernos.
+    // Spec: docs/HIERARQUIA-AREAS-PROJETOS-CADERNOS-NOTAS.md
+    if (needsMigrationToV3(parsed)) {
+      // Backup completo do estado anterior (uma vez só) antes de mexer.
+      saveBackupPreV3IfNeeded(saved);
+      return applyMigrationV3(parsed);
+    }
+
     parsed.schemaVersion = SCHEMA_VERSION;
     return parsed;
   } catch (e) {
@@ -137,6 +239,18 @@ function createVersion(note) {
     priority: note.priority,
   };
 }
+
+// === EXPORTS PUROS (pra teste) ===
+//
+// Estas funções são puras e testáveis sem montar o hook React inteiro.
+// Manter sincronizadas com a lógica usada em loadFromStorage().
+export {
+  migrateNotebook as _migrateNotebook,
+  needsMigrationToV3 as _needsMigrationToV3,
+  applyMigrationV3 as _applyMigrationV3,
+  SCHEMA_VERSION as _SCHEMA_VERSION,
+  BACKUP_PRE_V3_KEY as _BACKUP_PRE_V3_KEY,
+};
 
 export function useStore() {
   const [data, setData] = useState(defaultData);
@@ -514,8 +628,17 @@ export function useStore() {
   }, [data.notes]);
 
   // === CADERNOS ===
-  const createNotebook = useCallback((name, color = '#5B2D8E') => {
-    const newNotebook = { id: uuidv4(), name, color, createdAt: new Date().toISOString() };
+  const createNotebook = useCallback((name, color = '#5B2D8E', extra = {}) => {
+    // v3: lifeArea e projectId fazem parte do caderno (ver spec).
+    // Defaults sensatos: lifeArea='outros' (área genérica), projectId=null (avulso).
+    const newNotebook = {
+      id: uuidv4(),
+      name,
+      color,
+      lifeArea: extra.lifeArea || 'outros',
+      projectId: extra.projectId === undefined ? null : extra.projectId,
+      createdAt: new Date().toISOString(),
+    };
     setData(prev => ({ ...prev, notebooks: [...prev.notebooks, newNotebook] }));
     return newNotebook.id;
   }, []);
