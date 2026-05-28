@@ -1,113 +1,112 @@
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
-import { X, Map as MapIcon, Plus, Sparkles, Compass, BookOpen } from 'lucide-react';
+import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import { X, Plus, Sparkles, BookOpen, ArrowLeft, UserCircle2, Camera } from 'lucide-react';
 import { NOTE_TYPES } from '../engine/RulesEngine';
 import rulesEngine from '../engine/RulesEngine';
 
 /**
- * ===== MAPA VISUAL — ECOSSISTEMA PESSOAL (v2 polido) =====
+ * ===== MAPA VISUAL — ECOSSISTEMA PESSOAL (v3 imersivo) =====
  *
- * Hierarquia conceitual:
- *   NÍVEL 1 (centro) — "Meu Espaço" (o eu, o núcleo, ponto de origem)
- *   NÍVEL 2 (1º anel) — Cadernos (agrupadores)
- *   NÍVEL 3 (2º anel) — Anotações (ligadas ao caderno-pai)
- *   NÍVEL 4 (arcos)  — Conexões entre anotações (manuais + sugeridas)
+ * Hierarquia conceitual mantida:
+ *   NÍVEL 1 — Núcleo (você)
+ *   NÍVEL 2 — Cadernos
+ *   NÍVEL 3 — Anotações
+ *   NÍVEL 4 — Conexões
  *
- * Refinamentos R1 sobre v1:
- *  - Centro pulsa suavemente (loop 4s) — sensação de respiração
- *  - Animação coreografada de entrada: centro → cadernos → notas → conexões
- *  - Hover expressivo com "highlight de subconjunto":
- *    quando hover num caderno, ele e suas notas-filhas ganham saturação;
- *    o resto do mapa entra em modo fantasma
- *  - Conexões tracejadas têm fluxo animado quando destacadas
- *  - Tipografia system-ui com hierarquia clara
- *  - Posicionamento adaptativo: 1 caderno → arco lateral; 2+ → radial
- *  - Tooltips nativos via <title> em cada elemento
- *  - Estado vazio mais convidativo (com botão criar nota)
- *  - Ícones polidos (livro Lucide-style, pessoa estilizada)
+ * Refinamentos R2:
+ *  - Tela cheia imersiva (não modal popup)
+ *  - Núcleo com avatar (foto upload via clique → base64 localStorage)
+ *  - Sem texto "MEU ESPAÇO" embaixo (avatar é a identidade)
+ *  - 3 ondas concêntricas pulsando emanando do centro
+ *  - Cadernos com aspecto físico: capa colorida + lombada + páginas + relevo
+ *  - Linhas orgânicas (Bezier suaves) com leve oscilação contínua
+ *  - Pulsos de luz percorrendo as linhas com cores semânticas
  *
  * Implementação 100% SVG nativa + animação CSS — sem dependência nova.
- *
- * Segurança:
- *  - TODOS os hooks ANTES de qualquer early return (Rules of Hooks)
- *  - Defensivo: ?., || [], try
- *  - Não toca em useStore além de funções já existentes
+ * Avatar persistido em localStorage 'anotata-avatar' (não toca no useStore).
  */
 
-// === Paletas ===
-const FORCE_PALETTE = {
-  forte: { stroke: '#0F7A3F', fill: '#D4F4DD', label: 'forte' },
-  média: { stroke: '#9B6F00', fill: '#FFF4D9', label: 'média' },
-  fraca: { stroke: '#5B2D8E', fill: '#EDE8F2', label: 'fraca' },
-};
-const MANUAL_PALETTE = { stroke: '#5B2D8E', fill: '#FFFFFF', label: 'manual' };
+const AVATAR_STORAGE_KEY = 'anotata-avatar';
+const AVATAR_MAX_BYTES = 800 * 1024; // 800KB seguro pra localStorage
 
-// Fonte usada em todos os <text> do SVG
+// === Paletas de conexões ===
+const FORCE_PALETTE = {
+  forte: { stroke: '#0F7A3F', glow: '#1FB55C', label: 'forte' },
+  média: { stroke: '#9B6F00', glow: '#D49B1F', label: 'média' },
+  fraca: { stroke: '#7B4DBA', glow: '#9F77D8', label: 'fraca' },
+};
+const MANUAL_PALETTE = { stroke: '#5B2D8E', glow: '#7B4DBA', label: 'manual' };
+
 const SVG_FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Helvetica Neue", Arial, sans-serif';
 
 
-// === CSS embutido no SVG (animações + classes utilitárias) ===
-// Usar `<style>` dentro do SVG é seguro em todos os navegadores modernos.
+// === CSS embutido — animações (centro pulsante, ondas emanando, oscilação orgânica) ===
 const SVG_STYLE = `
-  @keyframes anotata-pulse {
-    0%, 100% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.04); opacity: 0.92; }
+  @keyframes a-pulse-core {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.025); }
   }
-  @keyframes anotata-halo {
-    0%, 100% { opacity: 0.18; }
-    50% { opacity: 0.32; }
+  @keyframes a-emanate {
+    0% { transform: scale(0.85); opacity: 0.6; }
+    100% { transform: scale(1.55); opacity: 0; }
   }
-  @keyframes anotata-fade-up {
-    0% { opacity: 0; transform: translateY(8px) scale(0.85); }
-    100% { opacity: 1; transform: translateY(0) scale(1); }
-  }
-  @keyframes anotata-fade-in {
+  @keyframes a-fade-in {
     0% { opacity: 0; }
     100% { opacity: 1; }
   }
-  @keyframes anotata-flow {
-    0% { stroke-dashoffset: 0; }
-    100% { stroke-dashoffset: -18; }
+  @keyframes a-fade-up {
+    0% { opacity: 0; transform: translateY(10px) scale(0.85); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes a-organic-1 {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+  }
+  @keyframes a-organic-2 {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(3px); }
   }
 
-  .a-center-core {
+  .a-core-pulse {
     transform-origin: center;
     transform-box: fill-box;
-    animation: anotata-pulse 4s ease-in-out infinite, anotata-fade-up 600ms ease-out both;
+    animation: a-pulse-core 4.5s ease-in-out infinite, a-fade-up 700ms ease-out both;
   }
-  .a-center-halo {
-    animation: anotata-halo 4s ease-in-out infinite, anotata-fade-in 800ms ease-out both;
+  .a-emanate {
+    transform-origin: center;
+    transform-box: fill-box;
+    animation: a-emanate 3.6s ease-out infinite;
+    pointer-events: none;
   }
+  .a-emanate-2 { animation-delay: 1.2s; }
+  .a-emanate-3 { animation-delay: 2.4s; }
+
   .a-notebook {
     transform-origin: center;
     transform-box: fill-box;
-    transition: transform 220ms cubic-bezier(.2,.7,.3,1.1), filter 220ms ease;
-    animation: anotata-fade-up 500ms ease-out both;
+    transition: transform 250ms cubic-bezier(.2,.7,.3,1.2), filter 250ms ease;
+    animation: a-fade-up 600ms ease-out both;
   }
-  .a-notebook:hover { transform: translateY(-3px) scale(1.04); }
+  .a-notebook:hover { transform: translateY(-4px) scale(1.05); filter: drop-shadow(0 8px 18px rgba(91,45,142,0.35)); }
+
   .a-note {
     transform-origin: center;
     transform-box: fill-box;
-    transition: transform 200ms ease, filter 200ms ease;
-    animation: anotata-fade-up 450ms ease-out both;
+    transition: transform 220ms ease, filter 220ms ease;
+    animation: a-fade-up 500ms ease-out both;
   }
-  .a-note:hover { transform: scale(1.12); }
-  .a-connection {
-    transition: stroke-width 220ms ease, opacity 220ms ease;
-    animation: anotata-fade-in 700ms ease-out both;
-  }
-  .a-connection.is-flow { animation: anotata-flow 1.6s linear infinite, anotata-fade-in 700ms ease-out both; }
-  .a-structural {
-    transition: opacity 220ms ease, stroke-width 220ms ease;
-    animation: anotata-fade-in 600ms ease-out both;
-  }
+  .a-note:hover { transform: scale(1.14); }
+
+  .a-organic-line-1 { animation: a-organic-1 7s ease-in-out infinite, a-fade-in 800ms ease-out both; }
+  .a-organic-line-2 { animation: a-organic-2 8s ease-in-out infinite, a-fade-in 800ms ease-out both; }
+
   .a-ghost { opacity: 0.18 !important; filter: saturate(0.4); }
-  .a-spotlight { filter: drop-shadow(0 4px 14px rgba(91,45,142,0.25)); }
+  .a-spotlight { filter: drop-shadow(0 6px 20px rgba(91,45,142,0.32)); }
 `;
 
 
 // === Helpers ===
 
-// Distribui N pontos em um círculo. Aceita ângulo inicial customizado.
+// Distribui N pontos em um círculo
 function radialPositions(count, radius, cx, cy, startAngle = -Math.PI / 2, sweep = Math.PI * 2) {
   if (count <= 0) return [];
   if (count === 1) return [{ x: cx + Math.cos(startAngle) * radius, y: cy + Math.sin(startAngle) * radius, angle: startAngle }];
@@ -118,18 +117,15 @@ function radialPositions(count, radius, cx, cy, startAngle = -Math.PI / 2, sweep
   });
 }
 
-// Posicionamento adaptativo dos cadernos no 1º anel
+// Posicionamento adaptativo dos cadernos
 function placeNotebooks(notebooks, cx, cy, radius) {
   const n = notebooks.length;
   if (n === 0) return [];
-  // 1 caderno: à direita (0°) — não fica isolado no topo
   if (n === 1) return radialPositions(1, radius, cx, cy, 0);
-  // 2 cadernos: opostos horizontalmente (0° e 180°)
   if (n === 2) return [
     { x: cx + radius, y: cy, angle: 0 },
     { x: cx - radius, y: cy, angle: Math.PI },
   ];
-  // 3+: distribuição radial uniforme começando do topo
   return radialPositions(n, radius, cx, cy, -Math.PI / 2);
 }
 
@@ -138,13 +134,54 @@ function truncate(str, n) {
   return str.length > n ? str.slice(0, n - 1) + '\u2026' : str;
 }
 
+// Curva Bezier orgânica entre 2 pontos (ligeiro arco)
+function curvedPath(x1, y1, x2, y2, curvature = 0.18) {
+  const midX = (x1 + x2) / 2;
+  const midY = (y1 + y2) / 2;
+  // Vetor perpendicular ao segmento
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const len = Math.sqrt(dx * dx + dy * dy) || 1;
+  const px = -dy / len;
+  const py = dx / len;
+  const off = len * curvature;
+  return `M ${x1} ${y1} Q ${midX + px * off} ${midY + py * off} ${x2} ${y2}`;
+}
+
+// Escurece (negativo) ou clareia (positivo) uma cor hex em N pontos percentuais
+function shadeColor(hex, percent) {
+  if (!hex || hex[0] !== '#') return hex || '#5B2D8E';
+  const num = parseInt(hex.slice(1), 16);
+  const amt = Math.round(2.55 * percent);
+  let r = (num >> 16) + amt;
+  let g = ((num >> 8) & 0x00ff) + amt;
+  let b = (num & 0x0000ff) + amt;
+  r = Math.max(0, Math.min(255, r));
+  g = Math.max(0, Math.min(255, g));
+  b = Math.max(0, Math.min(255, b));
+  return '#' + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
+}
+
+// Curva que desvia do centro (pra conexões inter-notas não passarem por cima do núcleo)
+function arcAroundCenter(x1, y1, x2, y2, cx, cy, strength = 0.32) {
+  const midX = (x1 + x2) / 2;
+  const midY = (y1 + y2) / 2;
+  // Desvia na direção oposta ao centro
+  const offX = (midX - cx) * strength;
+  const offY = (midY - cy) * strength;
+  return `M ${x1} ${y1} Q ${midX + offX} ${midY + offY} ${x2} ${y2}`;
+}
+
 
 // ================== COMPONENTE PRINCIPAL ==================
 
 export default function ConnectionMap({ note, store, onClose }) {
   // ====== TODOS OS HOOKS NO TOPO ======
   const [hoveredId, setHoveredId] = useState(null);
-  const [hoveredType, setHoveredType] = useState(null); // 'notebook' | 'note' | null
+  const [hoveredType, setHoveredType] = useState(null);
+  const [avatarUrl, setAvatarUrl] = useState(null);
+  const [avatarError, setAvatarError] = useState(null);
+  const fileInputRef = useRef(null);
 
   // ESC fecha
   useEffect(() => {
@@ -152,6 +189,16 @@ export default function ConnectionMap({ note, store, onClose }) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
+
+  // Carrega avatar do localStorage no mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(AVATAR_STORAGE_KEY);
+      if (saved && saved.startsWith('data:image/')) {
+        setAvatarUrl(saved);
+      }
+    } catch (_) { /* defensivo */ }
+  }, []);
 
   // Cadernos
   const notebooks = useMemo(() => {
@@ -177,7 +224,6 @@ export default function ConnectionMap({ note, store, onClose }) {
     const seen = new Set();
     const activeNotes = (store.notes || []).filter(n => !n.isTrash && !n.isArchived);
     activeNotes.forEach(n => {
-      // Manuais
       (n.manualConnections || []).forEach(c => {
         const targetId = typeof c === 'string' ? c : c?.noteId;
         const reason = typeof c === 'string' ? '' : (c?.reason || '');
@@ -189,7 +235,6 @@ export default function ConnectionMap({ note, store, onClose }) {
         seen.add(key);
         connections.push({ key, sourceId: n.id, targetId, reason, kind: 'manual' });
       });
-      // Sugeridas
       try {
         const suggested = rulesEngine.suggestConnections(n, store.notes, 4) || [];
         suggested.forEach(s => {
@@ -209,14 +254,13 @@ export default function ConnectionMap({ note, store, onClose }) {
     return connections;
   }, [store.notes]);
 
-
-  // Layout completo: centro fixo + 1º anel (cadernos) + 2º anel (notas)
+  // Layout: centro + 1º anel (cadernos) + 2º anel (notas)
   const layout = useMemo(() => {
     const VIEW = 1000;
     const cx = VIEW / 2;
     const cy = VIEW / 2;
-    const RING1 = 220;
-    const RING2 = 410;
+    const RING1 = 230;
+    const RING2 = 420;
 
     const nbPositions = placeNotebooks(notebooks, cx, cy, RING1);
     const notebookNodes = notebooks.map((nb, i) => ({
@@ -227,22 +271,17 @@ export default function ConnectionMap({ note, store, onClose }) {
       ...nbPositions[i],
     }));
 
-    // Notas: spread angular adaptativo ao redor do caderno-pai
     const noteNodes = [];
     notebooks.forEach((nb, nbIdx) => {
       const notes = notesByNotebook[nb.id] || [];
       if (notes.length === 0) return;
       const baseAngle = nbPositions[nbIdx]?.angle ?? -Math.PI / 2;
-
-      // Spread maior quando há poucos cadernos (mais espaço pra ocupar)
       let maxSpread;
-      if (notebooks.length === 1) maxSpread = Math.PI * 1.5;     // 270°
-      else if (notebooks.length === 2) maxSpread = Math.PI * 0.9; // 162°
+      if (notebooks.length === 1) maxSpread = Math.PI * 1.5;
+      else if (notebooks.length === 2) maxSpread = Math.PI * 0.9;
       else maxSpread = Math.min(Math.PI / 2.2, (Math.PI * 2 / notebooks.length) * 0.85);
-
       const step = notes.length > 1 ? maxSpread / (notes.length - 1) : 0;
       const startA = baseAngle - maxSpread / 2;
-
       notes.forEach((nt, nIdx) => {
         const a = notes.length === 1 ? baseAngle : startA + nIdx * step;
         noteNodes.push({
@@ -263,7 +302,7 @@ export default function ConnectionMap({ note, store, onClose }) {
   }, [notebooks, notesByNotebook]);
 
 
-  // Handlers
+  // === Handlers ===
   const handleOpenNote = useCallback((noteId) => {
     if (!noteId) return;
     store.setSelectedNoteId(noteId);
@@ -274,29 +313,66 @@ export default function ConnectionMap({ note, store, onClose }) {
   const handleCreateNote = useCallback(() => {
     if (typeof store.createNote === 'function') {
       try {
-        // Usa o primeiro caderno existente se houver, senão 'default'
         const firstNbId = (notebooks[0] && notebooks[0].id) || 'default';
-        store.createNote(firstNbId); // já chama setSelectedNoteId internamente
+        store.createNote(firstNbId);
         store.setCurrentView('all');
       } catch (_) { /* defensivo */ }
     }
     onClose();
   }, [store, onClose, notebooks]);
 
-  // Highlight de subconjunto: quando hover num caderno ou nota, calcula
-  // quais ids fazem parte do "destaque" (caderno + suas notas + linhas)
+  // === Avatar handlers ===
+  const handleAvatarClick = useCallback(() => {
+    if (fileInputRef.current) fileInputRef.current.click();
+  }, []);
+
+  const handleAvatarFile = useCallback((e) => {
+    setAvatarError(null);
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setAvatarError('Arquivo precisa ser uma imagem');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      if (typeof dataUrl !== 'string') return;
+      if (dataUrl.length > AVATAR_MAX_BYTES * 1.4) {
+        setAvatarError('Imagem grande demais. Use até 800KB.');
+        return;
+      }
+      try {
+        localStorage.setItem(AVATAR_STORAGE_KEY, dataUrl);
+        setAvatarUrl(dataUrl);
+      } catch (_) {
+        setAvatarError('Não consegui salvar a foto.');
+      }
+    };
+    reader.onerror = () => setAvatarError('Erro ao ler o arquivo.');
+    reader.readAsDataURL(file);
+    // Reset input pra permitir re-upload da mesma foto
+    e.target.value = '';
+  }, []);
+
+  const handleAvatarRemove = useCallback(() => {
+    try {
+      localStorage.removeItem(AVATAR_STORAGE_KEY);
+      setAvatarUrl(null);
+    } catch (_) { /* defensivo */ }
+  }, []);
+
+  // Highlight de subconjunto
   const highlightSet = useMemo(() => {
     if (!hoveredId) return null;
     const set = new Set([hoveredId]);
     if (hoveredType === 'notebook') {
-      // Caderno em hover: incluir todas as notas-filhas
       layout.noteNodes.forEach(nn => {
         if (nn.notebookId === hoveredId) set.add(nn.id);
       });
     } else if (hoveredType === 'note') {
-      // Nota em hover: incluir o caderno-pai e notas conectadas (manuais/sugeridas)
-      const note = layout.noteNodes.find(nn => nn.id === hoveredId);
-      if (note) set.add(note.notebookId);
+      const nt = layout.noteNodes.find(nn => nn.id === hoveredId);
+      if (nt) set.add(nt.notebookId);
       interNoteConnections.forEach(c => {
         if (c.sourceId === hoveredId) set.add(c.targetId);
         if (c.targetId === hoveredId) set.add(c.sourceId);
@@ -315,70 +391,87 @@ export default function ConnectionMap({ note, store, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center p-4"
-      style={{ background: 'rgba(45, 27, 78, 0.55)', backdropFilter: 'blur(6px)' }}
+      className="fixed inset-0 z-[60] bg-gradient-to-br from-[#1A0E33] via-[#2D1B4E] to-[#3D1B66]"
       role="dialog"
       aria-modal="true"
       aria-label="Mapa visual — ecossistema pessoal"
     >
+      {/* Camada de textura sobre o fundo escuro pra criar profundidade */}
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl h-[90vh] max-h-[90vh] flex flex-col overflow-hidden border border-anotata-border"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* HEADER */}
-        <div className="px-5 py-3 border-b border-anotata-border bg-anotata-sidebar flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-anotata-roxo to-anotata-roxo-escuro flex items-center justify-center text-white shadow-sm">
-            <Compass size={16} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h2 className="text-sm font-semibold text-anotata-text">Meu Ecossistema</h2>
-            <p className="text-xs text-anotata-muted truncate">
-              {totalNotebooks} {totalNotebooks === 1 ? 'caderno' : 'cadernos'} · {totalNotes} {totalNotes === 1 ? 'anotação' : 'anotações'} · {totalConnections} {totalConnections === 1 ? 'conexão' : 'conexões'}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-lg text-anotata-muted hover:text-anotata-goiaba hover:bg-white transition-colors focus-visible:ring-2 focus-visible:ring-anotata-roxo/50"
-            aria-label="Fechar mapa"
-            title="Fechar (Esc)"
-          >
-            <X size={16} />
-          </button>
-        </div>
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse at center, rgba(123,77,186,0.18) 0%, transparent 60%)',
+        }}
+      />
 
-        {/* LEGENDA */}
-        <div className="px-5 py-2 bg-anotata-bg border-b border-anotata-border flex items-center gap-x-4 gap-y-1 text-xs text-anotata-text-suave flex-wrap">
-          <LegendDot color="#5B2D8E" label="Núcleo (você)" />
-          <LegendSquare color="#3D1B66" label="Caderno" />
-          <LegendCircle color="#FFFFFF" border="#5B2D8E" label="Anotação" />
-          <span className="text-anotata-border">·</span>
-          <LegendLine color="#5B2D8E" dashed={false} label="Pertence" />
-          <LegendLine color="#0F7A3F" dashed={true} label="Forte" />
-          <LegendLine color="#9B6F00" dashed={true} label="Média" />
-          <LegendLine color="#5B2D8E" dashed={true} label="Fraca" />
+      {/* HEADER FLUTUANTE glass */}
+      <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-5 py-3 backdrop-blur-md bg-white/8 border-b border-white/10">
+        <button
+          onClick={onClose}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg text-white/85 hover:text-white hover:bg-white/10 transition-colors focus-visible:ring-2 focus-visible:ring-white/40"
+          aria-label="Voltar para o editor"
+        >
+          <ArrowLeft size={16} />
+          <span className="text-sm font-medium">Voltar</span>
+        </button>
+        <div className="flex flex-col items-center text-center">
+          <h2 className="text-sm font-semibold text-white tracking-wide">Meu Ecossistema</h2>
+          <p className="text-2xs text-white/60">
+            {totalNotebooks} {totalNotebooks === 1 ? 'caderno' : 'cadernos'} · {totalNotes} {totalNotes === 1 ? 'anotação' : 'anotações'} · {totalConnections} {totalConnections === 1 ? 'conexão' : 'conexões'}
+          </p>
         </div>
+        <button
+          onClick={onClose}
+          className="p-2 rounded-lg text-white/85 hover:text-white hover:bg-white/10 transition-colors focus-visible:ring-2 focus-visible:ring-white/40"
+          aria-label="Fechar mapa"
+          title="Fechar (Esc)"
+        >
+          <X size={18} />
+        </button>
+      </div>
 
-        {/* CORPO */}
-        <div className="flex-1 relative overflow-hidden bg-gradient-to-br from-anotata-bg via-white to-anotata-lavanda-clara">
-          {isEmpty ? (
-            <MapEmptyState onClose={onClose} onCreate={handleCreateNote} hasNotebookNoNotes={false} />
-          ) : onlyNotebooksNoNotes ? (
-            <MapEmptyState onClose={onClose} onCreate={handleCreateNote} hasNotebookNoNotes={true} />
-          ) : (
-            <EcosystemSvg
-              layout={layout}
-              connections={interNoteConnections}
-              hoveredId={hoveredId}
-              hoveredType={hoveredType}
-              highlightSet={highlightSet}
-              setHoveredId={setHoveredId}
-              setHoveredType={setHoveredType}
-              onOpenNote={handleOpenNote}
-            />
-          )}
+      {/* Input file invisível pra avatar */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleAvatarFile}
+        className="hidden"
+        aria-label="Escolher foto de perfil"
+      />
+
+      {/* CORPO DO MAPA — ocupa tela toda */}
+      <div className="absolute inset-0 pt-16">
+        {isEmpty ? (
+          <MapEmptyState onClose={onClose} onCreate={handleCreateNote} hasNotebookNoNotes={false} />
+        ) : onlyNotebooksNoNotes ? (
+          <MapEmptyState onClose={onClose} onCreate={handleCreateNote} hasNotebookNoNotes={true} />
+        ) : (
+          <EcosystemSvg
+            layout={layout}
+            connections={interNoteConnections}
+            hoveredId={hoveredId}
+            hoveredType={hoveredType}
+            highlightSet={highlightSet}
+            setHoveredId={setHoveredId}
+            setHoveredType={setHoveredType}
+            onOpenNote={handleOpenNote}
+            avatarUrl={avatarUrl}
+            onAvatarClick={handleAvatarClick}
+            onAvatarRemove={handleAvatarRemove}
+          />
+        )}
+      </div>
+
+      {/* Toast de erro de avatar */}
+      {avatarError && (
+        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg bg-anotata-goiaba text-white text-sm shadow-2xl z-20">
+          {avatarError}
         </div>
+      )}
 
-        {/* PAINEL INFERIOR */}
+      {/* PAINEL INFERIOR flutuante glass */}
+      <div className="absolute bottom-0 left-0 right-0 z-10">
         <EcosystemDetailPanel
           hoveredId={hoveredId}
           hoveredType={hoveredType}
@@ -391,65 +484,16 @@ export default function ConnectionMap({ note, store, onClose }) {
 }
 
 
-// ================== LEGENDAS ==================
-
-function LegendDot({ color, label }) {
-  return (
-    <span className="flex items-center gap-1.5">
-      <svg width="12" height="12" aria-hidden="true">
-        <circle cx="6" cy="6" r="5" fill={color} />
-      </svg>
-      {label}
-    </span>
-  );
-}
-
-function LegendSquare({ color, label }) {
-  return (
-    <span className="flex items-center gap-1.5">
-      <svg width="12" height="12" aria-hidden="true">
-        <rect x="1.5" y="1.5" width="9" height="9" rx="2" fill={color} />
-      </svg>
-      {label}
-    </span>
-  );
-}
-
-function LegendCircle({ color, border, label }) {
-  return (
-    <span className="flex items-center gap-1.5">
-      <svg width="12" height="12" aria-hidden="true">
-        <circle cx="6" cy="6" r="4.5" fill={color} stroke={border} strokeWidth="1.5" />
-      </svg>
-      {label}
-    </span>
-  );
-}
-
-function LegendLine({ color, dashed, label }) {
-  return (
-    <span className="flex items-center gap-1.5">
-      <svg width="20" height="6" aria-hidden="true">
-        <line
-          x1="0" y1="3" x2="20" y2="3"
-          stroke={color}
-          strokeWidth="2"
-          strokeDasharray={dashed ? '4 3' : '0'}
-          strokeLinecap="round"
-        />
-      </svg>
-      {label}
-    </span>
-  );
-}
-
-
 // ================== SVG PRINCIPAL ==================
 
-function EcosystemSvg({ layout, connections, hoveredId, hoveredType, highlightSet, setHoveredId, setHoveredType, onOpenNote }) {
+function EcosystemSvg({
+  layout, connections, hoveredId, hoveredType, highlightSet,
+  setHoveredId, setHoveredType, onOpenNote,
+  avatarUrl, onAvatarClick, onAvatarRemove,
+}) {
   const { cx, cy, view, notebookNodes, noteNodes, ring1, ring2 } = layout;
 
-  // Mapa rápido de posição por id (para desenhar conexões)
+  // Mapa de posição por id
   const posById = useMemo(() => {
     const m = {};
     noteNodes.forEach(n => { m[n.id] = { x: n.x, y: n.y }; });
@@ -457,15 +501,11 @@ function EcosystemSvg({ layout, connections, hoveredId, hoveredType, highlightSe
     return m;
   }, [noteNodes, notebookNodes]);
 
-  // Helper: um id está "fantasma" (escurecido) quando há highlight ativo e ele não pertence
-  const isGhost = (id) => highlightSet && !highlightSet.has(id);
-
-  // Atrasos de cascata (entrada coreografada)
+  // Atrasos de cascata
   const delayCenter = 0;
-  const delayNotebookBase = 200;   // depois do centro
-  const delayNoteBase = 200 + notebookNodes.length * 80 + 100; // depois dos cadernos
-  const delayConnections = delayNoteBase + noteNodes.length * 30 + 100;
-
+  const delayNotebookBase = 250;
+  const delayNoteBase = 250 + notebookNodes.length * 90 + 100;
+  const delayConnections = delayNoteBase + noteNodes.length * 35 + 100;
 
   return (
     <svg
@@ -474,44 +514,66 @@ function EcosystemSvg({ layout, connections, hoveredId, hoveredType, highlightSe
       className="w-full h-full"
       style={{ fontFamily: SVG_FONT }}
     >
-      {/* CSS embutido — animações + utilitários */}
       <style>{SVG_STYLE}</style>
 
       <defs>
-        <radialGradient id="centerHalo" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#5B2D8E" stopOpacity="0.35" />
-          <stop offset="60%" stopColor="#5B2D8E" stopOpacity="0.06" />
+        {/* Halo do núcleo */}
+        <radialGradient id="coreHalo" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#7B4DBA" stopOpacity="0.5" />
+          <stop offset="50%" stopColor="#5B2D8E" stopOpacity="0.15" />
           <stop offset="100%" stopColor="#5B2D8E" stopOpacity="0" />
         </radialGradient>
-        <radialGradient id="centerCore" cx="35%" cy="35%" r="80%">
-          <stop offset="0%" stopColor="#7B4DBA" />
-          <stop offset="60%" stopColor="#5B2D8E" />
-          <stop offset="100%" stopColor="#3D1B66" />
+        {/* Núcleo gradiente (caso sem avatar) */}
+        <radialGradient id="coreFill" cx="35%" cy="35%" r="80%">
+          <stop offset="0%" stopColor="#A07BD6" />
+          <stop offset="55%" stopColor="#7B4DBA" />
+          <stop offset="100%" stopColor="#5B2D8E" />
         </radialGradient>
+        {/* Anel pulsante ao redor do avatar */}
+        <radialGradient id="coreRing" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#7B4DBA" stopOpacity="0" />
+          <stop offset="80%" stopColor="#A07BD6" stopOpacity="0.4" />
+          <stop offset="100%" stopColor="#A07BD6" stopOpacity="0" />
+        </radialGradient>
+        {/* Padrão de pontos */}
         <pattern id="dotgrid" patternUnits="userSpaceOnUse" width="44" height="44">
-          <circle cx="22" cy="22" r="1" fill="#5B2D8E" opacity="0.045" />
+          <circle cx="22" cy="22" r="0.9" fill="#FFFFFF" opacity="0.05" />
         </pattern>
-        <filter id="softShadow" x="-50%" y="-50%" width="200%" height="200%">
-          <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#3D1B66" floodOpacity="0.15" />
+        {/* Filtro glow pra pulsos */}
+        <filter id="lineGlow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="2" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+        {/* Mascara circular pro avatar */}
+        <clipPath id="avatarClip">
+          <circle cx={cx} cy={cy} r="64" />
+        </clipPath>
+        {/* Sombras de relevo dos cadernos */}
+        <filter id="bookShadow" x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow dx="2" dy="6" stdDeviation="4" floodColor="#000000" floodOpacity="0.35" />
         </filter>
       </defs>
 
-      {/* Fundo com pontos sutis */}
+      {/* Fundo de pontos */}
       <rect x="0" y="0" width={view} height={view} fill="url(#dotgrid)" />
 
-      {/* Halo do centro (pulsa com o núcleo) */}
-      <circle
-        cx={cx} cy={cy} r={300}
-        fill="url(#centerHalo)"
-        className="a-center-halo"
-      />
+      {/* Halo central */}
+      <circle cx={cx} cy={cy} r={320} fill="url(#coreHalo)" />
 
-      {/* Anéis-guia muito sutis */}
-      <circle cx={cx} cy={cy} r={ring1} fill="none" stroke="#5B2D8E" strokeWidth="0.6" strokeDasharray="3 7" opacity="0.12" className="a-structural" style={{ animationDelay: '300ms' }} />
-      <circle cx={cx} cy={cy} r={ring2} fill="none" stroke="#5B2D8E" strokeWidth="0.5" strokeDasharray="2 9" opacity="0.08" className="a-structural" style={{ animationDelay: '400ms' }} />
+      {/* === Anéis-guia muito sutis === */}
+      <circle cx={cx} cy={cy} r={ring1} fill="none" stroke="#FFFFFF" strokeWidth="0.5" strokeDasharray="3 8" opacity="0.08" />
+      <circle cx={cx} cy={cy} r={ring2} fill="none" stroke="#FFFFFF" strokeWidth="0.4" strokeDasharray="2 10" opacity="0.06" />
 
 
-      {/* === NÍVEL 4: Conexões inter-notas (arcos atrás de tudo) === */}
+      {/* === 3 ondas concêntricas emanando do núcleo === */}
+      <circle cx={cx} cy={cy} r="78" fill="none" stroke="#A07BD6" strokeWidth="2" opacity="0.5" className="a-emanate" />
+      <circle cx={cx} cy={cy} r="78" fill="none" stroke="#A07BD6" strokeWidth="2" opacity="0.5" className="a-emanate a-emanate-2" />
+      <circle cx={cx} cy={cy} r="78" fill="none" stroke="#A07BD6" strokeWidth="2" opacity="0.5" className="a-emanate a-emanate-3" />
+
+      {/* === Conexões inter-notas (atrás de tudo) — orgânicas com pulso === */}
       {connections.map((conn) => {
         const src = posById[conn.sourceId];
         const tgt = posById[conn.targetId];
@@ -519,43 +581,62 @@ function EcosystemSvg({ layout, connections, hoveredId, hoveredType, highlightSe
         const palette = conn.kind === 'manual' ? MANUAL_PALETTE : (FORCE_PALETTE[conn.strength] || FORCE_PALETTE.fraca);
         const isHighlight = hoveredId && (hoveredId === conn.sourceId || hoveredId === conn.targetId);
         const isDimmed = highlightSet && !isHighlight;
-        // Curva desviando do centro para evitar passar por cima dele
-        const midX = (src.x + tgt.x) / 2 + (cy - (src.y + tgt.y) / 2) * 0.32;
-        const midY = (src.y + tgt.y) / 2 + ((src.x + tgt.x) / 2 - cx) * 0.32;
+        const path = arcAroundCenter(src.x, src.y, tgt.x, tgt.y, cx, cy, 0.32);
+        const pathId = `path-conn-${conn.key}`;
         return (
-          <path
-            key={`conn-${conn.key}`}
-            d={`M ${src.x} ${src.y} Q ${midX} ${midY} ${tgt.x} ${tgt.y}`}
-            fill="none"
-            stroke={palette.stroke}
-            strokeWidth={isHighlight ? 2.8 : 1.4}
-            strokeDasharray={conn.kind === 'manual' ? '0' : '6 5'}
-            strokeLinecap="round"
-            opacity={isDimmed ? 0.12 : (isHighlight ? 0.85 : 0.45)}
-            className={`a-connection ${isHighlight && conn.kind !== 'manual' ? 'is-flow' : ''}`}
-            style={{ animationDelay: `${delayConnections}ms` }}
-          >
+          <g key={`conn-${conn.key}`} style={{ animationDelay: `${delayConnections}ms` }} className="a-organic-line-1">
+            <path id={pathId} d={path} fill="none" stroke="none" />
+            <use
+              href={`#${pathId}`}
+              fill="none"
+              stroke={palette.stroke}
+              strokeWidth={isHighlight ? 2.4 : 1.2}
+              strokeDasharray={conn.kind === 'manual' ? '0' : '5 6'}
+              strokeLinecap="round"
+              opacity={isDimmed ? 0.1 : (isHighlight ? 0.85 : 0.4)}
+              style={{ transition: 'all 250ms ease' }}
+            />
+            {/* Pulso de luz percorrendo a curva (apenas quando destacada, performance) */}
+            {isHighlight && (
+              <circle r="3.5" fill={palette.glow} filter="url(#lineGlow)">
+                <animateMotion dur="2s" repeatCount="indefinite">
+                  <mpath href={`#${pathId}`} />
+                </animateMotion>
+              </circle>
+            )}
             <title>{conn.kind === 'manual' ? `Conexão manual: ${conn.reason || 'sem motivo'}` : `Conexão ${conn.strength || 'sugerida'}: ${conn.reason || ''}`}</title>
-          </path>
+          </g>
         );
       })}
 
-      {/* === Linhas estruturais centro → cadernos === */}
+      {/* === Linhas estruturais centro → cadernos (orgânicas) === */}
       {notebookNodes.map((nb, idx) => {
         const dim = highlightSet && !highlightSet.has(nb.id);
+        const lit = hoveredId === nb.id;
+        const path = curvedPath(cx, cy, nb.x, nb.y, 0.12);
+        const pathId = `path-c2nb-${nb.id}`;
         return (
-          <line
-            key={`struct-c-${nb.id}`}
-            x1={cx} y1={cy} x2={nb.x} y2={nb.y}
-            stroke="#3D1B66"
-            strokeWidth={hoveredId === nb.id ? 2.5 : 1.6}
-            strokeLinecap="round"
-            opacity={dim ? 0.12 : (hoveredId === nb.id ? 0.65 : 0.3)}
-            className="a-structural"
-            style={{ animationDelay: `${delayNotebookBase + idx * 80}ms` }}
-          />
+          <g key={`struct-c-${nb.id}`} style={{ animationDelay: `${delayNotebookBase + idx * 90}ms` }} className={idx % 2 === 0 ? 'a-organic-line-1' : 'a-organic-line-2'}>
+            <path id={pathId} d={path} fill="none" stroke="none" />
+            <use
+              href={`#${pathId}`}
+              fill="none"
+              stroke="#FFFFFF"
+              strokeWidth={lit ? 2 : 1.2}
+              strokeLinecap="round"
+              opacity={dim ? 0.08 : (lit ? 0.55 : 0.22)}
+              style={{ transition: 'all 250ms ease' }}
+            />
+            {/* Pulso permanente sutil percorrendo do núcleo até o caderno */}
+            <circle r="2.5" fill="#A07BD6" filter="url(#lineGlow)" opacity={dim ? 0.2 : 0.7}>
+              <animateMotion dur={`${4 + (idx % 3)}s`} repeatCount="indefinite" begin={`${idx * 0.5}s`}>
+                <mpath href={`#${pathId}`} />
+              </animateMotion>
+            </circle>
+          </g>
         );
       })}
+
 
       {/* === Linhas caderno → notas (pertencimento) === */}
       {noteNodes.map((nn, idx) => {
@@ -563,68 +644,121 @@ function EcosystemSvg({ layout, connections, hoveredId, hoveredType, highlightSe
         if (!parent) return null;
         const dim = highlightSet && !(highlightSet.has(nn.id) || highlightSet.has(parent.id));
         const lit = hoveredId === nn.id || hoveredId === parent.id;
+        const path = curvedPath(parent.x, parent.y, nn.x, nn.y, 0.15);
+        const pathId = `path-nb2n-${nn.id}`;
         return (
-          <line
-            key={`struct-n-${nn.id}`}
-            x1={parent.x} y1={parent.y} x2={nn.x} y2={nn.y}
-            stroke={parent.color || '#5B2D8E'}
-            strokeWidth={lit ? 1.8 : 1}
-            strokeLinecap="round"
-            opacity={dim ? 0.1 : (lit ? 0.55 : 0.28)}
-            className="a-structural"
-            style={{ animationDelay: `${delayNoteBase + idx * 30}ms` }}
-          />
+          <g key={`struct-n-${nn.id}`} style={{ animationDelay: `${delayNoteBase + idx * 35}ms` }} className={idx % 2 === 0 ? 'a-organic-line-2' : 'a-organic-line-1'}>
+            <path id={pathId} d={path} fill="none" stroke="none" />
+            <use
+              href={`#${pathId}`}
+              fill="none"
+              stroke={parent.color || '#A07BD6'}
+              strokeWidth={lit ? 1.8 : 1}
+              strokeLinecap="round"
+              opacity={dim ? 0.08 : (lit ? 0.7 : 0.32)}
+              style={{ transition: 'all 250ms ease' }}
+            />
+            {lit && (
+              <circle r="2.5" fill={parent.color || '#A07BD6'} filter="url(#lineGlow)">
+                <animateMotion dur="1.6s" repeatCount="indefinite">
+                  <mpath href={`#${pathId}`} />
+                </animateMotion>
+              </circle>
+            )}
+          </g>
         );
       })}
 
 
-      {/* === NÍVEL 1: Núcleo (Meu Espaço) === */}
-      <g className="a-spotlight" style={{ animationDelay: `${delayCenter}ms` }}>
-        {/* Anel externo branco (cria respiro entre halo e núcleo) */}
-        <circle cx={cx} cy={cy} r={82} fill="#FFFFFF" opacity="0.95" />
-        {/* Núcleo com gradiente radial e pulso */}
-        <g className="a-center-core">
-          <circle cx={cx} cy={cy} r={68} fill="url(#centerCore)" />
-          {/* Borda fina do núcleo */}
-          <circle cx={cx} cy={cy} r={68} fill="none" stroke="#FFFFFF" strokeWidth="1.5" opacity="0.4" />
-          {/* Ícone de pessoa estilizado (linhas elegantes) */}
-          {/* Cabeça */}
-          <circle cx={cx} cy={cy - 14} r={11} fill="none" stroke="#FFFFFF" strokeWidth="2.4" />
-          {/* Tronco — arco aberto no topo */}
-          <path
-            d={`M ${cx - 18} ${cy + 18}
-                C ${cx - 18} ${cy + 4}, ${cx - 8} ${cy - 2}, ${cx} ${cy - 2}
-                C ${cx + 8} ${cy - 2}, ${cx + 18} ${cy + 4}, ${cx + 18} ${cy + 18}`}
-            fill="none" stroke="#FFFFFF" strokeWidth="2.4" strokeLinecap="round"
-          />
-        </g>
-        {/* Texto "MEU ESPAÇO" abaixo do núcleo, em destaque */}
-        <text
-          x={cx} y={cy + 110}
-          textAnchor="middle"
-          fontSize="13"
-          fontWeight="700"
-          fill="#3D1B66"
-          letterSpacing="3"
-          fontFamily={SVG_FONT}
-        >
-          MEU ESPAÇO
-        </text>
-        <title>O centro do seu ecossistema — você</title>
+      {/* === NÚCLEO — avatar com clique pra trocar foto === */}
+      <g
+        className="a-core-pulse"
+        style={{ cursor: 'pointer', animationDelay: `${delayCenter}ms` }}
+        onClick={onAvatarClick}
+        role="button"
+        tabIndex={0}
+        aria-label={avatarUrl ? 'Trocar foto de perfil' : 'Adicionar foto de perfil'}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onAvatarClick(); } }}
+      >
+        {/* Anel pulsante externo */}
+        <circle cx={cx} cy={cy} r="78" fill="url(#coreRing)" />
+        {/* Borda branca */}
+        <circle cx={cx} cy={cy} r="68" fill="#FFFFFF" />
+        {/* Conteúdo: avatar (foto) ou placeholder */}
+        {avatarUrl ? (
+          <>
+            <image
+              href={avatarUrl}
+              x={cx - 64} y={cy - 64}
+              width="128" height="128"
+              clipPath="url(#avatarClip)"
+              preserveAspectRatio="xMidYMid slice"
+            />
+            <circle cx={cx} cy={cy} r="64" fill="none" stroke="#FFFFFF" strokeWidth="2" />
+          </>
+        ) : (
+          <>
+            <circle cx={cx} cy={cy} r="64" fill="url(#coreFill)" />
+            {/* Ícone de pessoa estilizado (paths elegantes) */}
+            <circle cx={cx} cy={cy - 14} r="13" fill="none" stroke="#FFFFFF" strokeWidth="2.6" />
+            <path
+              d={`M ${cx - 22} ${cy + 24}
+                  C ${cx - 22} ${cy + 8}, ${cx - 10} ${cy} ${cx} ${cy}
+                  C ${cx + 10} ${cy}, ${cx + 22} ${cy + 8}, ${cx + 22} ${cy + 24}`}
+              fill="none" stroke="#FFFFFF" strokeWidth="2.6" strokeLinecap="round"
+            />
+            {/* Indicador de "adicionar foto" — câmera pequena no canto */}
+            <g transform={`translate(${cx + 38}, ${cy + 38})`}>
+              <circle cx="0" cy="0" r="14" fill="#5B2D8E" stroke="#FFFFFF" strokeWidth="2.5" />
+              <rect x="-7" y="-4" width="14" height="9" rx="1.5" fill="#FFFFFF" />
+              <circle cx="0" cy="0.5" r="3" fill="#5B2D8E" />
+              <rect x="-2" y="-6" width="4" height="2" rx="0.5" fill="#FFFFFF" />
+            </g>
+          </>
+        )}
+        <title>{avatarUrl ? 'Clique para trocar sua foto' : 'Clique para adicionar sua foto de perfil'}</title>
       </g>
 
+      {/* Botão pequeno "remover foto" (só se tiver foto) */}
+      {avatarUrl && (
+        <g
+          transform={`translate(${cx + 50}, ${cy + 50})`}
+          style={{ cursor: 'pointer' }}
+          onClick={(e) => { e.stopPropagation(); onAvatarRemove(); }}
+          role="button"
+          tabIndex={0}
+          aria-label="Remover foto de perfil"
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onAvatarRemove(); } }}
+        >
+          <circle cx="0" cy="0" r="13" fill="#5B2D8E" stroke="#FFFFFF" strokeWidth="2.5" />
+          <line x1="-5" y1="-5" x2="5" y2="5" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" />
+          <line x1="5" y1="-5" x2="-5" y2="5" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" />
+          <title>Remover foto</title>
+        </g>
+      )}
 
-      {/* === NÍVEL 2: Cadernos === */}
+
+      {/* === NÍVEL 2: Cadernos físicos === */}
       {notebookNodes.map((nb, idx) => {
         const isHover = hoveredId === nb.id && hoveredType === 'notebook';
         const dim = highlightSet && !highlightSet.has(nb.id);
         const noteCount = noteNodes.filter(n => n.notebookId === nb.id).length;
-        const r = 44;
+        const w = 96;  // largura
+        const h = 116; // altura
+        const x = nb.x - w / 2;
+        const y = nb.y - h / 2;
+        const color = nb.color || '#5B2D8E';
+
+        // Gradiente único pra capa de cada caderno
+        const gradId = `nbGrad-${nb.id}`;
+        // Sombra interna da capa (lado direito mais escuro = "abertura")
+        const shadowId = `nbShadow-${nb.id}`;
+
         return (
           <g
             key={`nb-${nb.id}`}
             className={`a-notebook ${dim ? 'a-ghost' : ''} ${isHover ? 'a-spotlight' : ''}`}
-            style={{ cursor: 'pointer', animationDelay: `${delayNotebookBase + idx * 80}ms` }}
+            style={{ cursor: 'pointer', animationDelay: `${delayNotebookBase + idx * 90}ms` }}
             onMouseEnter={() => { setHoveredId(nb.id); setHoveredType('notebook'); }}
             onMouseLeave={() => { setHoveredId(null); setHoveredType(null); }}
             tabIndex={0}
@@ -632,53 +766,104 @@ function EcosystemSvg({ layout, connections, hoveredId, hoveredType, highlightSe
             aria-label={`Caderno ${nb.label}, ${noteCount} ${noteCount === 1 ? 'nota' : 'notas'}`}
           >
             <title>{nb.label} — {noteCount} {noteCount === 1 ? 'nota' : 'notas'}</title>
-            {/* Sombra suave do card */}
-            <rect x={nb.x - r} y={nb.y - r + 4} width={r * 2} height={r * 2} rx={14} fill="#3D1B66" opacity="0.1" />
-            {/* Card de fundo claro */}
+
+            <defs>
+              <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor={shadeColor(color, 30)} />
+                <stop offset="55%" stopColor={color} />
+                <stop offset="100%" stopColor={shadeColor(color, -25)} />
+              </linearGradient>
+              <linearGradient id={shadowId} x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#000000" stopOpacity="0.25" />
+                <stop offset="8%" stopColor="#000000" stopOpacity="0" />
+                <stop offset="100%" stopColor="#000000" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+
+            {/* Páginas (atrás da capa, à direita) — folhas brancas empilhadas */}
+            <rect x={x + w - 4} y={y + 3} width="6" height={h - 6} fill="#F9F6FA" stroke="#D8D3E0" strokeWidth="0.5" rx="1" />
+            <rect x={x + w - 6} y={y + 5} width="6" height={h - 10} fill="#FFFFFF" stroke="#E5E0EB" strokeWidth="0.5" rx="1" />
+
+            {/* CAPA principal */}
             <rect
-              x={nb.x - r} y={nb.y - r} width={r * 2} height={r * 2}
-              rx={14}
+              x={x} y={y} width={w} height={h}
+              rx="3"
+              fill={`url(#${gradId})`}
+              filter="url(#bookShadow)"
+            />
+
+            {/* Lombada à esquerda (faixa mais escura, vertical) */}
+            <rect x={x} y={y} width="14" height={h} fill={shadeColor(color, -40)} rx="3" />
+            <line x1={x + 14} y1={y} x2={x + 14} y2={y + h} stroke="#000000" strokeWidth="0.4" opacity="0.3" />
+            {/* Linhas decorativas na lombada (gomos) */}
+            <line x1={x + 4} y1={y + 14} x2={x + 10} y2={y + 14} stroke="#FFFFFF" strokeWidth="0.6" opacity="0.45" />
+            <line x1={x + 4} y1={y + h - 14} x2={x + 10} y2={y + h - 14} stroke="#FFFFFF" strokeWidth="0.6" opacity="0.45" />
+
+            {/* Sombra interna na junção lombada/capa */}
+            <rect x={x + 14} y={y} width={w - 14} height={h} fill={`url(#${shadowId})`} pointerEvents="none" />
+
+            {/* "Etiqueta" branca no centro da capa pro título */}
+            <rect
+              x={x + 22} y={y + 26}
+              width={w - 30} height={h - 52}
+              rx="2"
               fill="#FFFFFF"
-              stroke={nb.color || '#5B2D8E'}
-              strokeWidth={isHover ? 2.5 : 1.8}
+              opacity="0.94"
             />
-            {/* Faixa colorida lateral (identidade do caderno) */}
+            {/* Sombra suave na etiqueta */}
             <rect
-              x={nb.x - r} y={nb.y - r} width={6} height={r * 2}
-              rx={3}
-              fill={nb.color || '#5B2D8E'}
+              x={x + 22} y={y + 26}
+              width={w - 30} height={h - 52}
+              rx="2"
+              fill="none" stroke={shadeColor(color, -50)} strokeWidth="0.4" opacity="0.4"
             />
-            {/* Ícone de livro (semi-aberto) — desenhado em path elegante */}
-            <g transform={`translate(${nb.x - 14}, ${nb.y - 18})`} fill={nb.color || '#5B2D8E'} opacity="0.92">
-              <path d="M 2 2 L 13 2 L 13 28 L 2 28 Z" />
-              <path d="M 15 2 L 26 2 L 26 28 L 15 28 Z" />
-              <line x1="14" y1="2" x2="14" y2="28" stroke="#FFFFFF" strokeWidth="0.8" opacity="0.5" />
-              <line x1="5" y1="8" x2="10" y2="8" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" opacity="0.85" />
-              <line x1="5" y1="12" x2="10" y2="12" stroke="#FFFFFF" strokeWidth="1" strokeLinecap="round" opacity="0.7" />
-              <line x1="18" y1="8" x2="23" y2="8" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" opacity="0.85" />
-              <line x1="18" y1="12" x2="23" y2="12" stroke="#FFFFFF" strokeWidth="1" strokeLinecap="round" opacity="0.7" />
-            </g>
-            {/* Contador de notas */}
+
+            {/* Título do caderno NA CAPA */}
+            <foreignObject
+              x={x + 24} y={y + 28}
+              width={w - 34} height={h - 56}
+            >
+              <div
+                xmlns="http://www.w3.org/1999/xhtml"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  textAlign: 'center',
+                  fontSize: '9.5px',
+                  lineHeight: 1.2,
+                  fontWeight: 600,
+                  color: shadeColor(color, -40),
+                  fontFamily: SVG_FONT,
+                  padding: '2px',
+                  overflow: 'hidden',
+                  wordBreak: 'break-word',
+                }}
+              >
+                {truncate(nb.label, 26)}
+              </div>
+            </foreignObject>
+
+            {/* Pequena fita marcadora pendente no topo */}
+            <path
+              d={`M ${x + w - 18} ${y} L ${x + w - 18} ${y + 16} L ${x + w - 14} ${y + 12} L ${x + w - 10} ${y + 16} L ${x + w - 10} ${y}`}
+              fill={shadeColor(color, -20)}
+              opacity="0.85"
+            />
+
+            {/* Contador de notas — círculo abaixo */}
+            <circle cx={nb.x} cy={y + h + 14} r="11" fill="#FFFFFF" stroke={color} strokeWidth="1.5" />
             <text
-              x={nb.x} y={nb.y + 26}
+              x={nb.x} y={y + h + 18}
               textAnchor="middle"
-              fontSize="10"
-              fontWeight="600"
-              fill={nb.color || '#5B2D8E'}
+              fontSize="11"
+              fontWeight="700"
+              fill={color}
               fontFamily={SVG_FONT}
             >
-              {noteCount} {noteCount === 1 ? 'nota' : 'notas'}
-            </text>
-            {/* Título abaixo do card */}
-            <text
-              x={nb.x} y={nb.y + r + 22}
-              textAnchor="middle"
-              fontSize="13"
-              fontWeight="600"
-              fill="#2D1B4E"
-              fontFamily={SVG_FONT}
-            >
-              {truncate(nb.label, 20)}
+              {noteCount}
             </text>
           </g>
         );
@@ -691,13 +876,13 @@ function EcosystemSvg({ layout, connections, hoveredId, hoveredType, highlightSe
         const dim = highlightSet && !highlightSet.has(nn.id);
         const tType = NOTE_TYPES[nn.noteType] || NOTE_TYPES.rascunho;
         const parentNb = notebookNodes.find(nb => nb.id === nn.notebookId);
-        const borderColor = parentNb?.color || '#5B2D8E';
+        const borderColor = parentNb?.color || '#7B4DBA';
         const r = 32;
         return (
           <g
             key={`note-${nn.id}`}
             className={`a-note ${dim ? 'a-ghost' : ''} ${isHover ? 'a-spotlight' : ''}`}
-            style={{ cursor: 'pointer', animationDelay: `${delayNoteBase + idx * 30}ms` }}
+            style={{ cursor: 'pointer', animationDelay: `${delayNoteBase + idx * 35}ms` }}
             onMouseEnter={() => { setHoveredId(nn.id); setHoveredType('note'); }}
             onMouseLeave={() => { setHoveredId(null); setHoveredType(null); }}
             onClick={() => onOpenNote(nn.id)}
@@ -707,50 +892,50 @@ function EcosystemSvg({ layout, connections, hoveredId, hoveredType, highlightSe
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenNote(nn.id); } }}
           >
             <title>{nn.label}{parentNb ? ` — ${parentNb.label}` : ''}</title>
-            {/* Sombra suave */}
-            <circle cx={nn.x} cy={nn.y + 2} r={r} fill="#3D1B66" opacity="0.08" />
-            {/* Anel colorido fino (cor do caderno-pai) */}
-            <circle cx={nn.x} cy={nn.y} r={r + 2} fill="none" stroke={borderColor} strokeWidth="1" opacity="0.35" />
-            {/* Card circular branco */}
+            {/* Anel externo da cor do caderno-pai */}
+            <circle cx={nn.x} cy={nn.y} r={r + 3} fill="none" stroke={borderColor} strokeWidth="1.3" opacity="0.45" />
+            {/* Card branco com sombra */}
+            <circle cx={nn.x} cy={nn.y + 2} r={r} fill="#000000" opacity="0.25" />
             <circle
               cx={nn.x} cy={nn.y} r={r}
               fill="#FFFFFF"
               stroke={borderColor}
               strokeWidth={isHover ? 2.4 : 1.4}
             />
-            {/* Ícone do tipo (emoji) */}
-            <text
-              x={nn.x} y={nn.y + 1}
-              textAnchor="middle"
-              fontSize="22"
-              dominantBaseline="middle"
-            >
+            {/* Ícone do tipo */}
+            <text x={nn.x} y={nn.y + 1} textAnchor="middle" fontSize="22" dominantBaseline="middle">
               {tType.icon}
             </text>
-            {/* Estrela de favorito (canto superior direito) */}
+            {/* Estrela favorito */}
             {nn.isFavorite && (
               <g transform={`translate(${nn.x + r - 8}, ${nn.y - r + 8})`}>
                 <circle cx="0" cy="0" r="7" fill="#FFFFFF" />
                 <path
                   d="M 0 -5 L 1.5 -1.5 L 5 -1.5 L 2.2 0.7 L 3.3 4 L 0 2 L -3.3 4 L -2.2 0.7 L -5 -1.5 L -1.5 -1.5 Z"
-                  fill="#F0B400"
-                  stroke="#F0B400"
-                  strokeWidth="0.8"
-                  strokeLinejoin="round"
+                  fill="#F0B400" stroke="#F0B400" strokeWidth="0.8" strokeLinejoin="round"
                 />
               </g>
             )}
-            {/* Título abaixo */}
-            <text
-              x={nn.x} y={nn.y + r + 18}
-              textAnchor="middle"
-              fontSize="11"
-              fontWeight="500"
-              fill="#2D1B4E"
-              fontFamily={SVG_FONT}
-            >
-              {truncate(nn.label, 18)}
-            </text>
+            {/* Título — agora sobre fundo escuro com box translúcido */}
+            <foreignObject x={nn.x - 70} y={nn.y + r + 8} width="140" height="24">
+              <div
+                xmlns="http://www.w3.org/1999/xhtml"
+                style={{
+                  width: '100%',
+                  textAlign: 'center',
+                  fontSize: '10.5px',
+                  fontWeight: 500,
+                  color: '#FFFFFF',
+                  fontFamily: SVG_FONT,
+                  textShadow: '0 1px 4px rgba(0,0,0,0.7)',
+                  overflow: 'hidden',
+                  whiteSpace: 'nowrap',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {truncate(nn.label, 22)}
+              </div>
+            </foreignObject>
           </g>
         );
       })}
@@ -759,14 +944,14 @@ function EcosystemSvg({ layout, connections, hoveredId, hoveredType, highlightSe
 }
 
 
-// ================== PAINEL INFERIOR ==================
+// ================== PAINEL INFERIOR (glass) ==================
 
 function EcosystemDetailPanel({ hoveredId, hoveredType, layout, onOpen }) {
   if (!hoveredId) {
     return (
-      <div className="px-5 py-3 border-t border-anotata-border bg-anotata-sidebar text-xs text-anotata-muted flex items-center gap-2">
-        <Sparkles size={12} className="text-anotata-roxo" />
-        Passe o mouse sobre um caderno ou anotação para ver detalhes · Clique numa anotação para abrir
+      <div className="px-5 py-3 backdrop-blur-md bg-white/8 border-t border-white/10 text-2xs text-white/60 flex items-center justify-center gap-2">
+        <Sparkles size={12} className="text-white/70" />
+        Passe o mouse sobre um caderno ou anotação · Clique no centro para adicionar sua foto · Clique numa anotação para abri-la
       </div>
     );
   }
@@ -776,16 +961,16 @@ function EcosystemDetailPanel({ hoveredId, hoveredType, layout, onOpen }) {
     if (!nb) return null;
     const noteCount = layout.noteNodes.filter(n => n.notebookId === nb.id).length;
     return (
-      <div className="px-5 py-3 border-t border-anotata-border bg-anotata-sidebar flex items-center gap-3">
+      <div className="px-5 py-3 backdrop-blur-md bg-white/8 border-t border-white/10 flex items-center gap-3">
         <div
-          className="w-9 h-9 rounded-lg flex items-center justify-center shadow-sm"
+          className="w-10 h-10 rounded-lg flex items-center justify-center shadow-lg shrink-0"
           style={{ backgroundColor: nb.color || '#5B2D8E' }}
         >
-          <BookOpen size={16} className="text-white" />
+          <BookOpen size={18} className="text-white" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-semibold text-anotata-text">{nb.label}</div>
-          <div className="text-xs text-anotata-muted">
+          <div className="text-sm font-semibold text-white truncate">{nb.label}</div>
+          <div className="text-xs text-white/60">
             Caderno · {noteCount} {noteCount === 1 ? 'anotação' : 'anotações'}
           </div>
         </div>
@@ -799,12 +984,12 @@ function EcosystemDetailPanel({ hoveredId, hoveredType, layout, onOpen }) {
     const tType = NOTE_TYPES[nn.noteType] || NOTE_TYPES.rascunho;
     const parentNb = layout.notebookNodes.find(nb => nb.id === nn.notebookId);
     return (
-      <div className="px-5 py-3 border-t border-anotata-border bg-anotata-sidebar flex items-center gap-3">
-        <span className="text-2xl leading-none">{tType.icon}</span>
+      <div className="px-5 py-3 backdrop-blur-md bg-white/8 border-t border-white/10 flex items-center gap-3">
+        <span className="text-2xl leading-none shrink-0">{tType.icon}</span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-            <span className="text-sm font-semibold text-anotata-text truncate max-w-md">{nn.label}</span>
-            <span className="text-2xs uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-anotata-lavanda text-anotata-roxo">
+            <span className="text-sm font-semibold text-white truncate max-w-md">{nn.label}</span>
+            <span className="text-2xs uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-white/15 text-white/90">
               {tType.label || nn.noteType}
             </span>
             {nn.isFavorite && (
@@ -812,7 +997,7 @@ function EcosystemDetailPanel({ hoveredId, hoveredType, layout, onOpen }) {
             )}
           </div>
           {parentNb && (
-            <div className="text-xs text-anotata-text-suave flex items-center gap-1">
+            <div className="text-xs text-white/60 flex items-center gap-1.5">
               <span
                 className="inline-block w-2 h-2 rounded-full"
                 style={{ backgroundColor: parentNb.color || '#5B2D8E' }}
@@ -824,7 +1009,7 @@ function EcosystemDetailPanel({ hoveredId, hoveredType, layout, onOpen }) {
         </div>
         <button
           onClick={() => onOpen(nn.id)}
-          className="px-3 py-1.5 text-xs font-medium bg-anotata-roxo text-white rounded-md hover:bg-anotata-roxo-escuro transition-colors focus-visible:ring-2 focus-visible:ring-anotata-roxo/50 shrink-0"
+          className="px-3 py-1.5 text-xs font-medium bg-white text-anotata-roxo-escuro rounded-md hover:bg-white/90 transition-colors focus-visible:ring-2 focus-visible:ring-white/50 shrink-0"
         >
           Abrir nota
         </button>
@@ -842,39 +1027,38 @@ function MapEmptyState({ onClose, onCreate, hasNotebookNoNotes }) {
   return (
     <div className="absolute inset-0 flex items-center justify-center p-8">
       <div className="text-center max-w-md">
-        {/* Ilustração SVG decorativa: núcleo + sementes orbitando (estática) */}
-        <div className="mx-auto mb-6 relative" style={{ width: 140, height: 140 }}>
-          <svg viewBox="0 0 140 140" width="140" height="140" aria-hidden="true">
+        {/* Ilustração SVG decorativa */}
+        <div className="mx-auto mb-6 relative" style={{ width: 160, height: 160 }}>
+          <svg viewBox="0 0 160 160" width="160" height="160" aria-hidden="true">
             <defs>
               <radialGradient id="emptyHalo" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#5B2D8E" stopOpacity="0.18" />
+                <stop offset="0%" stopColor="#A07BD6" stopOpacity="0.45" />
                 <stop offset="100%" stopColor="#5B2D8E" stopOpacity="0" />
               </radialGradient>
               <radialGradient id="emptyCore" cx="35%" cy="35%" r="80%">
-                <stop offset="0%" stopColor="#7B4DBA" />
-                <stop offset="100%" stopColor="#3D1B66" />
+                <stop offset="0%" stopColor="#A07BD6" />
+                <stop offset="100%" stopColor="#5B2D8E" />
               </radialGradient>
             </defs>
-            <circle cx="70" cy="70" r="65" fill="url(#emptyHalo)" />
-            <circle cx="70" cy="70" r="46" fill="none" stroke="#5B2D8E" strokeWidth="0.7" strokeDasharray="3 5" opacity="0.25" />
-            <circle cx="70" cy="70" r="28" fill="url(#emptyCore)" />
-            <circle cx="70" cy="62" r="5" fill="none" stroke="#FFFFFF" strokeWidth="1.6" />
+            <circle cx="80" cy="80" r="75" fill="url(#emptyHalo)" />
+            <circle cx="80" cy="80" r="56" fill="none" stroke="#FFFFFF" strokeWidth="0.6" strokeDasharray="3 6" opacity="0.3" />
+            <circle cx="80" cy="80" r="32" fill="url(#emptyCore)" />
+            <circle cx="80" cy="72" r="6" fill="none" stroke="#FFFFFF" strokeWidth="1.8" />
             <path
-              d="M 60 78 C 60 70, 65 67, 70 67 C 75 67, 80 70, 80 78"
-              fill="none" stroke="#FFFFFF" strokeWidth="1.6" strokeLinecap="round"
+              d="M 68 90 C 68 82, 74 79, 80 79 C 86 79, 92 82, 92 90"
+              fill="none" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round"
             />
-            {/* Sementes ao redor */}
-            <circle cx="116" cy="70" r="6" fill="#FFFFFF" stroke="#5B2D8E" strokeWidth="1.4" />
-            <circle cx="24" cy="70" r="6" fill="#FFFFFF" stroke="#5B2D8E" strokeWidth="1.4" />
-            <circle cx="70" cy="116" r="6" fill="#FFFFFF" stroke="#5B2D8E" strokeWidth="1.4" />
+            <circle cx="132" cy="80" r="7" fill="#FFFFFF" stroke="#A07BD6" strokeWidth="1.6" />
+            <circle cx="28" cy="80" r="7" fill="#FFFFFF" stroke="#A07BD6" strokeWidth="1.6" />
+            <circle cx="80" cy="132" r="7" fill="#FFFFFF" stroke="#A07BD6" strokeWidth="1.6" />
           </svg>
         </div>
-        <h3 className="text-lg font-semibold text-anotata-text mb-2">
+        <h3 className="text-xl font-semibold text-white mb-2">
           {hasNotebookNoNotes
             ? 'Seu mapa está pronto pra crescer'
             : 'Seu mapa ainda está começando'}
         </h3>
-        <p className="text-sm text-anotata-text-suave mb-5">
+        <p className="text-sm text-white/70 mb-6">
           {hasNotebookNoNotes
             ? 'Você já tem um caderno. Crie sua primeira anotação para vê-la aparecer no ecossistema.'
             : 'Cada anotação que você criar vai aparecer aqui como parte da sua rede de ideias.'}
@@ -882,13 +1066,13 @@ function MapEmptyState({ onClose, onCreate, hasNotebookNoNotes }) {
         <div className="flex items-center justify-center gap-2">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium bg-white border border-anotata-border text-anotata-text rounded-lg hover:bg-anotata-sidebar transition-colors focus-visible:ring-2 focus-visible:ring-anotata-roxo/50"
+            className="px-4 py-2 text-sm font-medium bg-white/10 border border-white/20 text-white rounded-lg hover:bg-white/15 transition-colors focus-visible:ring-2 focus-visible:ring-white/40"
           >
             Voltar
           </button>
           <button
             onClick={onCreate}
-            className="px-4 py-2 text-sm font-medium bg-anotata-roxo text-white rounded-lg hover:bg-anotata-roxo-escuro transition-colors focus-visible:ring-2 focus-visible:ring-anotata-roxo/50 inline-flex items-center gap-1.5"
+            className="px-4 py-2 text-sm font-medium bg-white text-anotata-roxo-escuro rounded-lg hover:bg-white/90 transition-colors focus-visible:ring-2 focus-visible:ring-white/50 inline-flex items-center gap-1.5"
           >
             <Plus size={14} /> Criar primeira anotação
           </button>
