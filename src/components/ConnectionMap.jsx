@@ -146,6 +146,20 @@ const SVG_STYLE = `
   .a-avatar-wrap:hover .a-avatar-overlay { opacity: 1; }
   .a-avatar-remove { opacity: 0; transition: opacity 200ms ease; }
   .a-avatar-wrap:hover .a-avatar-remove { opacity: 1; }
+
+  /* === Paralaxe estelar (fundo "universo") === */
+  @keyframes a-starfield-slow {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 100% 100%; }
+  }
+  @keyframes a-starfield-mid {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 100% -50%; }
+  }
+  @keyframes a-starfield-fast {
+    0% { background-position: 50% 0%; }
+    100% { background-position: -50% 100%; }
+  }
 `;
 
 
@@ -636,10 +650,67 @@ export default function ConnectionMap({ note, store, onClose }) {
       aria-modal="true"
       aria-label="Mapa visual — ecossistema pessoal"
     >
+      {/* Injeção CSS para animações fora do SVG (paralaxe estelar) */}
+      <style dangerouslySetInnerHTML={{ __html: SVG_STYLE }} />
       {/* Textura sutil */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{ background: 'radial-gradient(ellipse at center, rgba(123,77,186,0.18) 0%, transparent 60%)' }}
+      />
+
+      {/* === FUNDO UNIVERSO — 3 camadas de paralaxe estelar === */}
+      {/* Camada 1 (fundo): estrelas pequenas fixas — tom roxo muito sutil */}
+      <div
+        className="absolute inset-0 pointer-events-none overflow-hidden"
+        style={{
+          backgroundImage: `
+            radial-gradient(1px 1px at 10% 15%, rgba(160,123,214,0.35), transparent),
+            radial-gradient(1px 1px at 25% 45%, rgba(160,123,214,0.25), transparent),
+            radial-gradient(1px 1px at 50% 80%, rgba(160,123,214,0.3), transparent),
+            radial-gradient(1px 1px at 70% 20%, rgba(160,123,214,0.2), transparent),
+            radial-gradient(1px 1px at 85% 60%, rgba(160,123,214,0.3), transparent),
+            radial-gradient(1px 1px at 40% 10%, rgba(160,123,214,0.25), transparent),
+            radial-gradient(1px 1px at 60% 55%, rgba(160,123,214,0.2), transparent),
+            radial-gradient(1.2px 1.2px at 15% 70%, rgba(200,180,253,0.3), transparent),
+            radial-gradient(0.8px 0.8px at 90% 35%, rgba(200,180,253,0.25), transparent),
+            radial-gradient(1px 1px at 35% 90%, rgba(160,123,214,0.3), transparent),
+            radial-gradient(0.8px 0.8px at 75% 75%, rgba(160,123,214,0.2), transparent),
+            radial-gradient(1px 1px at 5% 50%, rgba(200,180,253,0.25), transparent),
+            radial-gradient(1.2px 1.2px at 55% 25%, rgba(160,123,214,0.3), transparent),
+            radial-gradient(0.8px 0.8px at 45% 65%, rgba(160,123,214,0.2), transparent)
+          `,
+          backgroundSize: '200% 200%',
+          animation: 'a-starfield-slow 120s linear infinite',
+        }}
+      />
+      {/* Camada 2 (média): partículas maiores — brilho sutil */}
+      <div
+        className="absolute inset-0 pointer-events-none overflow-hidden"
+        style={{
+          backgroundImage: `
+            radial-gradient(1.5px 1.5px at 20% 30%, rgba(200,180,253,0.4), transparent),
+            radial-gradient(2px 2px at 65% 15%, rgba(200,180,253,0.3), transparent),
+            radial-gradient(1.5px 1.5px at 80% 70%, rgba(200,180,253,0.35), transparent),
+            radial-gradient(1.8px 1.8px at 30% 85%, rgba(160,123,214,0.3), transparent),
+            radial-gradient(2px 2px at 50% 50%, rgba(200,180,253,0.25), transparent),
+            radial-gradient(1.5px 1.5px at 10% 90%, rgba(160,123,214,0.3), transparent)
+          `,
+          backgroundSize: '180% 180%',
+          animation: 'a-starfield-mid 80s linear infinite reverse',
+        }}
+      />
+      {/* Camada 3 (frente): poucas estrelas grandes — brilho roxo claro */}
+      <div
+        className="absolute inset-0 pointer-events-none overflow-hidden"
+        style={{
+          backgroundImage: `
+            radial-gradient(2.5px 2.5px at 15% 45%, rgba(200,180,253,0.5), transparent),
+            radial-gradient(3px 3px at 75% 25%, rgba(200,180,253,0.35), transparent),
+            radial-gradient(2px 2px at 45% 75%, rgba(200,180,253,0.4), transparent)
+          `,
+          backgroundSize: '150% 150%',
+          animation: 'a-starfield-fast 55s linear infinite',
+        }}
       />
 
       {/* HEADER glass */}
@@ -1280,33 +1351,33 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
             >
               <title>{nn.label}{parentNb ? ` — ${parentNb.label}` : ''}</title>
 
-              {/* Sombra projetada da folha */}
+              {/* Sombra projetada da folha (arredondada — branding) */}
               <rect
                 x={px + 2} y={py + 4}
                 width={PW} height={PH}
-                rx="3"
-                fill="#000000" opacity="0.35"
+                rx="12"
+                fill="#000000" opacity="0.3"
               />
 
-              {/* Folha branca (papel) */}
+              {/* Folha branca (papel arredondado — branding premium) */}
               <rect
                 x={px} y={py}
                 width={PW} height={PH}
-                rx="3"
+                rx="12"
                 fill="#FFFFFF"
                 stroke={accentColor}
-                strokeWidth={isHover ? 2 : 1.2}
+                strokeWidth={isHover ? 2.2 : 1.2}
               />
 
-              {/* Faixa colorida no topo (cor do caderno-pai) */}
+              {/* Faixa colorida no topo (cor do caderno-pai / área) — arredondada */}
               <rect
                 x={px} y={py}
-                width={PW} height={6}
-                rx="3"
+                width={PW} height={8}
+                rx="12"
                 fill={accentColor}
               />
               {/* Cobre o arredondamento de baixo da faixa */}
-              <rect x={px} y={py + 3} width={PW} height={3} fill={accentColor} />
+              <rect x={px} y={py + 5} width={PW} height={3} fill={accentColor} />
 
               {/* Linhas simulando texto */}
               <line x1={px + 8} y1={py + 18} x2={px + PW - 8} y2={py + 18} stroke="#5B4A7A" strokeWidth="1" opacity="0.55" strokeLinecap="round" />
