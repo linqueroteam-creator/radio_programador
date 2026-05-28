@@ -1,8 +1,39 @@
 import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
-import { X, Plus, Sparkles, BookOpen, ArrowLeft, FileText, Camera, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import {
+  X, Plus, Sparkles, BookOpen, ArrowLeft, FileText, Camera, ZoomIn, ZoomOut, Maximize2,
+  // Ícones para cada área da vida (Camada 2 — regra-de-cor.md / areas-da-vida.md)
+  Heart, Smile, Brain, Briefcase, Coins, Users, Home as HomeIcon, Palette, Compass, CircleDot, Layers,
+} from 'lucide-react';
 import { NOTE_TYPES } from '../engine/RulesEngine';
 import rulesEngine from '../engine/RulesEngine';
 import NotebookCover from './NotebookCover';
+import {
+  LIFE_AREAS,
+  getLifeArea,
+  listLifeAreas,
+  getAreaUsage,
+  calculateAreaGravity,
+} from '../engine/LifeAreas';
+
+// Mapa de ícone Lucide por id de área (resolução estática — sem dynamic import)
+const LIFE_AREA_ICON_MAP = {
+  saude: Heart,
+  emocoes: Smile,
+  intelectual: Brain,
+  carreira: Briefcase,
+  financas: Coins,
+  relacoes: Users,
+  espiritual: Sparkles,
+  lar: HomeIcon,
+  lazer: Palette,
+  crescimento: Compass,
+  outros: CircleDot,
+};
+
+// Persistência da preferência de visão do mapa
+const MAP_VIEW_STORAGE_KEY = 'anotata-map-view';
+const MAP_VIEW_NOTEBOOKS = 'notebooks';
+const MAP_VIEW_LIFE_AREAS = 'lifeAreas';
 
 /**
  * ===== MAPA VISUAL — ECOSSISTEMA PESSOAL (v3 premium) =====
@@ -161,6 +192,37 @@ function placeNotebooksWithGravity(notebooks, notesByNotebook, cx, cy, baseRadiu
   });
 }
 
+/**
+ * Posiciona núcleos das áreas da vida com lei da gravidade.
+ * Áreas com mais Pulsos → mais perto do centro.
+ * Áreas vazias → não aparecem (filter).
+ *
+ * Doc: estrutura_neurocognitiva_mestre/areas-da-vida.md
+ */
+function placeLifeAreasWithGravity(activeAreas, gravity, cx, cy, baseRadius, gravityRange = 60) {
+  const n = activeAreas.length;
+  if (n === 0) return [];
+
+  // Posições angulares base — distribui em círculo, começando do topo
+  const angles = (() => {
+    if (n === 1) return [-Math.PI / 2]; // topo
+    return Array.from({ length: n }, (_, i) => -Math.PI / 2 + i * (Math.PI * 2 / n));
+  })();
+
+  return activeAreas.map((area, i) => {
+    const g = gravity[area.id] || 0; // 0..1
+    const radius = baseRadius - g * gravityRange;
+    return {
+      x: cx + Math.cos(angles[i]) * radius,
+      y: cy + Math.sin(angles[i]) * radius,
+      angle: angles[i],
+      radius,
+      noteCount: area.usage || 0,
+      gravityFactor: g,
+    };
+  });
+}
+
 function truncate(str, n) {
   if (!str) return '';
   return str.length > n ? str.slice(0, n - 1) + '\u2026' : str;
@@ -196,6 +258,8 @@ export default function ConnectionMap({ note, store, onClose }) {
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [avatarError, setAvatarError] = useState(null);
   const [avatarHover, setAvatarHover] = useState(false);
+  // Visão do mapa: 'notebooks' (padrão, comportamento atual) | 'lifeAreas' (núcleos das áreas da vida)
+  const [mapView, setMapView] = useState(MAP_VIEW_NOTEBOOKS);
   const fileInputRef = useRef(null);
   const svgRef = useRef(null);
 
@@ -219,6 +283,23 @@ export default function ConnectionMap({ note, store, onClose }) {
       if (saved && saved.startsWith('data:image/')) setAvatarUrl(saved);
     } catch (_) { /* defensivo */ }
   }, []);
+
+  // Carrega preferência de visão do mapa
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(MAP_VIEW_STORAGE_KEY);
+      if (saved === MAP_VIEW_LIFE_AREAS || saved === MAP_VIEW_NOTEBOOKS) {
+        setMapView(saved);
+      }
+    } catch (_) { /* defensivo */ }
+  }, []);
+
+  // Persiste preferência ao mudar
+  useEffect(() => {
+    try {
+      localStorage.setItem(MAP_VIEW_STORAGE_KEY, mapView);
+    } catch (_) { /* defensivo */ }
+  }, [mapView]);
 
   // Cadernos
   const notebooks = useMemo(() => {
@@ -279,55 +360,139 @@ export default function ConnectionMap({ note, store, onClose }) {
     const VIEW = 1000;
     const cx = VIEW / 2;
     const cy = VIEW / 2;
-    const RING1_BASE = 270;        // raio base dos cadernos
+    const RING1_BASE = 270;        // raio base dos cadernos/áreas
     const GRAVITY_RANGE = 70;       // amplitude da gravidade
-    const RING2_OFFSET = 170;       // notas ficam X unidades além do caderno-pai
+    const RING2_OFFSET = 170;       // notas ficam X unidades além do núcleo-pai
 
-    const nbPositions = placeNotebooksWithGravity(notebooks, notesByNotebook, cx, cy, RING1_BASE, GRAVITY_RANGE);
-    const notebookNodes = notebooks.map((nb, i) => ({
-      id: nb.id,
-      type: 'notebook',
-      label: nb.name || 'Caderno',
-      color: nb.color || '#5B2D8E',
-      raw: nb, // pra passar pra NotebookCover
-      ...nbPositions[i],
-    }));
+    const isLifeAreasView = mapView === MAP_VIEW_LIFE_AREAS;
 
-    // Notas no anel externo, espalhadas perto do caderno-pai (também com leve gravidade individual)
+    // ============================================================
+    // Camada de núcleos (anel 1): cadernos OU áreas da vida
+    // ============================================================
+    let ringNodes = [];
+
+    if (isLifeAreasView) {
+      // === Visão por áreas da vida ===
+      // Calcula áreas ativas (com Pulsos) e suas gravidades
+      const activeNotes = (store.notes || []).filter(n => !n.isTrash && !n.isArchived);
+      const usage = getAreaUsage(activeNotes);
+      const gravity = calculateAreaGravity(activeNotes);
+      // Lista as áreas ativas em ordem canônica (saúde primeiro, outros por último)
+      const activeAreas = listLifeAreas()
+        .filter(a => (usage[a.id] || 0) > 0)
+        .map(a => ({ ...a, usage: usage[a.id] || 0 }));
+
+      const positions = placeLifeAreasWithGravity(activeAreas, gravity, cx, cy, RING1_BASE, GRAVITY_RANGE);
+      ringNodes = activeAreas.map((area, i) => ({
+        kind: 'lifeArea',
+        id: area.id,
+        type: 'lifeArea',
+        label: area.name,
+        shortName: area.shortName,
+        color: area.color,
+        colorDark: area.colorDark,
+        colorLight: area.colorLight,
+        colorGlow: area.colorGlow,
+        iconName: area.icon,
+        ...positions[i],
+      }));
+    } else {
+      // === Visão por cadernos (comportamento original) ===
+      const nbPositions = placeNotebooksWithGravity(notebooks, notesByNotebook, cx, cy, RING1_BASE, GRAVITY_RANGE);
+      ringNodes = notebooks.map((nb, i) => ({
+        kind: 'notebook',
+        id: nb.id,
+        type: 'notebook',
+        label: nb.name || 'Caderno',
+        color: nb.color || '#5B2D8E',
+        raw: nb, // pra passar pra NotebookCover
+        ...nbPositions[i],
+      }));
+    }
+
+    // ============================================================
+    // Camada de notas (anel 2): notas distribuídas em volta do núcleo-pai
+    // ============================================================
     const noteNodes = [];
-    notebooks.forEach((nb, nbIdx) => {
-      const notes = notesByNotebook[nb.id] || [];
-      if (notes.length === 0) return;
-      const baseAngle = nbPositions[nbIdx]?.angle ?? -Math.PI / 2;
-      const nbR = nbPositions[nbIdx]?.radius ?? RING1_BASE;
-      const notesR = nbR + RING2_OFFSET;
 
-      let maxSpread;
-      if (notebooks.length === 1) maxSpread = Math.PI * 1.5;
-      else if (notebooks.length === 2) maxSpread = Math.PI * 0.9;
-      else maxSpread = Math.min(Math.PI / 2.4, (Math.PI * 2 / notebooks.length) * 0.78);
+    if (isLifeAreasView) {
+      // Agrupar notas por área da vida
+      const notesByArea = {};
+      (store.notes || []).forEach(n => {
+        if (n.isTrash || n.isArchived) return;
+        const areaId = (n.lifeArea && LIFE_AREAS[n.lifeArea]) ? n.lifeArea : 'outros';
+        if (!notesByArea[areaId]) notesByArea[areaId] = [];
+        notesByArea[areaId].push(n);
+      });
 
-      const step = notes.length > 1 ? maxSpread / (notes.length - 1) : 0;
-      const startA = baseAngle - maxSpread / 2;
+      ringNodes.forEach((areaNode, areaIdx) => {
+        const notes = notesByArea[areaNode.id] || [];
+        if (notes.length === 0) return;
+        const baseAngle = areaNode.angle ?? -Math.PI / 2;
+        const nbR = areaNode.radius ?? RING1_BASE;
+        const notesR = nbR + RING2_OFFSET;
 
-      notes.forEach((nt, nIdx) => {
-        const a = notes.length === 1 ? baseAngle : startA + nIdx * step;
-        noteNodes.push({
-          id: nt.id,
-          type: 'note',
-          label: nt.title || 'Sem título',
-          noteType: nt.type || 'rascunho',
-          notebookId: nb.id,
-          isFavorite: nt.isFavorite,
-          x: cx + Math.cos(a) * notesR,
-          y: cy + Math.sin(a) * notesR,
-          angle: a,
+        let maxSpread;
+        if (ringNodes.length === 1) maxSpread = Math.PI * 1.5;
+        else if (ringNodes.length === 2) maxSpread = Math.PI * 0.9;
+        else maxSpread = Math.min(Math.PI / 2.4, (Math.PI * 2 / ringNodes.length) * 0.78);
+
+        const step = notes.length > 1 ? maxSpread / (notes.length - 1) : 0;
+        const startA = baseAngle - maxSpread / 2;
+
+        notes.forEach((nt, nIdx) => {
+          const a = notes.length === 1 ? baseAngle : startA + nIdx * step;
+          noteNodes.push({
+            id: nt.id,
+            type: 'note',
+            label: nt.title || 'Sem título',
+            noteType: nt.type || 'rascunho',
+            // notebookId mantido pra retrocompat de hover/highlight
+            notebookId: areaNode.id,
+            isFavorite: nt.isFavorite,
+            x: cx + Math.cos(a) * notesR,
+            y: cy + Math.sin(a) * notesR,
+            angle: a,
+          });
         });
       });
-    });
+    } else {
+      // === Visão por cadernos: notas em volta do caderno-pai (original) ===
+      notebooks.forEach((nb, nbIdx) => {
+        const notes = notesByNotebook[nb.id] || [];
+        if (notes.length === 0) return;
+        const ringNode = ringNodes[nbIdx];
+        const baseAngle = ringNode?.angle ?? -Math.PI / 2;
+        const nbR = ringNode?.radius ?? RING1_BASE;
+        const notesR = nbR + RING2_OFFSET;
 
-    return { cx, cy, view: VIEW, notebookNodes, noteNodes };
-  }, [notebooks, notesByNotebook]);
+        let maxSpread;
+        if (notebooks.length === 1) maxSpread = Math.PI * 1.5;
+        else if (notebooks.length === 2) maxSpread = Math.PI * 0.9;
+        else maxSpread = Math.min(Math.PI / 2.4, (Math.PI * 2 / notebooks.length) * 0.78);
+
+        const step = notes.length > 1 ? maxSpread / (notes.length - 1) : 0;
+        const startA = baseAngle - maxSpread / 2;
+
+        notes.forEach((nt, nIdx) => {
+          const a = notes.length === 1 ? baseAngle : startA + nIdx * step;
+          noteNodes.push({
+            id: nt.id,
+            type: 'note',
+            label: nt.title || 'Sem título',
+            noteType: nt.type || 'rascunho',
+            notebookId: nb.id,
+            isFavorite: nt.isFavorite,
+            x: cx + Math.cos(a) * notesR,
+            y: cy + Math.sin(a) * notesR,
+            angle: a,
+          });
+        });
+      });
+    }
+
+    return { cx, cy, view: VIEW, notebookNodes: ringNodes, noteNodes, mapView };
+  }, [notebooks, notesByNotebook, mapView, store.notes]);
 
   // === HANDLERS ===
   const handleOpenNote = useCallback((noteId) => {
@@ -490,8 +655,37 @@ export default function ConnectionMap({ note, store, onClose }) {
         <div className="flex flex-col items-center text-center">
           <h2 className="text-sm font-semibold text-white tracking-wide">Meu Ecossistema</h2>
           <p className="text-2xs text-white/60">
-            {totalNotebooks} {totalNotebooks === 1 ? 'caderno' : 'cadernos'} · {totalNotes} {totalNotes === 1 ? 'anotação' : 'anotações'} · {totalConnections} {totalConnections === 1 ? 'conexão' : 'conexões'}
+            {totalNotebooks} {totalNotebooks === 1 ? (mapView === MAP_VIEW_LIFE_AREAS ? 'área ativa' : 'caderno') : (mapView === MAP_VIEW_LIFE_AREAS ? 'áreas ativas' : 'cadernos')} · {totalNotes} {totalNotes === 1 ? 'anotação' : 'anotações'} · {totalConnections} {totalConnections === 1 ? 'conexão' : 'conexões'}
           </p>
+          {/* Toggle de visão (segmented control) */}
+          <div className="mt-1.5 inline-flex items-center bg-white/10 rounded-full p-0.5 border border-white/15">
+            <button
+              onClick={() => setMapView(MAP_VIEW_NOTEBOOKS)}
+              className={`text-2xs font-medium px-2.5 py-1 rounded-full transition-colors flex items-center gap-1 ${
+                mapView === MAP_VIEW_NOTEBOOKS
+                  ? 'bg-white text-anotata-roxo-escuro shadow-sm'
+                  : 'text-white/75 hover:text-white'
+              }`}
+              aria-pressed={mapView === MAP_VIEW_NOTEBOOKS}
+              title="Ver mapa por cadernos"
+            >
+              <BookOpen size={11} />
+              <span>Cadernos</span>
+            </button>
+            <button
+              onClick={() => setMapView(MAP_VIEW_LIFE_AREAS)}
+              className={`text-2xs font-medium px-2.5 py-1 rounded-full transition-colors flex items-center gap-1 ${
+                mapView === MAP_VIEW_LIFE_AREAS
+                  ? 'bg-white text-anotata-roxo-escuro shadow-sm'
+                  : 'text-white/75 hover:text-white'
+              }`}
+              aria-pressed={mapView === MAP_VIEW_LIFE_AREAS}
+              title="Ver mapa por áreas da vida"
+            >
+              <Layers size={11} />
+              <span>Áreas da vida</span>
+            </button>
+          </div>
         </div>
         <button
           onClick={onClose}
@@ -932,17 +1126,102 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
         </g>
 
 
-        {/* === NÍVEL 2: Cadernos PREMIUM (usando NotebookCover) === */}
+        {/* === NÍVEL 2: Cadernos PREMIUM (NotebookCover) ou Áreas da Vida === */}
         {notebookNodes.map((nb, idx) => {
           const isHover = hoveredId === nb.id && hoveredType === 'notebook';
           const dim = highlightSet && !highlightSet.has(nb.id);
           const noteCount = noteNodes.filter(n => n.notebookId === nb.id).length;
+          const isLifeArea = nb.kind === 'lifeArea';
 
-          // Caderno enriquecido com noteCount pra NotebookCover mostrar contador
-          const enrichedNb = { ...nb.raw, _noteCount: noteCount };
-
-          // Pulso defasado por caderno
+          // Pulso defasado
           const pulseDelay = (idx * 0.7) % 5.5;
+
+          // Renderização condicional do conteúdo (NotebookCover OU Disco da Área)
+          let innerContent;
+          if (isLifeArea) {
+            // === ÁREA DA VIDA: disco premium com cor + ícone Lucide ===
+            const IconComp = LIFE_AREA_ICON_MAP[nb.id] || CircleDot;
+            innerContent = (
+              <foreignObject
+                x={nb.x - NB_W / 2}
+                y={nb.y - NB_H / 2}
+                width={NB_W}
+                height={NB_H}
+                style={{ overflow: 'visible' }}
+              >
+                <div
+                  xmlns="http://www.w3.org/1999/xhtml"
+                  style={{
+                    width: NB_W,
+                    height: NB_H,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6,
+                    background: `radial-gradient(circle at 30% 30%, ${nb.colorGlow || nb.color}, ${nb.color} 65%, ${nb.colorDark || nb.color})`,
+                    borderRadius: '50%',
+                    boxShadow: `inset 0 0 0 2px rgba(255,255,255,0.18), 0 8px 24px rgba(0,0,0,0.35), 0 0 28px ${nb.color}40`,
+                    color: '#FFFFFF',
+                    fontFamily: SVG_FONT,
+                    border: `2px solid rgba(255,255,255,0.3)`,
+                    aspectRatio: '1 / 1',
+                    width: NB_W,
+                    height: NB_W, // disco circular
+                  }}
+                >
+                  <IconComp size={28} strokeWidth={1.8} />
+                  <div style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    letterSpacing: '0.04em',
+                    textAlign: 'center',
+                    lineHeight: 1.2,
+                    padding: '0 8px',
+                    textShadow: '0 1px 4px rgba(0,0,0,0.4)',
+                  }}>
+                    {nb.shortName || nb.label}
+                  </div>
+                  <div style={{
+                    position: 'absolute',
+                    bottom: -6,
+                    background: nb.colorDark || nb.color,
+                    color: '#FFFFFF',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    padding: '2px 9px',
+                    borderRadius: 999,
+                    border: '2px solid rgba(255,255,255,0.55)',
+                    boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
+                  }}>
+                    {noteCount}
+                  </div>
+                </div>
+              </foreignObject>
+            );
+          } else {
+            // === CADERNO: NotebookCover original ===
+            const enrichedNb = { ...nb.raw, _noteCount: noteCount };
+            innerContent = (
+              <foreignObject
+                x={nb.x - NB_W / 2}
+                y={nb.y - NB_H / 2}
+                width={NB_W}
+                height={NB_H}
+                style={{ overflow: 'visible' }}
+              >
+                <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: NB_W, height: NB_H, cursor: 'pointer' }}>
+                  <NotebookCover
+                    notebook={enrichedNb}
+                    size="sm"
+                    showSpine={true}
+                    style={{ width: NB_W, height: NB_H }}
+                  />
+                </div>
+              </foreignObject>
+            );
+          }
 
           return (
             <g
@@ -953,31 +1232,20 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
               onMouseLeave={() => { setHoveredId(null); setHoveredType(null); }}
               tabIndex={0}
               role="button"
-              aria-label={`Caderno ${nb.label}, ${noteCount} ${noteCount === 1 ? 'nota' : 'notas'}`}
+              aria-label={
+                isLifeArea
+                  ? `Área ${nb.label}, ${noteCount} ${noteCount === 1 ? 'anotação' : 'anotações'}`
+                  : `Caderno ${nb.label}, ${noteCount} ${noteCount === 1 ? 'nota' : 'notas'}`
+              }
             >
-              <title>{nb.label} — {noteCount} {noteCount === 1 ? 'nota' : 'notas'}</title>
+              <title>{nb.label} — {noteCount} {noteCount === 1 ? 'anotação' : 'anotações'}</title>
 
               {/* Wrapper que pulsa sutilmente, com delay próprio */}
               <g
                 className="a-notebook-pulse"
                 style={{ animationDelay: `${-pulseDelay}s` }}
               >
-                <foreignObject
-                  x={nb.x - NB_W / 2}
-                  y={nb.y - NB_H / 2}
-                  width={NB_W}
-                  height={NB_H}
-                  style={{ overflow: 'visible' }}
-                >
-                  <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: NB_W, height: NB_H, cursor: 'pointer' }}>
-                    <NotebookCover
-                      notebook={enrichedNb}
-                      size="sm"
-                      showSpine={true}
-                      style={{ width: NB_W, height: NB_H }}
-                    />
-                  </div>
-                </foreignObject>
+                {innerContent}
               </g>
             </g>
           );
