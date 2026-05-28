@@ -74,18 +74,27 @@ export default function Editor({ store, onOpenMobileMenu, onOpenMobileNoteList }
   // menu está aberto, ele consome esses eventos antes do ProseMirror, pra não
   // mover o cursor enquanto o usuário escolhe um comando.
   const slashKeyHandlerRef = React.useRef(null);
-  const handleSlashChange = useCallback((newState) => {
+
+  // REFS estáveis pra que a extensão (que é instanciada 1x no useEditor)
+  // sempre chame a versão mais recente das callbacks, sem stale closure.
+  const slashChangeRef = React.useRef(null);
+  const slashKeyDownRef = React.useRef(null);
+  slashChangeRef.current = (newState) => {
     setSlashState({
       active: !!newState.active,
       query: newState.query || '',
       range: newState.range || null,
     });
-  }, []);
-  const handleSlashKeyDown = useCallback((event) => {
+  };
+  slashKeyDownRef.current = (event) => {
     const handler = slashKeyHandlerRef.current;
     if (handler) return handler(event);
     return false;
-  }, []);
+  };
+
+  // Wrappers estáveis (mesma referência em toda a vida do componente)
+  const handleSlashChange = useCallback((s) => slashChangeRef.current(s), []);
+  const handleSlashKeyDown = useCallback((e) => slashKeyDownRef.current(e), []);
   const registerSlashKeyHandler = useCallback((handler) => {
     slashKeyHandlerRef.current = handler;
   }, []);
@@ -197,6 +206,19 @@ export default function Editor({ store, onOpenMobileMenu, onOpenMobileNoteList }
       if (selectedNote.title) predictiveEngine.learn(selectedNote.title);
     }
   }, [selectedNote?.id]);
+
+  // === Manter storage da extensão SlashCommand atualizado (stale closure fix) ===
+  // O useEditor congela as options no primeiro render. Então toda vez que
+  // nossos handlers de slash mudam (montagem, update do slashKeyHandlerRef),
+  // reescrevemos o storage — o plugin lê de lá em tempo real.
+  useEffect(() => {
+    if (!editor) return;
+    const ext = editor.extensionManager.extensions.find(e => e.name === 'slashCommand');
+    if (ext && ext.storage) {
+      ext.storage.onChange = handleSlashChange;
+      ext.storage.onKeyDown = handleSlashKeyDown;
+    }
+  }, [editor, handleSlashChange, handleSlashKeyDown]);
 
   // === BOOTSTRAP DO CÉREBRO PREDITIVO ===
   // Toda vez que a coleção de notas mudar, garante que o motor aprendeu

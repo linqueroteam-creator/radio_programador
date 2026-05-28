@@ -23,9 +23,14 @@
  * .[ação]().run()` — primeiro apaga o "/foo" digitado, depois aplica
  * o comando do Tiptap correspondente. Isso garante que não sobre lixo.
  *
- * NÃO confundir com `@tiptap/suggestion` (que não está instalado).
- * Esta implementação é minimalista mas suficiente para os ~10 comandos
- * que o ANOTATA precisa.
+ * STALE CLOSURE FIX
+ * -----------------
+ * O `useEditor` do Tiptap instancia as extensions APENAS no primeiro render.
+ * As callbacks de `configure({ onChange, onKeyDown })` ficam congeladas.
+ * Para resolver, a extensão usa `this.storage` como "ponte": o Editor.jsx
+ * escreve nele (.onChange / .onKeyDown) via useEffect toda vez que os
+ * handlers mudam, e o plugin lê de lá em tempo real. Isso garante que
+ * a referência é sempre a mais recente sem precisar re-instanciar o editor.
  */
 
 import { Extension } from '@tiptap/core';
@@ -40,15 +45,22 @@ export const SlashCommand = Extension.create({
 
   addOptions() {
     return {
-      // Disparado sempre que o estado do menu muda (abrir, atualizar query, fechar)
+      // Callbacks iniciais (podem ser no-ops — o Editor.jsx sobrescreve via storage)
       onChange: () => {},
-      // Permite que o componente popover capture setas/Enter
       onKeyDown: () => false,
     };
   },
 
+  addStorage() {
+    return {
+      // Referências mutáveis — sempre atualizadas pelo Editor.jsx
+      onChange: this.options.onChange,
+      onKeyDown: this.options.onKeyDown,
+    };
+  },
+
   addProseMirrorPlugins() {
-    const options = this.options;
+    const storage = this.storage;
 
     return [
       new Plugin({
@@ -73,7 +85,7 @@ export const SlashCommand = Extension.create({
             // Esc fecha sempre
             if (event.key === 'Escape') {
               view.dispatch(view.state.tr.setMeta(SlashCommandPluginKey, EMPTY_STATE));
-              options.onChange({ ...EMPTY_STATE, clientRect: null });
+              storage.onChange({ ...EMPTY_STATE, clientRect: null });
               return true;
             }
 
@@ -81,7 +93,7 @@ export const SlashCommand = Extension.create({
             // estado de "qual item está ativo"). Se ele consumir, retornamos
             // true. Senão, deixamos o ProseMirror tratar normalmente.
             if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === 'Enter' || event.key === 'Tab') {
-              const consumed = options.onKeyDown(event);
+              const consumed = storage.onKeyDown(event);
               if (consumed) return true;
             }
 
@@ -101,7 +113,7 @@ export const SlashCommand = Extension.create({
           // Só ativa em seleção colapsada (cursor)
           if (!selection.empty) {
             if (oldMeta.active) {
-              options.onChange({ ...EMPTY_STATE, clientRect: null });
+              storage.onChange({ ...EMPTY_STATE, clientRect: null });
               return newState.tr.setMeta(SlashCommandPluginKey, EMPTY_STATE);
             }
             return null;
@@ -133,16 +145,7 @@ export const SlashCommand = Extension.create({
               oldMeta.query !== query ||
               oldMeta.range?.from !== from
             ) {
-              // Coordenadas na tela pro popover se posicionar
-              let clientRect = null;
-              try {
-                const view = oldState && oldState.view;
-                // O view real está acessível via this no Tiptap, mas em
-                // appendTransaction não temos. Os coords são calculados
-                // depois, no Editor.jsx, via editor.view.coordsAtPos(from).
-                clientRect = null;
-              } catch (_) {}
-              options.onChange({ ...newMeta, clientRect });
+              storage.onChange({ ...newMeta, clientRect: null });
             }
 
             return newState.tr.setMeta(SlashCommandPluginKey, newMeta);
@@ -150,7 +153,7 @@ export const SlashCommand = Extension.create({
 
           // Saiu do padrão "/foo" (ex: usuário digitou espaço, apagou tudo)
           if (oldMeta.active) {
-            options.onChange({ ...EMPTY_STATE, clientRect: null });
+            storage.onChange({ ...EMPTY_STATE, clientRect: null });
             return newState.tr.setMeta(SlashCommandPluginKey, EMPTY_STATE);
           }
 
