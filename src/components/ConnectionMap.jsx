@@ -292,6 +292,10 @@ export default function ConnectionMap({ note, store, onClose }) {
   const [mapView, setMapView] = useState(MAP_VIEW_NOTEBOOKS);
   const fileInputRef = useRef(null);
   const svgRef = useRef(null);
+  // Ref direta pro <g> que sofre o transform de pan/zoom — usada pra
+  // escrever diretamente no DOM durante o drag, evitando re-render do
+  // React a cada frame.
+  const panLayerRef = useRef(null);
 
   // Pan/zoom
   const [zoom, setZoom] = useState(1);
@@ -636,17 +640,31 @@ export default function ConnectionMap({ note, store, onClose }) {
     if (panRafId.current == null) {
       panRafId.current = requestAnimationFrame(() => {
         panRafId.current = null;
-        if (pendingPan.current) {
-          setPan(pendingPan.current);
+        const p = pendingPan.current;
+        if (!p) return;
+        // Caminho rápido: escreve direto no atributo transform do <g> via DOM,
+        // sem disparar re-render do React. Zero reconciliação durante o drag.
+        // O state só é sincronizado no mouseUp.
+        if (panLayerRef.current) {
+          const VIEW = 1000;
+          const cx = VIEW / 2;
+          const cy = VIEW / 2;
+          panLayerRef.current.setAttribute(
+            'transform',
+            `translate(${cx + p.x / zoom * 1} ${cy + p.y / zoom * 1}) scale(${zoom}) translate(${-cx} ${-cy})`
+          );
+        } else {
+          // Fallback (caso o ref ainda não tenha sido anexado): rota antiga
+          setPan(p);
           pendingPan.current = null;
         }
       });
     }
-  }, [isPanning]);
+  }, [isPanning, zoom]);
 
   const handleMouseUp = useCallback(() => {
     setIsPanning(false);
-    // Cancela frame pendente e aplica o último pan se houver
+    // Cancela frame pendente e sincroniza state com a posição final do DOM
     if (panRafId.current != null) {
       cancelAnimationFrame(panRafId.current);
       panRafId.current = null;
@@ -874,6 +892,7 @@ export default function ConnectionMap({ note, store, onClose }) {
         ) : (
           <EcosystemSvg
             ref={svgRef}
+            panLayerRef={panLayerRef}
             layout={layout}
             connections={interNoteConnections}
             hoveredId={hoveredId}
@@ -1035,9 +1054,71 @@ const NoteNode = React.memo(function NoteNode({
   );
 });
 
+// Conexão estrutural (linha caderno/área → nota) — memoizada para que o
+// recálculo do path SVG e atributos não aconteça em todo render do pai.
+// Só re-renderiza quando alguma das suas próprias props muda.
+const StructuralConnection = React.memo(function StructuralConnection({
+  noteId, parentX, parentY, noteX, noteY, parentColor,
+  isLit, isDim, animationDelay, animationClass,
+}) {
+  const path = curvedPath(parentX, parentY, noteX, noteY, 0.15);
+  const pathId = `path-nb2n-${noteId}`;
+  return (
+    <g style={{ animationDelay: `${animationDelay}ms` }} className={animationClass}>
+      <path id={pathId} d={path} fill="none" stroke="none" />
+      <use
+        href={`#${pathId}`}
+        fill="none"
+        stroke={parentColor}
+        strokeWidth={isLit ? 1.8 : 1}
+        strokeLinecap="round"
+        opacity={isDim ? 0.08 : (isLit ? 0.7 : 0.32)}
+        style={{ transition: 'all 250ms ease' }}
+      />
+      {isLit && (
+        <circle r="2.5" fill={parentColor} filter="url(#lineGlow)">
+          <animateMotion dur="1.6s" repeatCount="indefinite">
+            <mpath href={`#${pathId}`} />
+          </animateMotion>
+        </circle>
+      )}
+    </g>
+  );
+});
+
+// Conexão entre notas (manual ou sugerida) — mesmo princípio do StructuralConnection.
+const InterNoteConnection = React.memo(function InterNoteConnection({
+  connKey, kind, srcX, srcY, tgtX, tgtY, cx, cy,
+  strokeColor, strokeGlow, dasharray,
+  isHighlight, isDimmed, animationDelay,
+}) {
+  const path = arcAroundCenter(srcX, srcY, tgtX, tgtY, cx, cy, 0.32);
+  const pathId = `path-conn-${connKey}`;
+  return (
+    <g style={{ animationDelay: `${animationDelay}ms` }} className="a-organic-line-1">
+      <path id={pathId} d={path} fill="none" stroke="none" />
+      <use
+        href={`#${pathId}`}
+        fill="none"
+        stroke={strokeColor}
+        strokeWidth={isHighlight ? 2.4 : 1.2}
+        strokeDasharray={dasharray}
+        strokeLinecap="round"
+        opacity={isDimmed ? 0.1 : (isHighlight ? 0.85 : 0.4)}
+        style={{ transition: 'all 250ms ease' }}
+      />
+      {isHighlight && (
+        <circle r="3" fill={strokeGlow} filter="url(#lineGlow)">
+          <animateMotion dur="2.2s" repeatCount="indefinite">
+            <mpath href={`#${pathId}`} />
+          </animateMotion>
+        </circle>
+      )}
+    </g>
+  );
+});
+
 // Componente do Caderno/Área — memoizado pelo mesmo motivo do NoteNode.
-// Recebe noteCount, dim, isHover, delays e handlers estáveis já calculados
-// pelo pai. Cadernos param de re-renderizar à toa quando o mapa atualiza.
 const NotebookNode = React.memo(function NotebookNode({
   nb, noteCount, isHover, dim, delayMs, pulseDelay,
   onHoverEnter, onHoverLeave,
@@ -1157,6 +1238,7 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
   avatarUrl, onAvatarClick, onAvatarRemove,
   zoom, pan, isPanning, onWheel, onMouseDown, onMouseMove, onMouseUp,
   notesByNotebook,
+  panLayerRef,
 }, ref) {
   const { cx, cy, view, notebookNodes, noteNodes } = layout;
 
@@ -1272,6 +1354,7 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
 
       {/* Camada principal: tudo aqui sofre pan + zoom */}
       <g
+        ref={panLayerRef}
         transform={`translate(${cx + pan.x / zoom * 1} ${cy + pan.y / zoom * 1}) scale(${zoom}) translate(${-cx} ${-cy})`}
         style={{ willChange: 'transform' }}
       >
@@ -1286,32 +1369,26 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
 
         {/* === Linhas caderno → notas === */}
         {noteNodes.map((nn, idx) => {
-          const parent = notebookNodes.find(nb => nb.id === nn.notebookId);
-          if (!parent) return null;
-          const dim = highlightSet && !(highlightSet.has(nn.id) || highlightSet.has(parent.id));
-          const lit = hoveredId === nn.id || hoveredId === parent.id;
-          const path = curvedPath(parent.x, parent.y, nn.x, nn.y, 0.15);
-          const pathId = `path-nb2n-${nn.id}`;
+          const parentPos = posById[nn.notebookId];
+          const parentMeta = notebookMeta[nn.notebookId];
+          if (!parentPos || !parentMeta) return null;
+          const dim = !!(highlightSet && !(highlightSet.has(nn.id) || highlightSet.has(nn.notebookId)));
+          const lit = hoveredId === nn.id || hoveredId === nn.notebookId;
+          const animClass = idx % 2 === 0 ? 'a-organic-line-2' : 'a-organic-line-1';
           return (
-            <g key={`struct-n-${nn.id}`} style={{ animationDelay: `${delayNoteBase + idx * 35}ms` }} className={idx % 2 === 0 ? 'a-organic-line-2' : 'a-organic-line-1'}>
-              <path id={pathId} d={path} fill="none" stroke="none" />
-              <use
-                href={`#${pathId}`}
-                fill="none"
-                stroke={parent.color || '#A07BD6'}
-                strokeWidth={lit ? 1.8 : 1}
-                strokeLinecap="round"
-                opacity={dim ? 0.08 : (lit ? 0.7 : 0.32)}
-                style={{ transition: 'all 250ms ease' }}
-              />
-              {lit && (
-                <circle r="2.5" fill={parent.color || '#A07BD6'} filter="url(#lineGlow)">
-                  <animateMotion dur="1.6s" repeatCount="indefinite">
-                    <mpath href={`#${pathId}`} />
-                  </animateMotion>
-                </circle>
-              )}
-            </g>
+            <StructuralConnection
+              key={`struct-n-${nn.id}`}
+              noteId={nn.id}
+              parentX={parentPos.x}
+              parentY={parentPos.y}
+              noteX={nn.x}
+              noteY={nn.y}
+              parentColor={parentMeta.color}
+              isLit={lit}
+              isDim={dim}
+              animationDelay={delayNoteBase + idx * 35}
+              animationClass={animClass}
+            />
           );
         })}
 
@@ -1326,32 +1403,26 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
           const tgt = posById[conn.targetId];
           if (!src || !tgt) return null;
           const palette = conn.kind === 'manual' ? MANUAL_PALETTE : (FORCE_PALETTE[conn.strength] || FORCE_PALETTE.fraca);
-          const isHighlight = hoveredId && (hoveredId === conn.sourceId || hoveredId === conn.targetId);
-          const isDimmed = highlightSet && !isHighlight;
-          const path = arcAroundCenter(src.x, src.y, tgt.x, tgt.y, cx, cy, 0.32);
-          const pathId = `path-conn-${conn.key}`;
+          const isHighlight = !!(hoveredId && (hoveredId === conn.sourceId || hoveredId === conn.targetId));
+          const isDimmed = !!(highlightSet && !isHighlight);
           return (
-            <g key={`conn-${conn.key}`} style={{ animationDelay: `${delayConnections}ms` }} className="a-organic-line-1">
-              <path id={pathId} d={path} fill="none" stroke="none" />
-              <use
-                href={`#${pathId}`}
-                fill="none"
-                stroke={palette.stroke}
-                strokeWidth={isHighlight ? 2.4 : 1.2}
-                strokeDasharray={conn.kind === 'manual' ? '0' : '5 6'}
-                strokeLinecap="round"
-                opacity={isDimmed ? 0.1 : (isHighlight ? 0.85 : 0.4)}
-                style={{ transition: 'all 250ms ease' }}
-              />
-              {isHighlight && (
-                <circle r="3.5" fill={palette.glow} filter="url(#lineGlow)">
-                  <animateMotion dur="2s" repeatCount="indefinite">
-                    <mpath href={`#${pathId}`} />
-                  </animateMotion>
-                </circle>
-              )}
-              <title>{conn.kind === 'manual' ? `Conexão manual: ${conn.reason || 'sem motivo'}` : `Conexão ${conn.strength || 'sugerida'}: ${conn.reason || ''}`}</title>
-            </g>
+            <InterNoteConnection
+              key={`conn-${conn.key}`}
+              connKey={conn.key}
+              kind={conn.kind}
+              srcX={src.x}
+              srcY={src.y}
+              tgtX={tgt.x}
+              tgtY={tgt.y}
+              cx={cx}
+              cy={cy}
+              strokeColor={palette.stroke}
+              strokeGlow={palette.glow}
+              dasharray={conn.kind === 'manual' ? '0' : '5 6'}
+              isHighlight={isHighlight}
+              isDimmed={isDimmed}
+              animationDelay={delayConnections}
+            />
           );
         })}
 
