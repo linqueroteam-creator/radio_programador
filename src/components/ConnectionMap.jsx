@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, useRef, useDeferredValue } from 'react';
 import {
   X, Plus, Sparkles, BookOpen, ArrowLeft, FileText, Camera, ZoomIn, ZoomOut, Maximize2,
   // Ícones para cada área da vida (Camada 2 — regra-de-cor.md / areas-da-vida.md)
@@ -269,6 +269,10 @@ export default function ConnectionMap({ note, store, onClose }) {
   // === HOOKS ===
   const [hoveredId, setHoveredId] = useState(null);
   const [hoveredType, setHoveredType] = useState(null);
+  // Deferimos o hover: o React aplica o highlight em prioridade baixa,
+  // mantendo o cursor/UI responsivos mesmo em mapa grande.
+  const deferredHoveredId = useDeferredValue(hoveredId);
+  const deferredHoveredType = useDeferredValue(hoveredType);
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [avatarError, setAvatarError] = useState(null);
   const [avatarHover, setAvatarHover] = useState(false);
@@ -282,6 +286,10 @@ export default function ConnectionMap({ note, store, onClose }) {
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const panStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
+  // rAF-throttle: agenda 1 update de pan por frame, mesmo que o mouse
+  // dispare 100+ eventos por segundo. Reduz drasticamente re-renders.
+  const panRafId = useRef(null);
+  const pendingPan = useRef(null);
 
   // ESC fecha
   useEffect(() => {
@@ -314,6 +322,16 @@ export default function ConnectionMap({ note, store, onClose }) {
       localStorage.setItem(MAP_VIEW_STORAGE_KEY, mapView);
     } catch (_) { /* defensivo */ }
   }, [mapView]);
+
+  // Limpa frame pendente do pan ao desmontar (evita leak / set-state em ciclos finalizados)
+  useEffect(() => {
+    return () => {
+      if (panRafId.current != null) {
+        cancelAnimationFrame(panRafId.current);
+        panRafId.current = null;
+      }
+    };
+  }, []);
 
   // Cadernos
   const notebooks = useMemo(() => {
@@ -601,11 +619,30 @@ export default function ConnectionMap({ note, store, onClose }) {
     if (!isPanning) return;
     const dx = e.clientX - panStart.current.x;
     const dy = e.clientY - panStart.current.y;
-    setPan({ x: panStart.current.panX + dx, y: panStart.current.panY + dy });
+    // Guarda a posição mais recente; o rAF pega o último valor no próximo frame
+    pendingPan.current = { x: panStart.current.panX + dx, y: panStart.current.panY + dy };
+    if (panRafId.current == null) {
+      panRafId.current = requestAnimationFrame(() => {
+        panRafId.current = null;
+        if (pendingPan.current) {
+          setPan(pendingPan.current);
+          pendingPan.current = null;
+        }
+      });
+    }
   }, [isPanning]);
 
   const handleMouseUp = useCallback(() => {
     setIsPanning(false);
+    // Cancela frame pendente e aplica o último pan se houver
+    if (panRafId.current != null) {
+      cancelAnimationFrame(panRafId.current);
+      panRafId.current = null;
+    }
+    if (pendingPan.current) {
+      setPan(pendingPan.current);
+      pendingPan.current = null;
+    }
   }, []);
 
   const resetView = useCallback(() => {
@@ -616,24 +653,24 @@ export default function ConnectionMap({ note, store, onClose }) {
   const zoomIn = useCallback(() => setZoom(z => Math.min(ZOOM_MAX, z + ZOOM_STEP * 2)), []);
   const zoomOut = useCallback(() => setZoom(z => Math.max(ZOOM_MIN, z - ZOOM_STEP * 2)), []);
 
-  // Highlight de subconjunto
+  // Highlight de subconjunto — usa o hover deferido pra não travar a UI
   const highlightSet = useMemo(() => {
-    if (!hoveredId) return null;
-    const set = new Set([hoveredId]);
-    if (hoveredType === 'notebook') {
+    if (!deferredHoveredId) return null;
+    const set = new Set([deferredHoveredId]);
+    if (deferredHoveredType === 'notebook') {
       layout.noteNodes.forEach(nn => {
-        if (nn.notebookId === hoveredId) set.add(nn.id);
+        if (nn.notebookId === deferredHoveredId) set.add(nn.id);
       });
-    } else if (hoveredType === 'note') {
-      const nt = layout.noteNodes.find(nn => nn.id === hoveredId);
+    } else if (deferredHoveredType === 'note') {
+      const nt = layout.noteNodes.find(nn => nn.id === deferredHoveredId);
       if (nt) set.add(nt.notebookId);
       interNoteConnections.forEach(c => {
-        if (c.sourceId === hoveredId) set.add(c.targetId);
-        if (c.targetId === hoveredId) set.add(c.sourceId);
+        if (c.sourceId === deferredHoveredId) set.add(c.targetId);
+        if (c.targetId === deferredHoveredId) set.add(c.sourceId);
       });
     }
     return set;
-  }, [hoveredId, hoveredType, layout.noteNodes, interNoteConnections]);
+  }, [deferredHoveredId, deferredHoveredType, layout.noteNodes, interNoteConnections]);
 
   // ====== SEM HOOKS NOVOS A PARTIR DAQUI ======
   const totalNotes = layout.noteNodes.length;
@@ -949,7 +986,10 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
       <rect x="0" y="0" width={view} height={view} fill="url(#dotgrid)" className="a-pan-bg" />
 
       {/* Camada principal: tudo aqui sofre pan + zoom */}
-      <g transform={`translate(${cx + pan.x / zoom * 1} ${cy + pan.y / zoom * 1}) scale(${zoom}) translate(${-cx} ${-cy})`}>
+      <g
+        transform={`translate(${cx + pan.x / zoom * 1} ${cy + pan.y / zoom * 1}) scale(${zoom}) translate(${-cx} ${-cy})`}
+        style={{ willChange: 'transform' }}
+      >
 
         {/* Halo central */}
         <circle cx={cx} cy={cy} r={320} fill="url(#coreHalo)" />
