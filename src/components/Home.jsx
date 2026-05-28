@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import {
   Plus, BookOpen, Star, Clock, TrendingUp, Sparkles,
-  Search, ChevronRight, Edit3, X, Trash2, MoreVertical, Download, Package
+  Search, ChevronRight, Edit3, X, Trash2, MoreVertical, Download, Package,
+  FolderOpen
 } from 'lucide-react';
 import NotebookCover from './NotebookCover';
 import NotebookDeleteModal from './NotebookDeleteModal';
@@ -223,6 +224,62 @@ export default function Home({ store, onOpenInsights, onCreateNote, onOpenMobile
           </span>
         </div>
       </div>
+
+      {/* Seção de Projetos — NeuroSilêncio: só aparece se há ≥1 projeto */}
+      {(store.projects || []).filter(p => !p.archived).length > 0 && (
+        <div className="px-4 sm:px-6 lg:px-8 pb-8 max-w-7xl mx-auto">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg sm:text-xl font-bold text-anotata-text flex items-center gap-2">
+              <FolderOpen size={16} className="text-anotata-roxo" />
+              Seus projetos
+            </h2>
+            <button
+              onClick={() => { store.setCurrentView('projects'); store.setSelectedNoteId(null); }}
+              className="text-xs text-anotata-roxo hover:underline flex items-center gap-1"
+            >
+              Ver todos
+              <ChevronRight size={12} />
+            </button>
+          </div>
+
+          <div className="grid gap-3 sm:gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}>
+            {(store.projects || [])
+              .filter(p => !p.archived)
+              .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+              .slice(0, 4)
+              .map(project => {
+                const notebookCount = store.notebooks.filter(nb => nb.projectId === project.id).length;
+                return (
+                  <button
+                    key={project.id}
+                    onClick={() => { store.setCurrentView('projects'); store.setSelectedNoteId(null); }}
+                    className="group bg-white border border-anotata-border rounded-xl p-4 text-left hover:border-anotata-roxo hover:shadow-md transition-all hover:-translate-y-0.5"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      {project.coverEmoji && (
+                        <span className="text-lg">{project.coverEmoji}</span>
+                      )}
+                      <h3 className="font-semibold text-anotata-text text-sm truncate group-hover:text-anotata-roxo transition-colors">
+                        {project.title}
+                      </h3>
+                    </div>
+                    {project.description && (
+                      <p className="text-xs text-anotata-text-suave line-clamp-2 leading-relaxed mb-2">
+                        {project.description}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-3 text-2xs text-anotata-muted">
+                      <span className="flex items-center gap-1">
+                        <BookOpen size={10} />
+                        {notebookCount} {notebookCount === 1 ? 'caderno' : 'cadernos'}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+          </div>
+        </div>
+      )}
 
       {/* Seção de Cadernos */}
       <div className="px-4 sm:px-6 lg:px-8 pb-12 max-w-7xl mx-auto">
