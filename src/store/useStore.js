@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { analyzeNote, analyzeNotesBatch, onAnalyzed } from '../agent/agentClient';
+import { analyzeAndLink, onAnalyzedFull } from '../agent/agentClient';
 
 const STORAGE_KEY = 'anotata-data';
 const BACKUP_PRE_V3_KEY = 'np_backup_pre_v3';
@@ -55,15 +55,20 @@ function migrateNote(note) {
     // Migração suave: notas antigas que não têm o campo ganham 'outros'.
     lifeArea: note.lifeArea || 'outros',
 
-    // === AGENTE INTELIGENTE LOCAL (PR I) ===
+    // === AGENTE INTELIGENTE LOCAL (PR I + PR J) ===
     // Campos preenchidos pelo Web Worker em background.
     // - inferredLifeArea: área da vida sugerida (não substitui lifeArea manual)
-    // - confidenceScore: 0..1, confiança da inferência (>=0.6 vincula automaticamente
-    //   no PR J; < 0.6 fica como sugestão silenciosa)
+    // - confidenceScore: 0..1, confiança da inferência
     // - lastAgentRun: ISO timestamp da última análise (pra evitar reprocessar)
+    // - linkedByAgent: true se o agente vinculou esta nota a um caderno automaticamente
+    //                  (PR J) — usado pra que correções do usuário "ensinem" o agente no futuro
+    // - suggestedConnections: sinapses detectadas pelo agente (cosine similarity)
+    //                          [{ noteId, similarity, reasons: [] }]
     inferredLifeArea: note.inferredLifeArea || null,
     confidenceScore: typeof note.confidenceScore === 'number' ? note.confidenceScore : 0,
     lastAgentRun: note.lastAgentRun || null,
+    linkedByAgent: !!note.linkedByAgent,
+    suggestedConnections: Array.isArray(note.suggestedConnections) ? note.suggestedConnections : [],
   };
 }
 
@@ -296,51 +301,62 @@ export function useStore() {
     return () => clearTimeout(t);
   }, [data, isLoaded]);
 
-  // === AGENTE INTELIGENTE LOCAL (PR I) ===
-  // Escuta resultados do worker e persiste nos campos derivados.
-  // O agente NUNCA muda lifeArea (manual). Só preenche inferredLifeArea +
-  // confidenceScore + lastAgentRun. No PR J, com confidence >= 0.6, vai
-  // usar isso pra vincular caderno automaticamente.
+  // === AGENTE INTELIGENTE LOCAL (PR I + PR J) ===
+  // Escuta resultados completos do worker e persiste:
+  //  - campos derivados (inferredLifeArea, confidenceScore, lastAgentRun)
+  //  - vinculação automática de caderno se confidence >= 0.6 (apenas órfãs)
+  //  - sinapses detectadas em suggestedConnections
+  // O agente NUNCA muda lifeArea (manual). Só preenche os campos derivados.
   useEffect(() => {
-    const off = onAnalyzed(({ noteId, result }) => {
+    const off = onAnalyzedFull(({ noteId, result }) => {
       if (!noteId || !result) return;
-      setData(prev => ({
-        ...prev,
-        notes: prev.notes.map(n => {
-          if (n.id !== noteId) return n;
-          // SEMPRE atualiza lastAgentRun (mesmo se nada mudou) — assim o
-          // efeito disparador para de filtrar essa nota como "pendente"
-          // e não cria loop infinito.
-          return {
-            ...n,
-            inferredLifeArea: result.inferredLifeArea,
-            confidenceScore: result.confidenceScore,
-            lastAgentRun: new Date().toISOString(),
-          };
-        }),
-      }));
+      setData(prev => {
+        const validNbIds = new Set(prev.notebooks.map(nb => nb.id));
+        return {
+          ...prev,
+          notes: prev.notes.map(n => {
+            if (n.id !== noteId) return n;
+
+            const updated = {
+              ...n,
+              inferredLifeArea: result.inferredLifeArea,
+              confidenceScore: result.confidenceScore,
+              suggestedConnections: result.suggestedConnections || [],
+              lastAgentRun: new Date().toISOString(),
+            };
+
+            // Vinculação automática: só se a nota é órfã (sem caderno válido)
+            // e o agente sugeriu um caderno com confiança suficiente
+            // (NotebookLinker já aplicou o threshold de 0.6 internamente).
+            const isOrphan = !n.notebookId || !validNbIds.has(n.notebookId);
+            if (isOrphan && result.suggestedNotebookId && validNbIds.has(result.suggestedNotebookId)) {
+              updated.notebookId = result.suggestedNotebookId;
+              updated.linkedByAgent = true;
+              // Mantém updatedAt original (vinculação não conta como edição do usuário)
+            }
+
+            return updated;
+          }),
+        };
+      });
     });
     return off;
   }, []);
 
-  // Dispara análise quando o conjunto de notas muda (com debounce interno
-  // do agentClient — várias edições rápidas viram 1 análise no fim).
-  // Filtra: só notas vivas que ainda não foram analisadas OU foram editadas
+  // Dispara análise completa quando notas mudam ou cadernos mudam.
+  // Filtro: só notas vivas que ainda não foram analisadas OU foram editadas
   // depois da última análise.
   useEffect(() => {
     if (!isLoaded) return;
     const candidates = data.notes.filter(n => {
       if (n.isTrash || n.isArchived) return false;
       if (!n.lastAgentRun) return true;
-      // Reprocessa se a nota foi atualizada depois da última análise
       return new Date(n.updatedAt) > new Date(n.lastAgentRun);
     });
-    candidates.forEach(n => analyzeNote(n));
-  }, [data.notes, isLoaded]);
+    candidates.forEach(n => analyzeAndLink(n, data.notebooks, data.notes));
+  }, [data.notes, data.notebooks, isLoaded]);
 
   // Idle: a cada 3 minutos, reanalisa notas que nunca foram processadas.
-  // Pega gente que abriu o app e não editou nada — útil pra notas antigas
-  // pré-existentes ao agente.
   useEffect(() => {
     if (!isLoaded) return;
     const interval = setInterval(() => {
@@ -348,11 +364,11 @@ export function useStore() {
         !n.isTrash && !n.isArchived && !n.lastAgentRun
       );
       if (stale.length > 0) {
-        analyzeNotesBatch(stale.slice(0, 10)); // máx 10 por ciclo
+        stale.slice(0, 10).forEach(n => analyzeAndLink(n, data.notebooks, data.notes));
       }
     }, 3 * 60 * 1000); // 3 minutos
     return () => clearInterval(interval);
-  }, [data.notes, isLoaded]);
+  }, [data.notes, data.notebooks, isLoaded]);
 
   // === NOTAS ===
   const createNote = useCallback((notebookId = 'default', overrides = {}) => {

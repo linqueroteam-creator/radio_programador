@@ -433,6 +433,25 @@ export default function ConnectionMap({ note, store, onClose }) {
           });
         });
       } catch (_) { /* defensivo */ }
+
+      // === Sinapses do Agente Inteligente (PR J) ===
+      // Conexões automáticas detectadas via cosine similarity de bag-of-words.
+      // Persistidas no estado pelo agente em background; aqui só renderizamos.
+      (n.suggestedConnections || []).forEach(s => {
+        if (!s || !s.noteId) return;
+        const target = store.getNoteById(s.noteId);
+        if (!target || target.isTrash || target.isArchived) return;
+        const key = [n.id, s.noteId].sort().join('-');
+        if (seen.has(key)) return;
+        seen.add(key);
+        // Mapeia similarity em força visual: >=0.6 forte, >=0.4 média, resto fraca
+        const strength = s.similarity >= 0.6 ? 'forte' : s.similarity >= 0.4 ? 'média' : 'fraca';
+        connections.push({
+          key, sourceId: n.id, targetId: s.noteId,
+          reason: (s.reasons && s.reasons[0]) || 'sinapse automática',
+          strength, kind: 'agent',
+        });
+      });
     });
     return connections;
   }, [store.notes]);

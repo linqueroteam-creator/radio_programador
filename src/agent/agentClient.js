@@ -1,5 +1,5 @@
 /**
- * Agente Inteligente Local — Cliente (PR I)
+ * Agente Inteligente Local — Cliente (PR I + PR J)
  *
  * Interface entre main thread (React) e o Web Worker que roda o agente.
  *
@@ -8,19 +8,21 @@
  *  - Debounce: ao salvar/editar uma nota muitas vezes seguidas, só
  *    analisa uma vez no fim (evita rodar 50x enquanto o usuário digita)
  *  - Fallback síncrono: em ambientes sem Worker (Node/testes), roda
- *    a análise direto no main thread (com setTimeout 0 pra preservar
+ *    a análise direto no main thread (com Promise.resolve pra preservar
  *    a interface assíncrona)
  *  - Defensivo: nunca derruba a app se o worker falhar
  *
  * Uso:
- *   import { analyzeNote, onAnalyzed } from './agent/agentClient';
- *   onAnalyzed(({ noteId, result }) => { ... persiste no store ... });
- *   analyzeNote(note);  // dispara em background
+ *   import { analyzeNote, analyzeAndLink, onAnalyzed, onAnalyzedFull } from './agent/agentClient';
+ *   onAnalyzedFull(({ noteId, result }) => { ... persiste no store ... });
+ *   analyzeAndLink(note, notebooks, allNotes);  // dispara em background
  *
  * Doc: docs/HIERARQUIA-AREAS-PROJETOS-CADERNOS-NOTAS.md (seção 4)
  */
 
 import { suggestLifeArea } from '../engine/LifeAreaSuggester';
+import { linkNoteToNotebook } from '../engine/NotebookLinker';
+import { detectSynapses } from '../engine/ConnectionDetector';
 
 // Tempo de debounce: ao receber várias chamadas pra mesma nota, espera
 // 800ms de "silêncio" antes de mandar pro worker.
@@ -30,7 +32,8 @@ const DEBOUNCE_MS = 800;
 let worker = null;
 let workerInitFailed = false;
 const debounceTimers = new Map();    // noteId → timeoutId
-const listeners = new Set();         // callbacks pra resultados
+const listeners = new Set();         // callbacks pra resultados 'analyzed' (só área — PR I)
+const fullListeners = new Set();     // callbacks pra resultados 'analyzedFull' (completo — PR J)
 let nextJobId = 1;
 
 /**
@@ -44,12 +47,9 @@ function ensureWorker() {
     return false;
   }
   try {
-    // Vite suporta nativamente: `new URL(..., import.meta.url)` resolve
-    // o path do worker em dev e build. `type: 'module'` permite imports.
     worker = new Worker(new URL('./agentWorker.js', import.meta.url), { type: 'module' });
     worker.addEventListener('message', handleWorkerMessage);
     worker.addEventListener('error', (e) => {
-      // Se o worker quebrar, registra mas não trava a app
       // eslint-disable-next-line no-console
       console.warn('[agentClient] Worker error:', e?.message || e);
     });
@@ -65,21 +65,24 @@ function ensureWorker() {
 
 function handleWorkerMessage(event) {
   const data = event?.data;
-  if (!data || data.type !== 'analyzed') return;
-  notifyListeners({ noteId: data.noteId, result: data.result });
+  if (!data) return;
+  if (data.type === 'analyzed') {
+    notifyListeners(listeners, { noteId: data.noteId, result: data.result });
+  } else if (data.type === 'analyzedFull') {
+    notifyListeners(fullListeners, { noteId: data.noteId, result: data.result });
+  }
 }
 
-function notifyListeners(payload) {
-  listeners.forEach((cb) => {
+function notifyListeners(set, payload) {
+  set.forEach((cb) => {
     try { cb(payload); } catch (_) { /* defensivo */ }
   });
 }
 
 /**
- * Roda a análise no main thread (fallback pra ambientes sem Worker).
- * Mantém a interface assíncrona via Promise.resolve.
+ * Roda só inferência de área no main thread (fallback PR I).
  */
-function runFallback(note) {
+function runFallbackAnalyze(note) {
   Promise.resolve().then(() => {
     try {
       const suggestion = suggestLifeArea(note);
@@ -90,22 +93,61 @@ function runFallback(note) {
             keywords: suggestion.keywords,
           }
         : { inferredLifeArea: null, confidenceScore: 0, keywords: [] };
-      notifyListeners({ noteId: note?.id || null, result });
+      notifyListeners(listeners, { noteId: note?.id || null, result });
     } catch (_) { /* defensivo */ }
   });
 }
 
 /**
- * Pede análise de uma nota. Retorna imediatamente (não bloqueia).
- * Se a mesma nota for analisada várias vezes em sequência rápida,
- * só roda no fim (debounce).
- *
- * @param {Object} note — { id, title, content, lifeArea }
+ * Roda análise completa no main thread (fallback PR J).
+ */
+function runFallbackAnalyzeFull(note, notebooks, allNotes) {
+  Promise.resolve().then(() => {
+    try {
+      const suggestion = suggestLifeArea(note);
+      const inferredLifeArea = suggestion ? suggestion.areaId : null;
+      const confidenceScore = suggestion ? suggestion.confidence : 0;
+      const keywords = suggestion ? suggestion.keywords : [];
+
+      const validNbIds = new Set((notebooks || []).map(nb => nb.id));
+      const isOrphan = !note?.notebookId || !validNbIds.has(note.notebookId);
+      let suggestedNotebookId = null;
+      let notebookScore = 0;
+      let notebookReasons = [];
+      if (isOrphan) {
+        const noteWithInfer = { ...note, inferredLifeArea };
+        const link = linkNoteToNotebook(noteWithInfer, notebooks || [], allNotes || []);
+        if (link) {
+          suggestedNotebookId = link.notebookId;
+          notebookScore = link.score;
+          notebookReasons = link.reasons || [];
+        }
+      }
+
+      const suggestedConnections = detectSynapses(note, allNotes || [], 4, 0.25);
+
+      const result = {
+        inferredLifeArea,
+        confidenceScore,
+        keywords,
+        suggestedNotebookId,
+        notebookScore,
+        notebookReasons,
+        suggestedConnections,
+      };
+      notifyListeners(fullListeners, { noteId: note?.id || null, result });
+    } catch (_) { /* defensivo */ }
+  });
+}
+
+/**
+ * Pede análise simples (só área da vida) — PR I.
+ * Mantida pra compatibilidade. Pra a análise completa (com linker e sinapses),
+ * use `analyzeAndLink`.
  */
 export function analyzeNote(note) {
   if (!note || !note.id) return;
   const noteId = note.id;
-  // Cancela job anterior pra essa nota (debounce)
   const existing = debounceTimers.get(noteId);
   if (existing) clearTimeout(existing);
 
@@ -123,7 +165,7 @@ export function analyzeNote(note) {
         },
       });
     } else {
-      runFallback(note);
+      runFallbackAnalyze(note);
     }
   }, DEBOUNCE_MS);
 
@@ -131,11 +173,61 @@ export function analyzeNote(note) {
 }
 
 /**
- * Versão batch: analisa várias notas. Útil pro disparo idle (a cada
- * 2-3 minutos, reanalisa notas que ainda não foram processadas).
- * Sem debounce — assume que quem chama já filtrou.
+ * Análise completa (PR J): área + linker + sinapses.
+ * Recebe contexto (notebooks e allNotes) pra que o agente possa decidir
+ * sobre vinculação de caderno e detectar conexões textuais.
  *
- * @param {Array} notes
+ * @param {Object} note
+ * @param {Array} notebooks
+ * @param {Array} allNotes
+ */
+export function analyzeAndLink(note, notebooks, allNotes) {
+  if (!note || !note.id) return;
+  const noteId = note.id;
+  const existing = debounceTimers.get(noteId);
+  if (existing) clearTimeout(existing);
+
+  const timer = setTimeout(() => {
+    debounceTimers.delete(noteId);
+    if (ensureWorker() && worker) {
+      worker.postMessage({
+        type: 'analyzeAndLink',
+        jobId: nextJobId++,
+        note: {
+          id: note.id,
+          title: note.title || '',
+          content: note.content || '',
+          lifeArea: note.lifeArea || 'outros',
+          notebookId: note.notebookId || null,
+          ignoredSuggestions: note.ignoredSuggestions || [],
+          manualConnections: note.manualConnections || [],
+        },
+        notebooks: (notebooks || []).map(nb => ({
+          id: nb.id,
+          name: nb.name,
+          lifeArea: nb.lifeArea || 'outros',
+          keywords: nb.keywords || [],
+        })),
+        allNotes: (allNotes || []).map(n => ({
+          id: n.id,
+          title: n.title || '',
+          content: n.content || '',
+          notebookId: n.notebookId,
+          lifeArea: n.lifeArea || 'outros',
+          isTrash: !!n.isTrash,
+          isArchived: !!n.isArchived,
+        })),
+      });
+    } else {
+      runFallbackAnalyzeFull(note, notebooks, allNotes);
+    }
+  }, DEBOUNCE_MS);
+
+  debounceTimers.set(noteId, timer);
+}
+
+/**
+ * Versão batch da análise simples (só área).
  */
 export function analyzeNotesBatch(notes) {
   if (!Array.isArray(notes)) return;
@@ -153,17 +245,13 @@ export function analyzeNotesBatch(notes) {
         },
       });
     } else {
-      runFallback(note);
+      runFallbackAnalyze(note);
     }
   });
 }
 
 /**
- * Registra um callback pra receber resultados de análise.
- * Retorna função pra desregistrar (cleanup do useEffect).
- *
- * @param {(payload: { noteId: string, result: { inferredLifeArea, confidenceScore, keywords } }) => void} cb
- * @returns {() => void} função pra desinscrever
+ * Listener pra resultado simples (só área da vida — PR I).
  */
 export function onAnalyzed(cb) {
   if (typeof cb !== 'function') return () => {};
@@ -172,7 +260,16 @@ export function onAnalyzed(cb) {
 }
 
 /**
- * Desliga o worker (uso raro — testes, hot reload).
+ * Listener pra resultado completo (área + linker + sinapses — PR J).
+ */
+export function onAnalyzedFull(cb) {
+  if (typeof cb !== 'function') return () => {};
+  fullListeners.add(cb);
+  return () => fullListeners.delete(cb);
+}
+
+/**
+ * Desliga o worker e limpa estado interno (testes, hot reload).
  */
 export function shutdown() {
   if (worker) {
@@ -183,7 +280,7 @@ export function shutdown() {
   debounceTimers.forEach((t) => clearTimeout(t));
   debounceTimers.clear();
   listeners.clear();
+  fullListeners.clear();
 }
 
-// Exporta também um "default" pra import simples
-export default { analyzeNote, analyzeNotesBatch, onAnalyzed, shutdown };
+export default { analyzeNote, analyzeAndLink, analyzeNotesBatch, onAnalyzed, onAnalyzedFull, shutdown };
