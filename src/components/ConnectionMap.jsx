@@ -1351,6 +1351,13 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
             >
               <title>{nn.label}{parentNb ? ` — ${parentNb.label}` : ''}</title>
 
+              {/* Máscara: faixa colorida do topo respeita o arredondamento da folha */}
+              <defs>
+                <clipPath id={`note-clip-${nn.id}`}>
+                  <rect x={px} y={py} width={PW} height={PH} rx="12" />
+                </clipPath>
+              </defs>
+
               {/* Sombra projetada da folha (arredondada — branding) */}
               <rect
                 x={px + 2} y={py + 4}
@@ -1369,15 +1376,13 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
                 strokeWidth={isHover ? 2.2 : 1.2}
               />
 
-              {/* Faixa colorida no topo (cor do caderno-pai / área) — arredondada */}
+              {/* Faixa colorida no topo (cor do caderno-pai / área) — recortada pelo contorno da folha */}
               <rect
                 x={px} y={py}
                 width={PW} height={8}
-                rx="12"
                 fill={accentColor}
+                clipPath={`url(#note-clip-${nn.id})`}
               />
-              {/* Cobre o arredondamento de baixo da faixa */}
-              <rect x={px} y={py + 5} width={PW} height={3} fill={accentColor} />
 
               {/* Linhas simulando texto */}
               <line x1={px + 8} y1={py + 18} x2={px + PW - 8} y2={py + 18} stroke="#5B4A7A" strokeWidth="1" opacity="0.55" strokeLinecap="round" />
