@@ -67,6 +67,24 @@ const ZOOM_MIN = 0.4;
 const ZOOM_MAX = 2.5;
 const ZOOM_STEP = 0.1;
 
+// === Level of Detail (LOD) — PR G ===
+// Camadas aparecem progressivamente conforme aproximação.
+// Áreas da Vida estão SEMPRE visíveis (a estrutura cognitiva permanente).
+// Projetos, Cadernos e Notas aparecem com fade conforme o zoom aumenta.
+const LOD_PROJECT_FADE_START = 0.65;   // abaixo: invisível
+const LOD_PROJECT_FADE_END   = 0.85;   // acima: 100% visível
+const LOD_NOTEBOOK_FADE_START = 0.85;
+const LOD_NOTEBOOK_FADE_END   = 1.05;
+const LOD_NOTE_FADE_START = 1.05;
+const LOD_NOTE_FADE_END   = 1.25;
+
+// Interpolação linear simples (clamped 0..1).
+function lodOpacity(zoom, fadeStart, fadeEnd) {
+  if (zoom <= fadeStart) return 0;
+  if (zoom >= fadeEnd) return 1;
+  return (zoom - fadeStart) / (fadeEnd - fadeStart);
+}
+
 
 // === CSS embutido ===
 const SVG_STYLE = `
@@ -935,6 +953,13 @@ export default function ConnectionMap({ note, store, onClose }) {
         <div className="text-2xs text-white/55 text-center pt-1 border-t border-white/10">
           {Math.round(zoom * 100)}%
         </div>
+        {/* Indicador de nível LOD (PR G) — qual camada está visível agora */}
+        <div className="text-[9px] text-white/45 text-center leading-tight pt-0.5">
+          {zoom < 0.65 ? 'Áreas' :
+           zoom < 0.85 ? 'Áreas + Projetos' :
+           zoom < 1.05 ? '+ Cadernos' :
+           zoom < 1.25 ? '+ Notas' : 'Tudo'}
+        </div>
       </div>
 
       {/* Dica de navegação (canto inferior esquerdo, só na primeira vez) */}
@@ -1438,6 +1463,13 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
   const delayNoteBase = 250 + notebookNodes.length * 90 + 100;
   const delayConnections = delayNoteBase + noteNodes.length * 35 + 100;
 
+  // === LOD: opacidades das camadas conforme o zoom (PR G) ===
+  // Áreas: sempre visíveis (estrutura cognitiva permanente)
+  // Projetos / Cadernos / Notas: fade-in progressivo conforme aproximação
+  const lodProjectOpacity = lodOpacity(zoom, LOD_PROJECT_FADE_START, LOD_PROJECT_FADE_END);
+  const lodNotebookOpacity = lodOpacity(zoom, LOD_NOTEBOOK_FADE_START, LOD_NOTEBOOK_FADE_END);
+  const lodNoteOpacity = lodOpacity(zoom, LOD_NOTE_FADE_START, LOD_NOTE_FADE_END);
+
   // (NB_W e NB_H movidos pro escopo de módulo — necessário pelo NotebookNode
   // memoizado declarado fora deste componente)
 
@@ -1539,7 +1571,8 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
         <circle cx={cx} cy={cy} r="68" fill="none" stroke="#A07BD6" strokeWidth="2" opacity="0.45" className="a-emanate a-emanate-2" />
         <circle cx={cx} cy={cy} r="68" fill="none" stroke="#A07BD6" strokeWidth="2" opacity="0.45" className="a-emanate a-emanate-3" />
 
-        {/* === Conexões inter-notas === */}
+        {/* === Conexões inter-notas (LOD: visíveis junto com as notas) === */}
+        <g style={{ opacity: lodNoteOpacity, transition: 'opacity 350ms ease', pointerEvents: lodNoteOpacity < 0.05 ? 'none' : 'auto' }}>
         {connections.map((conn) => {
           const src = posById[conn.sourceId];
           const tgt = posById[conn.targetId];
@@ -1567,9 +1600,11 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
             />
           );
         })}
+        </g>
+        {/* Fim do grupo LOD de sinapses */}
 
         {/* === Linhas estruturais hierárquicas (4 camadas) === */}
-        {/* Centro → Áreas da Vida */}
+        {/* Centro → Áreas da Vida (sempre visíveis) */}
         {notebookNodes.filter(nb => nb.kind === 'lifeArea').map((nb, idx) => {
           const dim = highlightSet && !highlightSet.has(nb.id);
           const lit = hoveredId === nb.id;
@@ -1595,7 +1630,8 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
             </g>
           );
         })}
-        {/* Área → Projetos */}
+        {/* Área → Projetos (LOD: aparece em zoom médio) */}
+        <g style={{ opacity: lodProjectOpacity, transition: 'opacity 350ms ease', pointerEvents: lodProjectOpacity < 0.05 ? 'none' : 'auto' }}>
         {notebookNodes.filter(nb => nb.kind === 'project').map((proj, idx) => {
           const parentPos = posById[proj.parentAreaId];
           if (!parentPos) return null;
@@ -1625,7 +1661,9 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
             </g>
           );
         })}
-        {/* Projeto/Área → Cadernos */}
+        </g>
+        {/* Projeto/Área → Cadernos (LOD: aparece em zoom próximo) */}
+        <g style={{ opacity: lodNotebookOpacity, transition: 'opacity 350ms ease', pointerEvents: lodNotebookOpacity < 0.05 ? 'none' : 'auto' }}>
         {notebookNodes.filter(nb => nb.kind === 'notebook').map((nb, idx) => {
           const parentPos = posById[nb.parentId];
           if (!parentPos) return null;
@@ -1655,6 +1693,7 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
             </g>
           );
         })}
+        </g>
 
 
         {/* === NÚCLEO MINIMALISTA PREMIUM === */}
@@ -1796,14 +1835,59 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
         </g>
 
 
-        {/* === NÍVEL 2: Cadernos PREMIUM (NotebookCover) ou Áreas da Vida === */}
-        {notebookNodes.map((nb, idx) => {
+        {/* === NÍVEL 2: Áreas / Projetos / Cadernos — agrupados por LOD === */}
+        {/* Áreas da Vida (sempre visíveis — base estrutural permanente) */}
+        {notebookNodes.filter(nb => nb.kind === 'lifeArea').map((nb, idx) => {
           const isHover = hoveredId === nb.id && hoveredType === 'notebook';
           const dim = !!(highlightSet && !highlightSet.has(nb.id));
           const noteCount = noteCountByNbId[nb.id] || 0;
           const pulseDelay = (idx * 0.7) % 5.5;
           const delayMs = delayNotebookBase + idx * 90;
-
+          return (
+            <NotebookNode
+              key={`area-${nb.id}`}
+              nb={nb}
+              noteCount={noteCount}
+              isHover={isHover}
+              dim={dim}
+              delayMs={delayMs}
+              pulseDelay={pulseDelay}
+              onHoverEnter={handleNotebookHoverEnter}
+              onHoverLeave={handleNotebookHoverLeave}
+            />
+          );
+        })}
+        {/* Projetos (LOD: aparecem em zoom médio) */}
+        <g style={{ opacity: lodProjectOpacity, transition: 'opacity 350ms ease', pointerEvents: lodProjectOpacity < 0.05 ? 'none' : 'auto' }}>
+        {notebookNodes.filter(nb => nb.kind === 'project').map((nb, idx) => {
+          const isHover = hoveredId === nb.id && hoveredType === 'notebook';
+          const dim = !!(highlightSet && !highlightSet.has(nb.id));
+          const noteCount = noteCountByNbId[nb.id] || 0;
+          const pulseDelay = (idx * 0.7) % 5.5;
+          const delayMs = delayNotebookBase + 200 + idx * 90;
+          return (
+            <NotebookNode
+              key={`proj-${nb.id}`}
+              nb={nb}
+              noteCount={noteCount}
+              isHover={isHover}
+              dim={dim}
+              delayMs={delayMs}
+              pulseDelay={pulseDelay}
+              onHoverEnter={handleNotebookHoverEnter}
+              onHoverLeave={handleNotebookHoverLeave}
+            />
+          );
+        })}
+        </g>
+        {/* Cadernos (LOD: aparecem em zoom próximo) */}
+        <g style={{ opacity: lodNotebookOpacity, transition: 'opacity 350ms ease', pointerEvents: lodNotebookOpacity < 0.05 ? 'none' : 'auto' }}>
+        {notebookNodes.filter(nb => nb.kind === 'notebook').map((nb, idx) => {
+          const isHover = hoveredId === nb.id && hoveredType === 'notebook';
+          const dim = !!(highlightSet && !highlightSet.has(nb.id));
+          const noteCount = noteCountByNbId[nb.id] || 0;
+          const pulseDelay = (idx * 0.7) % 5.5;
+          const delayMs = delayNotebookBase + 400 + idx * 90;
           return (
             <NotebookNode
               key={`nb-${nb.id}`}
@@ -1818,9 +1902,11 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
             />
           );
         })}
+        </g>
 
 
-        {/* === NÍVEL 3: Anotações como FOLHAS de papel === */}
+        {/* === NÍVEL 3: Anotações como FOLHAS de papel (LOD: aparecem em zoom muito próximo) === */}
+        <g style={{ opacity: lodNoteOpacity, transition: 'opacity 350ms ease', pointerEvents: lodNoteOpacity < 0.05 ? 'none' : 'auto' }}>
         {noteNodes.map((nn, idx) => {
           const meta = notebookMeta[nn.notebookId];
           const accentColor = meta?.color || '#7B4DBA';
@@ -1844,6 +1930,8 @@ const EcosystemSvg = React.forwardRef(function EcosystemSvgInner({
             />
           );
         })}
+        </g>
+        {/* Fim do grupo LOD de notas */}
 
       </g>
       {/* Fim da camada com pan/zoom */}
