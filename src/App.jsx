@@ -6,6 +6,7 @@ import Editor from './components/Editor';
 import Dashboard from './components/Dashboard';
 import Corretor from './components/Corretor';
 import Home from './components/Home';
+import Projects from './components/Projects';
 import Timeline from './components/Timeline';
 import AuthGate from './components/AuthGate';
 import TemplatePicker from './components/TemplatePicker';
@@ -256,6 +257,9 @@ function MainApp({ logout }) {
           onOpenMobileMenu={isMobile ? openSidebarMobile : undefined}
         />
       );
+    }
+    if (store.currentView === 'projects') {
+      return <Projects store={store} onOpenMobileMenu={isMobile ? openSidebarMobile : undefined} />;
     }
     if (store.currentView === 'insights' || store.currentView === 'dashboard') {
       return <Dashboard store={store} onOpenMobileMenu={isMobile ? openSidebarMobile : undefined} />;

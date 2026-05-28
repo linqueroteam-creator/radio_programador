@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import {
   FileText, Star, Trash2, BookOpen, Tag, Plus,
   ChevronDown, ChevronRight, Search, Sparkles, X,
-  ChevronLeft, Menu, SpellCheck,
+  ChevronLeft, Menu, SpellCheck, FolderOpen,
   Home as HomeIcon, TrendingUp, Layers, Pin, Archive,
   Clock, Command, LogOut
 } from 'lucide-react';
@@ -163,6 +163,12 @@ export default function Sidebar({
             active={store.currentView === 'home'}
             onClick={() => { store.setCurrentView('home'); store.setSelectedNoteId(null); }}
             label="Início"
+          />
+          <SidebarIconBtn
+            icon={<FolderOpen size={16} />}
+            active={store.currentView === 'projects'}
+            onClick={() => { store.setCurrentView('projects'); store.setSelectedNoteId(null); }}
+            label="Projetos"
           />
           <SidebarIconBtn
             icon={<FileText size={16} />}
@@ -338,6 +344,13 @@ function ExpandedSidebar(props) {
           label="Início"
           active={store.currentView === 'home'}
           onClick={() => { store.setCurrentView('home'); store.setSelectedNoteId(null); }}
+        />
+
+        <NavBtn
+          icon={<FolderOpen size={16} />}
+          label="Projetos"
+          active={store.currentView === 'projects'}
+          onClick={() => { store.setCurrentView('projects'); store.setSelectedNoteId(null); }}
         />
 
         <NavBtn
