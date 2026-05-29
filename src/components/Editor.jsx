@@ -34,8 +34,9 @@ import {
   Star, Trash2, BookOpen, Clock, Sparkles, SpellCheck,
   Image as ImageIcon, CheckCircle, AlertCircle, Cloud, CloudOff,
   PanelRight, Link2, Map as MapIcon, RotateCw,
-  Menu, FileText
+  Menu, FileText, Settings
 } from 'lucide-react';
+import { getLifeArea } from '../engine/LifeAreas';
 
 export default function Editor({ store, onOpenMobileMenu, onOpenMobileNoteList }) {
   const { selectedNote } = store;
@@ -44,6 +45,7 @@ export default function Editor({ store, onOpenMobileMenu, onOpenMobileNoteList }
   const [grammarIssues, setGrammarIssues] = useState([]);
   const [isCheckingGrammar, setIsCheckingGrammar] = useState(false);
   const [showInsightPanel, setShowInsightPanel] = useState(true);
+  const [showMetaDetails, setShowMetaDetails] = useState(false);
   const [showConnectionModal, setShowConnectionModal] = useState(false);
   // === Mapa visual de conexões (P5 — Mapa de Conexões) ===
   // ATENÇÃO: este useState está aqui em cima, junto dos outros, ANTES de qualquer
@@ -627,11 +629,28 @@ export default function Editor({ store, onOpenMobileMenu, onOpenMobileNoteList }
                 value={selectedNote.notebookId}
                 onChange={handleNotebookChange}
                 className="bg-transparent text-anotata-text-suave text-xs border-none focus:outline-none cursor-pointer hover:text-anotata-roxo max-w-[120px] sm:max-w-none truncate"
+                style={{ display: 'none' }}
               >
                 {store.notebooks.map(nb => (
                   <option key={nb.id} value={nb.id}>{nb.name}</option>
                 ))}
               </select>
+              {/* Indicador de área da nota — faixa colorida discreta (PR K) */}
+              {(() => {
+                const areaId = selectedNote.lifeArea !== 'outros' ? selectedNote.lifeArea : (selectedNote.inferredLifeArea || null);
+                const area = areaId ? getLifeArea(areaId) : null;
+                if (!area || area.id === 'outros') return null;
+                return (
+                  <span
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-2xs font-medium"
+                    style={{ backgroundColor: area.color + '20', color: area.color }}
+                    title={`Área: ${area.name}${selectedNote.inferredLifeArea && selectedNote.lifeArea === 'outros' ? ' (inferida pelo agente)' : ''}`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: area.color }} />
+                    {area.shortName}
+                  </span>
+                );
+              })()}
             </div>
             <div className="hidden sm:flex items-center gap-1">
               <Clock size={12} />
@@ -654,7 +673,7 @@ export default function Editor({ store, onOpenMobileMenu, onOpenMobileNoteList }
               label="Conectar com outra nota"
               onClick={() => setShowConnectionModal(true)}
               size="lg"
-              className="hidden sm:inline-flex"
+              className="hidden"
             />
             <IconButton
               icon={MapIcon}
@@ -718,18 +737,35 @@ export default function Editor({ store, onOpenMobileMenu, onOpenMobileNoteList }
           className="w-full text-xl sm:text-2xl font-bold bg-transparent text-anotata-text border-none focus:outline-none placeholder:text-anotata-muted"
         />
 
-        {/* === Barra de metadados (tipo, status, prioridade) === */}
-        <NoteMetaBar note={selectedNote} store={store} suggestions={suggestions} />
+        {/* === Detalhes da nota (colapsado por padrão — PR K: tela limpa) ===
+             O agente cuida dos metadados em background.
+             Usuário pode abrir via botão engrenagem pra corrigir manualmente. */}
+        <div className="flex items-center gap-1 mt-2">
+          <button
+            onClick={() => setShowMetaDetails(!showMetaDetails)}
+            className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-2xs text-anotata-muted hover:text-anotata-roxo hover:bg-anotata-lavanda-clara transition-colors"
+            title="Expandir detalhes da nota (tipo, status, área, tags)"
+            aria-expanded={showMetaDetails}
+          >
+            <Settings size={12} />
+            <span>Detalhes</span>
+          </button>
+        </div>
 
-        {/* === Próxima ação sugerida === */}
-        {suggestions?.nextAction && (
-          <NextActionCard
-            suggestion={suggestions.nextAction}
-            onApply={() => handleNextAction(suggestions.nextAction, selectedNote, store)}
-          />
+        {showMetaDetails && (
+          <div className="animate-fade-in">
+            <NoteMetaBar note={selectedNote} store={store} suggestions={suggestions} />
+
+            {suggestions?.nextAction && (
+              <NextActionCard
+                suggestion={suggestions.nextAction}
+                onApply={() => handleNextAction(suggestions.nextAction, selectedNote, store)}
+              />
+            )}
+
+            <TagBar store={store} noteId={selectedNote.id} noteTags={selectedNote.tags} />
+          </div>
         )}
-
-        <TagBar store={store} noteId={selectedNote.id} noteTags={selectedNote.tags} />
       </div>
 
       <Toolbar editor={editor} />
@@ -737,6 +773,19 @@ export default function Editor({ store, onOpenMobileMenu, onOpenMobileNoteList }
 
       {/* Editor + painéis laterais */}
       <div className="flex-1 flex overflow-hidden">
+        {/* Indicador de área da vida — borda esquerda colorida (PR K) */}
+        {(() => {
+          const areaId = selectedNote.lifeArea !== 'outros' ? selectedNote.lifeArea : (selectedNote.inferredLifeArea || null);
+          const area = areaId ? getLifeArea(areaId) : null;
+          if (!area || area.id === 'outros') return null;
+          return (
+            <div
+              className="w-1 shrink-0 transition-colors duration-500"
+              style={{ backgroundColor: area.color + '55' }}
+              title={`Área: ${area.name}`}
+            />
+          );
+        })()}
         <div className="flex-1 overflow-y-auto">
           <EditorContent editor={editor} className="h-full" />
         </div>
